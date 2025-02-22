@@ -1,2 +1,2 @@
-# RP-Roster-Scripts
-Contains all Scripts related to the Blackshadow RP Rosters
+# Foundation-Seniors-Scripts
+Contains the Scripts concerning the Blackshadow RP Rosters
