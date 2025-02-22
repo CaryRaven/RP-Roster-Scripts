@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Google Apps Script Web App</title>
+  <base target="_top">
+  <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+  <?!= include("Interfaces/CSS"); ?>
+</head>
+
+<body>
+
+  <div class="lockdown-banner" style="display: none;" id="lockdown-topbanner">🚨 Security Documentation is currently under lockdown 🚨</div>
+
+  <!-- Sidebar NAVIGATION - Permanently displayed -->
+  <script>
+    // Panel Visibility Toggles => Operated by sidebar
+
+    function ShowDash() {
+      document.getElementById('dashboard').setAttribute('style', 'display: block;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { }
+    }
+
+    function ShowManual() {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: block;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { }
+    }
+
+    function ShowConnections() {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: block;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { }
+    }
+
+    function ShowSearch() {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: block;');
+      document.getElementById("searchLoading").setAttribute("style", "display: none;");
+      try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { }
+    }
+
+    function ShowConfig() {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      document.getElementById('config').setAttribute('style', 'display: block;');
+    }
+  </script>
+  <div class="sidebar">
+    <div class="top">
+      <!-- THIS DIV IS FULLY HIIDEN -(importing images don't work) -->
+      <div class="logo">
+        <i class="bx bxl-codepen"></i>
+        <span>Admin Menu</span>
+      </div>
+      <i class="https://drive.google.com/uc?export=view&id=1pftsKrkMT4231wMYCVDyvWPdcDT4nuqP" id="btn"></i>
+    </div>
+    <!-------------------------------->
+    <ul>
+      <li>
+        <button onclick="ShowDash()">
+          <i class="bx bxs-dashboard bx-tada-hover"></i>
+          <span class="tooltip">Dashboard</span>
+        </button>
+      </li>
+      <li>
+        <a href="https://docs.google.com/spreadsheets/d/1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE/edit?usp=sharing"
+          target="_blank">
+          <button>
+            <i class="bx bx-grid bx-tada-hover"></i>
+            <span class="tooltip">Roster</span>
+          </button>
+        </a>
+      </li>
+      <!-- <li>
+        <button onclick="ShowConnections()">
+          <i class='bx bx-link bx-tada-hover'></i>
+          <span class="tooltip">Connections</span>
+        </button>
+      </li> -->
+      <li>
+        <button onclick="ShowManual()">
+          <i class="bx bxs-book-bookmark bx-tada-hover"></i>
+          <span class="tooltip">Manual</span>
+        </button>
+      </li>
+      <li>
+        <button onclick="ShowSearch()">
+          <i class='bx bx-search-alt-2 bx-tada-hover'></i>
+          <span class="tooltip">Search</span>
+        </button>
+      </li>
+      <? if(ranks[2].includes(data.rank) || ranks[3].includes(data.rank) || allowedStaff.includes(user)) { ?>
+      <li>
+        <button onclick="ShowConfig()">
+          <i class='bx bx-shield-quarter bx-tada-hover'></i>
+          <span class="tooltip">Config</span>
+        </button>
+      </li>
+      <? } ?>
+      <!-- <li>
+        <button onclick="">
+          <i class='bx bx-bell bx-tada-hover' ></i>
+          <span class="tooltip">Notifications</span>
+        </button>
+      </li> -->
+    </ul>
+  </div>
+
+  <!-- Dashboard (with options to go to forms) -->
+  <script>
+    // Form Toggles => Operated by option-box divs
+
+    function OpenLogForm() {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('loggerForm').setAttribute('style', 'display: flex;');
+      document.getElementById('data-forms').setAttribute('style', 'display: block;');
+      document.getElementById('editForm').setAttribute('style', 'display: none;');
+    }
+
+    function OpenEditForm() {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('editForm').setAttribute('style', 'display: block;');
+      document.getElementById('data-forms').setAttribute('style', 'display: block;');
+      document.getElementById('loggerForm').setAttribute('style', 'display: none;');
+    }
+  </script>
+  <div class="main-content" id="dashboard">
+    <div class="container">
+      <div class="textbox">
+        <h1>Admin Menu</h1><br>
+        <h3>This menu is only to be accessed by individuals authorized to edit the Security Roster.<br>
+          If you are here unauthorized, no function will work.
+        </h3><br>
+        <hr><br>
+        <p>If you would be confused about what to do, don't be afraid to consult the Security Leadership Handbook or ask
+          your superior for help.<br>
+          This page is where all Security roster edits are made, our systems do everything automatically so do not worry
+          about handling permissions or such.<br>
+          If you would want manual changes to be made, please consult the owner of the roster.</p><br><br>
+        <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the Admin Menu
+        </p>
+        <div class="box-container">
+          <button class="option-box" onclick="OpenLogForm()">
+            <div class="button-text-align">
+              <h3> <i class="bx bxs-wrench"></i> Submit a Log</h3> <br>
+              <hr> <br>
+              <p>Select this option if you would like to perform basic roster operations such as submitting a log or
+                making a rank change. <br> <br>
+                This can include things like: <br> <br>
+                Rank Changes <br>
+                Infraction Logs <br>
+                Blacklists <br>
+                etc...
+              </p>
+            </div>
+          </button>
+          <button class="option-box" onclick="OpenEditForm()">
+            <div class="button-text-align">
+              <h3> <i class="bx bx-edit"></i> Modify Personnel Info</h3> <br>
+              <hr> <br>
+              <p>Select this option if you would like to modify specific information about a Security member. <br><br>
+                This can include things like: <br><br>
+                Name <br>
+                Steam ID <br>
+                Discord ID <br>
+                Email-address <br>
+                etc...
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connections -->
+  <!-- <div class="main-content" id="connections" style="display: none;">
+    <div class="container">
+      <div class="textbox">
+        <h1>Connections</h1><br>
+        <p>This page contains other rosters/admin menus for quick navigation.</p>
+      </div>
+    </div>
+  </div> -->
+
+  <!-- User Manual -->
+  <div class="main-content" id="usermanual" style="display: none;">
+    <div class="container">
+      <div class="textbox">
+        <h1><i class="bx bxs-book-bookmark"></i>User Manual</h1><br>
+        <p>In this manual I will explain all the necessary things you will need to know in order to operate this Admin
+          Menu. Alongside this, I will also go into more detail about how some of these functions work at the end of the
+          manual if you are curious. You can always consult your supervisor if you would be unsatisfied with the level
+          of detail of this manual, in which case they can provide you with more information.</p><br>
+        <hr><br>
+        <p>
+          <strong>Before we begin I must emphasize: NEVER edit the Security roster directly unless you know very well what you're doing. The whole reason why this
+            admin menu was made is so you don't have to make direct edits to the spreadsheet itself. Why you might ask?
+            This is because the Admin Menu performs a lot of operations behind the scenes, such as managing document access.
+            If you add a staff member manually you will also have to manually give them permissions to all the folders.
+            Using this UI might seem slow and inefficient, but trust me that you are saving yourself a lot of time &
+            effort. In order to prevent human error, please use the admin menu. Thanks :)</strong>
+        </p><br>
+        <div class="box-container" id="manual-box">
+          <div class="dashboard-manual">
+            <p class="left-text">The main reason why you would access the Admin Menu is, of course, to manage the Security
+              Roster. In order to do this, you must access the "dashboard" using the sidebar to your right. There you
+              can
+              choose between submitting a log or modifying personnel info. </p><br>
+            <ol style="text-align: left; margin-left: 40px;">
+              <li>
+                <p>Submitting a log is used to perform various tasks on the roster, most of these operations are done
+                  automatically. For example: if you submit a rank change, the person will automatically be moved on the
+                  roster and their document access will be updated. This can take a few seconds to process.</p><br>
+              </li>
+              <li>
+                <p>Modifying personnel info is only used to edit specific information about a certain member, such as
+                  their name or discord ID. This can be handy when for example somebody decides to switch to a new
+                  discord account, you can then edit their discord ID to match the new account.</p>
+              </li>
+            </ol><br><br>
+            <p class="left-text">Once you have selected one of these two options, a form will be displayed. Fill out all
+              the questions correctly and <strong>double check your answers before submitting</strong> as they cannot be changed
+              later. If you are 100% sure that your answers are correct, press submit and be patient while the request
+              is being processed. This can take up to 40 seconds to complete so don't panic if
+              your change isn't immediately visible. Never "try again" and submit a second time, this will only break
+              things. If your change has failed to show up after two minutes just contact a member of Staff Administration through a discord ticket. They will investigate the issue.<br>
+              This is about all the information that you need to know in order to properly operate this UI and the staff
+              roster.</p><br>
+            <h2>Want to know more?</h2><br>
+            <p class="left-text">Below you can find all sorts of video & text tutorials that I used, that will get you
+              started on understanding how this UI functions and, hopefully, also teach you how to do it
+              yourself.<br><br>
+              <i class='bx bxs-tag-alt'></i> <a
+                href="https://youtube.com/playlist?list=PLv9Pf9aNgemt82hBENyneRyHnD-zORB3l&si=2WfgL0itSXsRhUQe"
+                target="_blank" class="visible-link">Full course on Google Web Applications</a> -- This tutorial is
+              quite old, but so is google apps script. So apart from the old editor layout you will see in this course,
+              the language & features are still the same.<br>
+              <i class='bx bxs-tag-alt'></i> <a href="https://www.w3schools.com/html/default.asp" target="_blank"
+                class="visible-link">HTML (CSS & JS) documentation</a> -- W3schools is one of the best online sources
+              for web development and I cannot recommend it more. For Google Web Apps, you"ll really only need to go
+              over the HTML, CSS and Javascript tutorials but there is so much more to find there.<br>
+              <i class='bx bxs-tag-alt'></i> <a href="https://boxicons.com/" target="_blank"
+                class="visible-link">Boxicons Library</a> -- Boxicons is a free library full of amazing icons for
+              websites. All the icons on this web application come from there, imported as a font. There are many more
+              icon libraries out there, and they're all good, but I found boxicons to be the easiest to use.<br>
+              <i class='bx bxs-tag-alt'></i> <a href="https://developers.google.com/apps-script/reference"
+                target="_blank" class="visible-link">Apps Script Reference</a> -- This is the official documentation on
+              Google Apps Script by Google. Everything you will need to know about this language can be found here.<br>
+              <i class='bx bxs-tag-alt'></i> <a href="https://github.com/google/clasp" target="_blank"
+                class="visible-link">Clasp</a> -- Clasp is a software that will let you write Google Apps Script code
+              inside of your favorite IDE/Text Editor, instead of having to use the default browser editor. This does
+              require you to install NodeJS.<br>
+              <i class='bx bxs-tag-alt'></i> <a href="https://chatgpt.com/" target="_blank" class="visible-link">AI
+                (such as ChatGPT)</a> -- AI is, whether you want to accept it or not, a very useful tool for developers
+              to assist you. There is nothing wrong with asking ChatGPT for help. ALTHOUGH, I do not recommend asking AI
+              to just write the code for you, this won't help you in any way and just make you a worse programmer. Use
+              it as a tool, not a goal.
+            </p>
+            </p>
+          </div>
+        </div>
+        <div class="box-container">
+          <div>
+            <h2>Your Information</h2><br>
+            <h3><strong>Name: </strong>
+              <?= data.name; ?>
+            </h3><br>
+            <h3><strong>Steam ID: </strong>
+              <?= data.steamId; ?>
+            </h3><br>
+            <h3><strong>Discord ID: </strong>
+              <?= data.discordId; ?>
+            </h3><br>
+            <h3><strong>Rank: </strong>
+              <?= data.rank; ?>
+            </h3><br>
+            <h3><strong>Status: </strong>
+              <?= data.status; ?>
+            </h3><br>
+            <h3><strong>Notes: </strong>
+              <?= data.notes; ?>
+            </h3><br>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Panel -->
+  <script>
+    // Functions to populate outputDiv with result data
+    function UpdateDiv(event) {
+      event.preventDefault();
+      const inputValue = document.getElementById('inputField').value;
+      if (inputValue === "" || !inputValue.includes("STEAM_")) {
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 200);
+        return;
+      }
+
+      document.getElementById("loading-search").innerText = "Searching for matching data...";
+      document.getElementById("searchLoading").setAttribute("style", "display: block;")
+
+      google.script.run
+        .withSuccessHandler(DisplayData)
+        .withFailureHandler(error => {
+          console.error("Server error:", error); // Log server-side errors
+          document.getElementById("loading-search").innerText = "An error occured when trying to fetch the data: " + error;
+          document.getElementById("searchLoading").setAttribute("style", "display: none;")
+        })
+        .GetSpreadsheetData(inputValue);
+    }
+
+    function DisplayData(data) {
+      data = JSON.parse(data);
+
+      const outputDiv = document.getElementById('outputDiv');
+      outputDiv.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        document.getElementById("loading-search").innerText = "No matching data was found, please try another steam ID.";
+        document.getElementById("searchLoading").setAttribute("style", "display: none;")
+        return;
+      }
+
+      // Format dates to be readable => made using AI (I couldn't be asked)
+      function FormatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return dateString; // Return original string if not a valid date
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      const cardContainer = document.createElement('div');
+      cardContainer.style.display = "flex";
+      cardContainer.style.flexWrap = "wrap";
+      cardContainer.style.justifyContent = "center";
+      cardContainer.style.gap = "15px";
+      cardContainer.style.backgroundColor = "#777777";
+      cardContainer.style.marginTop = "20px";
+      cardContainer.style.padding = "20px";
+      cardContainer.style.borderRadius = "10px";
+
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.style.border = "4px solid black";
+        card.style.borderRadius = "10px";
+        card.style.padding = "20px";
+        card.style.backgroundColor = "#444444";
+        card.style.boxShadow = "0 4px 8px black";
+        card.style.flex = "1 1 calc(33% - 30px)";
+        card.style.maxWidth = "calc(33% - 30px)";
+        card.style.boxSizing = "border-box";
+        card.style.lineHeight = "1.8";
+
+        const head = document.createElement('div');
+        head.textContent = item.sheetLabel;
+        head.style.fontSize = "20px";
+        head.style.fontWeight = "bold";
+        head.style.color = "whitesmoke";
+        head.style.fontFamily = "Lexend";
+        head.style.paddingBottom = "5px";
+        card.appendChild(head);
+
+        Object.entries(item).forEach(([key, value]) => {
+          if (key === "sheetLabel") return;
+
+          const field = document.createElement('div');
+          field.style.fontSize = "16px";
+          field.style.fontWeight = "bold";
+
+          if (key.toLowerCase().includes("date")) {
+            value = FormatDate(value);
+          }
+
+          // Style color for easy reading
+          switch (value) {
+            case "Promotion":
+              field.style.color = "#34a853";
+              break;
+            case "Demotion":
+              field.style.color = "#ff2f2f";
+              break;
+            case "Removal":
+              field.style.color = "#ff2f2f";
+              break;
+            case "Severe":
+              field.style.color = "#ff2f2f";
+              break;
+            case "Transfer":
+              field.style.color = "#8e7cc3";
+              break;
+            case "Passed Interview":
+              field.style.color = "#3c78d8";
+              break;
+            default:
+              field.style.color = "whitesmoke";
+              break;
+          }
+
+          // Differentiate logger information
+          if (key.includes("Logger")) {
+            field.style.color = "gray";
+          }
+
+          field.style.fontFamily = "Lexend";
+          field.textContent = `${key}: ${value !== null ? value : 'N/A'}`;
+          card.appendChild(field);
+        });
+
+        cardContainer.appendChild(card);
+      });
+
+      outputDiv.appendChild(cardContainer);
+      document.getElementById("loading-search").innerText = "";
+      document.getElementById("searchLoading").setAttribute("style", "display: none;")
+    }
+  </script>
+  <div class="main-content" id="search_panel" style="display: none;">
+    <div class="container">
+      <div class="textbox">
+        <h1>Search Panel</h1><br>
+        <p>Input a Steam ID and you will be shown all logs related to the SteamID.</p><br>
+        <form>
+          <label for="inputField">Enter SteamID:</label><br>
+          <input type="text" id="inputField" maxlength="25" required />
+          <button type="submit" class="submitButton-mini" onclick="UpdateDiv(event)">Submit</button>
+        </form>
+        <p id="loading-search"></p><br>
+        <div class="loader" id="searchLoading"></div>
+        <div id="outputDiv">
+          <!-- Search output goes here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Panel -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      try {
+        google.script.run.withSuccessHandler(r => {
+          document.getElementById('manualEditingSlider').checked = !(r === "true");
+        }).ReturnManualEditing();
+
+        google.script.run.withSuccessHandler(re => {
+          google.script.run.withSuccessHandler(response => {
+            document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+            document.getElementById('backupSlider').checked = (re === "true");
+            document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
+            document.getElementById('config-loading').innerHTML = '';
+          }).GetLastBackupTime();
+        }).ReturnBackup();
+
+        google.script.run.withSuccessHandler(res => {
+          if (res === "true") {
+            document.getElementById('lockdown-topbanner').style.display = "block";
+            document.getElementById('lockdownIdentifier').innerText = "Disable";
+          } else {
+            document.getElementById('lockdownIdentifier').innerText = "Enable";
+          }
+        }).ReturnLockdown();
+
+        google.script.run.withSuccessHandler(resp => {
+          document.getElementById('sheetRestoreSlider').checked = (resp === "true");
+        }).ReturnRestoreType();
+      } catch (e) { }
+
+      document.getElementById('manualEditingSlider').addEventListener('change', function () {
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+        }).ToggleManualEditing(this.checked);
+      });
+
+      document.getElementById('backupSlider').addEventListener('change', function () {
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+        }).ToggleBackup(this.checked);
+      });
+
+      document.getElementById('sheetRestoreSlider').addEventListener('change', function () {
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+        }).ToggleSheetRestore(this.checked);
+      });
+
+      window.LockdownInit = function (event) {
+        event.preventDefault();
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        const button = document.getElementById('lockdownButton');
+        button.disabled = true;
+
+        google.script.run.withSuccessHandler(response => {
+
+          google.script.run.withSuccessHandler(() => {
+            document.getElementById('config-loading').innerHTML = '';
+            button.disabled = false;
+              if (response === "false") {
+                document.getElementById('lockdown-topbanner').style.display = "block";
+                document.getElementById('lockdownIdentifier').innerText = "Disable";
+              } else {
+                document.getElementById('lockdown-topbanner').style.display = "none";
+                document.getElementById('lockdownIdentifier').innerText = "Enable";
+              }
+          }).withFailureHandler(() => {
+            document.getElementById('config-loading').innerHTML = '';
+            button.disabled = false;
+          }).ToggleLockdown(response === "true" ? false : true);
+
+        }).withFailureHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+          button.disabled = false;
+        }).ReturnLockdown();
+      };
+
+      window.AddRankRow = function (event) {
+        event.preventDefault();
+        const rankElement = document.getElementById('new-rank-select');
+        const rank = rankElement.value;
+        const buttonAdd = document.getElementById('addrankrow-button');
+        const buttonRemove = document.getElementById('removerankrow-button');
+        let configLoading = document.getElementById('config-loading');
+
+        configLoading.innerHTML = '<div class="loader"></div>';
+        buttonAdd.disabled = true;
+        buttonRemove.disabled = true;
+        rankElement.disabled = true;
+
+        if (!rank) {
+          document.body.classList.add('shake');
+          setTimeout(() => document.body.classList.remove('shake'), 200);
+          configLoading.innerHTML = '';
+          buttonAdd.disabled = false;
+          buttonRemove.disabled = false;
+          rankElement.disabled = false;
+          return;
+        }
+
+        google.script.run.withSuccessHandler(response => {
+          configLoading.innerHTML = '';
+          buttonAdd.classList.add('green');
+          buttonRemove.classList.add('green');
+          setTimeout(() => {
+            buttonAdd.classList.remove('green');
+            buttonRemove.classList.remove('green');
+            buttonAdd.disabled = false;
+            buttonRemove.disabled = false;
+            rankElement.disabled = false;
+          }, 3000);
+        }).withFailureHandler(() => {
+          document.body.classList.add('shake');
+          setTimeout(() => document.body.classList.remove('shake'), 200);
+          configLoading.innerHTML = '';
+          configLoading.innerText = "Something went wrong while adding a rank slot";
+          buttonAdd.classList.add('red');
+          buttonRemove.classList.add('red');
+          setTimeout(() => {
+            configLoading.innerText = ""
+            buttonAdd.disabled = false;
+            buttonRemove.disabled = false;
+            rankElement.disabled = false;
+            buttonAdd.classList.remove('red');
+            buttonRemove.classList.remove('red');
+          }, 3000);
+        }).AddRankRow(rank);
+      };
+
+      window.RemoveRankRow = function (event) {
+        event.preventDefault();
+        const rankElement = document.getElementById('new-rank-select');
+        const rank = rankElement.value;
+        const buttonAdd = document.getElementById('addrankrow-button');
+        const buttonRemove = document.getElementById('removerankrow-button');
+        let configLoading = document.getElementById('config-loading');
+
+        configLoading.innerHTML = '<div class="loader"></div>';
+        buttonAdd.disabled = true;
+        buttonRemove.disabled = true;
+        rankElement.disabled = true;
+
+        if (!rank) {
+          document.body.classList.add('shake');
+          setTimeout(() => document.body.classList.remove('shake'), 200);
+          configLoading.innerHTML = '';
+          buttonAdd.disabled = false;
+          buttonRemove.disabled = false;
+          rankElement.disabled = false;
+          return;
+        }
+
+        google.script.run.withSuccessHandler(response => {
+          configLoading.innerHTML = '';
+          if (response) {
+            buttonAdd.classList.add('red');
+            buttonRemove.classList.add('red');
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 200);
+            setTimeout(() => {
+              buttonAdd.classList.remove('red');
+              buttonRemove.classList.remove('red');
+              buttonAdd.disabled = false;
+              buttonRemove.disabled = false;
+              rankElement.disabled = false;
+            }, 3000);
+          } else {
+            buttonAdd.classList.add('green');
+            buttonRemove.classList.add('green');
+            setTimeout(() => {
+              buttonAdd.classList.remove('green');
+              buttonRemove.classList.remove('green');
+              buttonAdd.disabled = false;
+              buttonRemove.disabled = false;
+              rankElement.disabled = false;
+            }, 3000);
+          }
+        }).withFailureHandler(response => {
+          document.body.classList.add('shake');
+          setTimeout(() => document.body.classList.remove('shake'), 200);
+          configLoading.innerHTML = '';
+          configLoading.innerText = "Something went wrong while adding a rank slot";
+          buttonAdd.classList.add('red');
+          buttonRemove.classList.add('red');
+          setTimeout(() => {
+            configLoading.innerText = ""
+            buttonAdd.disabled = false;
+            buttonRemove.disabled = false;
+            rankElement.disabled = false;
+            buttonAdd.classList.remove('red');
+            buttonRemove.classList.remove('red');
+          }, 3000);
+        }).RemoveRankRow(rank);
+      };
+
+      window.RestoreBackup = function (event) {
+        event.preventDefault();
+        const button = document.getElementById('restoreBackupButton');
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        button.disabled = true;
+
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById('config-loading').innerHTML = '';
+          if (response) {
+            button.classList.add("red");
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.disabled = false;
+            }, 2000);
+          } else {
+            button.disabled = false;
+          }
+        }).withFailureHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+          button.disabled = false;
+          button.classList.add("red");
+          setTimeout(() => button.classList.remove("red"), 2000);
+        }).RestoreSheet();
+      };
+
+      window.MakeBackup = function (event) {
+        event.preventDefault();
+        const button = document.getElementById('backupButton');
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        button.disabled = true;
+
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById('config-loading').innerHTML = '';
+          if (response) {
+            button.classList.add("red");
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.disabled = false;
+            }, 2000);
+          } else {
+            button.disabled = false;
+          }
+
+          // Update last backup time
+          google.script.run.withSuccessHandler(response => {
+            document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+          }).GetLastBackupTime();
+        }).withFailureHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+          button.disabled = false;
+          button.classList.add("red");
+          setTimeout(() => button.classList.remove("red"), 2000);
+        }).BackupSheet();
+      };
+
+      window.RefreshBackupTime = function (event) {
+        event.preventDefault();
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+          document.getElementById('config-loading').innerHTML = '';
+        }).GetLastBackupTime();
+      }
+
+      window.ResetPerms = function (event) {
+        event.preventDefault();
+        const button = document.getElementById('resetButton');
+        button.disabled = true;
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+
+        google.script.run.withSuccessHandler(() => {
+          button.disabled = false;
+          document.getElementById('config-loading').innerHTML = '';
+        }).withFailureHandler(() => {
+          button.disabled = false;
+          document.getElementById('config-loading').innerHTML = '';
+        }).ResetPermissions();
+      }
+
+    });
+  </script>
+  <div class="main-content" id="config" style="display: none;">
+    <div class="container">
+      <div class="textbox" id="config-textbox" style="display: none;">
+        <h1>Config Panel</h1><br>
+        <p>Configure all sorts of aspects of the Staff Roster here!<br>When changing something in this menu, wait for
+          the loading animation to stop before performing another operation.</p>
+        <br>
+        <hr><br>
+        <!-- Managing Admin Ranks & Adding/removing rank slots is currently not operational
+          I will probably not re-add 'managing admin ranks' as that should really be changed for something like staff (will be used for RP roster probably)
+            <form id="config-form-adminRanks">
+            <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br><br>Current allowed ranks: <span id="allowedRanks"></span>
+            </label><br>
+            <select id="amdin-role-select">
+              <option value=""></option>
+              <option value="Moderator">Moderator</option>
+              <option value="Head Moderator">Head Moderator</option>
+              <option value="Administrator">Administrator</option>
+              <option value="Staff Manager">Staff Manager</option>
+            </select>
+            <button onclick="SaveChanges_AdminRanks(event)" type="submit" class="submitButton-mini">Add/Remove</button>
+          </form><br> -->
+        <form id="config-form-rankRow">
+          <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
+          <select id="new-rank-select">
+            <option value=""></option>
+          </select>
+          <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button">Add</button>
+          <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini"
+            id="removerankrow-button">Remove</button>
+        </form><br>
+        <table class="config-switches">
+          <tr>
+            <td>
+              Enable Manual Editing of the roster:
+            </td>
+            <td class="config-switch">
+              <label class="switch">
+                <input type="checkbox" id="manualEditingSlider">
+                <span class="slider round"></span>
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Restore full sheet on manual edit (vs just the edited cells):
+            </td>
+            <td class="config-switch">
+              <label class="switch">
+                <input type="checkbox" id="sheetRestoreSlider">
+                <span class="slider round"></span>
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Enable time-based (12h) Backups being made of the roster:
+            </td>
+            <td class="config-switch">
+              <label class="switch">
+                <input type="checkbox" id="backupSlider">
+                <span class="slider round"></span>
+              </label>
+            </td>
+          </tr>
+          <? if (allowedStaff.includes(user)) { ?>
+          <tr>
+            <td>
+              Make a roster backup immediately:
+            </td>
+            <td class="config-switch">
+              <button class="submitButton-mini-mini" id="backupButton" onclick="MakeBackup(event)">Backup</button>
+            </td>
+          </tr>
+          <? } ?>
+          <? if (allowedStaff.includes(user) || ranks[3].includes(data.rank)) { ?>
+          <tr>
+            <td>
+              Restore the roster to its latest backup:<br><span id="backupTime" style="font-weight: 200; font-size: 12px;" onclick="RefreshBackupTime(event)"></span>
+            </td>
+            <td class="config-switch">
+              <button class="submitButton-mini-mini" id="restoreBackupButton" onclick="RestoreBackup(event)">Restore</button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Reset all Staff Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>
+            </td>
+            <td class="config-switch">
+              <button class="submitButton-mini-mini" id="resetButton" onclick="ResetPerms(event)">Reset</button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <span id="lockdownIdentifier"></span> a full Lockdown of all Staff Documentation:
+            </td>
+            <td class="config-switch">
+              <button class="submitButton-mini-mini" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
+            </td>
+          </tr>
+          <? } ?>
+        </table>
+      </div>
+      <p id="config-loading" style="margin-top: 15px;"></p>
+    </div>
+  </div>
+  <script>
+    // Needs to be below config loading element so the <p> is loaded
+    document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+  </script>
+
+  <!-- Form Section (both Logger and Edit Form)
+     Apologies for the terrible formatting -->
+  <script>
+    // Toggle which questions are visible depending on main selection
+    function HideCheck() {
+      // This MASSIVE switch statement is not best practice, but it works :)
+      const logtype = document.getElementById('logTypeList').value;
+      switch (logtype) {
+        case 'Infraction Log':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: block;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: block;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'Rank Change':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: block;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: block;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'LOA Log':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'Blacklist':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: none;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: none;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: block;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: block;');
+          document.getElementById('bltypelist').value = "";
+          break;
+        case 'Infraction Appeal':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: none;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: block;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: block;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'Blacklist Appeal':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: none;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: block;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: block;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'New Captain':
+          document.getElementById('namefield').setAttribute('style', 'display: block;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: block;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+      }
+    }
+
+    // SUBMITING FORMS
+    function SubmitLog(event) {
+      event.preventDefault();
+      console.time("Log Submission Runtime");
+      const button = document.getElementById("loggerSubmitButton");
+      button.disabled = true;
+
+      // Set some data if a New Staff was logged so it can use the same script as Rank Change in the logger engine
+      let data_type = document.getElementById('logTypeList').value == "New Staff" ? "Rank Change" : document.getElementById('logTypeList').value;
+      let data_rankchangetype = document.getElementById('logTypeList').value == "New Staff" ? "Passed Interview" : document.getElementById('rctypefield').value;
+      let data_type_check = document.getElementById('logTypeList').value == "New Staff" ? "New Staff" : document.getElementById('logTypeList').value;
+      let branch_check = document.getElementById('branchfield').value ? document.getElementById('branchfield').value : null;
+
+      const dataToSubmit = {
+        type: data_type,
+        type_check: data_type_check,
+        name: document.getElementById('namefield').value,
+        steamid: document.getElementById('steamidfield').value,
+        discordid: document.getElementById('discordidfield').value,
+        email: document.getElementById('emailfield').value,
+        rankchangetype: data_rankchangetype,
+        reason: document.getElementById('reasonfield').value,
+        infraction_type: document.getElementById('infrtypelist').value,
+        end_date: document.getElementById('enddatefield').value,
+        mentorlog_type: document.getElementById('mentorlist').value,
+        blacklist_appealable: document.getElementById('appealable').value,
+        certificate_type: document.getElementById('certfield').value,
+        log_id: document.getElementById('idfield').value,
+        branch: branch_check,
+        mentor_email: document.getElementById('emailfield_Mentor').value,
+        blacklist_type: document.getElementById('bltypelist').value
+      };
+
+      // Data validation -> check if correct data has been inputted
+      let valid = false;
+      switch (dataToSubmit.type_check) {
+        case 'Rank Change':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') { valid = true; }
+          if (dataToSubmit.rankchangetype == "Transfer") { dataToSubmit.branch != "" ? valid = true : valid = false; }
+          break;
+        case 'Infraction Log':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') { valid = true; }
+          break;
+        case 'LOA Log':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
+          break;
+        case 'Mentor Log':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.mentorlog_type != '' && dataToSubmit.mentor_email != '') { valid = true; }
+          break;
+        case 'Certificate Log':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.certificate_type != '') { valid = true; }
+          break;
+        case 'Staff Blacklist':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.end_date != '' && dataToSubmit.reason != '' && dataToSubmit.blacklist_appealable != '') {
+            switch (dataToSubmit.blacklist_type) {
+              case "Suspension":
+                valid = true;
+                break;
+              case "Blacklist":
+                if (dataToSubmit.name != '' && dataToSubmit.steamid != '' && dataToSubmit.discordid != '' && dataToSubmit.blacklist_type != '') valid = true;
+                break;
+            }
+          }
+          break;
+        case 'Infraction Appeal':
+          if (dataToSubmit.reason != '' && dataToSubmit.log_id >= 7) { valid = true; }
+          break;
+        case 'Blacklist Appeal':
+          if (dataToSubmit.log_id >= 7) { valid = true; }
+          break;
+        case "New Staff":
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '' && dataToSubmit.branch != '') { valid = true; }
+          break;
+        default:
+          break;
+      }
+
+      // Actually submitting data
+      if (valid == true) {
+        button.innerText = "";
+        button.innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(response => {
+
+          HideCheck();
+          console.log("Log sucessfully submitted");
+
+          if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 200);
+            button.classList.add('red');
+          } else if (!response.includes('something')) {
+            document.getElementById('dataform').reset();
+            HideCheck();
+            button.classList.add('green');
+          }
+
+          // Manipulating button text to give info to user.
+          button.innerHTML = "";
+          button.innerText = response;
+          setTimeout(() => {
+            button.innerText = "Submit";
+            button.disabled = false;
+            button.classList.remove('red');
+            button.classList.remove('green');
+          }, 4000);
+          document.getElementById('rctypefield').value = "";
+          document.getElementById('mentorlist').value = "";
+          document.getElementById('bltypelist').value = "";
+          console.timeEnd("Log Submission Runtime");
+
+        }).withFailureHandler(error => {
+
+          // Manipulating button text to give info to user.
+          button.innerHTML = "";
+          button.innerText = "Something went wrong";
+          setTimeout(() => {
+            button.innerText = "Submit";
+            button.disabled = false;
+          }, 4000);
+          console.timeEnd("Log Submission Runtime");
+
+        }).ProcessLog(dataToSubmit);
+      } else if (valid == false) {
+        // Make screen shake if not all questions were answered (idk seemed fun)
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 200);
+        console.log("You did not fill out all questions correctly -- Submission failed");
+        button.disabled = false;
+        console.timeEnd("Log Submission Runtime");
+      }
+    }
+
+    function BlacklistToggle() {
+      try {
+        const blacklistTypeSelector = document.getElementById('bltypelist');
+        if (blacklistTypeSelector.value == "Suspension") {
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
+          document.getElementById('appealable').setAttribute('style', 'display: block;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').innerText = "Is the Suspension appealable?";
+          document.getElementById('enddatelabelBL').innerText = "Select expiry date of Suspension:";
+        } else if (blacklistTypeSelector.value == "Blacklist") {
+          document.getElementById('namefield').setAttribute('style', 'display: block;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: block;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
+          document.getElementById('appealable').setAttribute('style', 'display: block;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').innerText = "Is the Blacklist appealable?";
+          document.getElementById('enddatelabelBL').innerText = "Select expiry date of Blacklist:";
+        }
+      } catch (e) {
+        console.log("Blacklist Type edited");
+      }
+    }
+  </script>
+  <div class="main-content" id="data-forms" style="display: none;">
+    <div class="container">
+      <div class="textbox">
+
+        <div id="loggerForm" style="display: none;">
+          <form id="dataform">
+            <h1>Staff Roster Logger Form</h1>
+            <p>Please fill out <strong>all</strong> the below questions in order to submit a log.</p>
+            <p>Before submitting, double-check your answers as once you press the button, they can no longer be
+              adjusted.
+            </p>
+            <br>
+            <hr>
+            <br>
+            <h3>Main Options</h3>
+            <br>
+            <p>Please select which type of log you want to submit.</p><br>
+            <select id="logTypeList" onchange="HideCheck()">
+              <option value="Rank Change">Rank Change</option>
+              <option value="New Captain">Add New Captain</option>
+              <option value="Infraction Log">Infraction Log</option>
+              <option value="LOA Log">LOA Log</option>
+              <option value="Blacklist">Blacklist / Suspension</option>
+              <? if (allowedStaff.includes(user) || ranks[3].includes(data.rank)) { ?>
+              <option value="Infraction Appeal">Appeal Infraction [SM+]</option>
+              <option value="Blacklist Appeal">Appeal Blacklist [SM+]</option>
+              <? } ?>
+            </select>
+            <hr><br>
+            <h3>Log Information</h3>
+            <br>
+            <p>All below questions must contain info related to the log / the person to whom the log is targeted.<br>Do
+              not include information about yourself.
+            </p><br>
+            <label for="idfield" id="idfieldlabel" style="display: none;">The log ID is the row where the log you want
+              to appeal is located.</label>
+            <input type="number" placeholder="Log ID; minimum 7, up to 1003" id='idfield' min="7" max="1003"
+              style="display: none;" required />
+            <label for="infrtypelist" id="infrlabel" style="display: none;">Select an Infraction Type:</label>
+            <select type="text" id='infrtypelist' style="display: none;" required>
+              <option value=''></option>
+              <option value="Minor">Minor</option>
+              <option value="Regular">Regular</option>
+              <option value="Severe">Severe</option>
+            </select>
+            <label for="bltypelist" id="bllabel" style="display: none;">Do you want to log a Blacklist or
+              Suspension?:</label>
+            <select type="text" id='bltypelist' style="display: none;" onchange="BlacklistToggle()" required>
+              <option value=''></option>
+              <option value="Suspension">Suspension</option>
+              <option value="Blacklist">Blacklist</option>
+            </select>
+            <label for='appealable' id='appealablelabel' style="display: none;">Is the Blacklist appealable?:</label>
+            <select type="text" id="appealable" style="display: none;" required>
+              <option value=''></option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+            <input type="text" placeholder="Name" id='namefield' maxlength="20" style="display: none;" required />
+            <input type="text" placeholder="Steam_ID" id='steamidfield' maxlength="25" style="display: none;" required />
+            <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
+            <input type="email" placeholder="Email Address" id='emailfield' maxlength="40" required />
+            <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
+            <select type="text" id="rctypefield" style='display: block;' onchange="EnableTransfer()" required>
+              <option value=''></option>
+              <option value='Promotion'>Promotion</option>
+              <option value="Demotion">Demotion</option>
+              <option value="Removal">Removal</option>
+            </select>
+            <label for="enddatefield" id="enddatelabelLOA" style="display: none;">Select end date of LOA:</label>
+            <label for="enddatefield" id="enddatelabelBL" style="display: none;">Select expiry date of
+              Blacklist:</label>
+            <input type="date" placeholder="dd-mm-yyyy" id='enddatefield' style="display: none;" required />
+            <input type="text" placeholder="Reason" id='reasonfield' maxlength="70" required />
+            <button onclick="SubmitLog(event)" type="submit" class="submitButton" id="loggerSubmitButton">Submit</button>
+            <p id="disclaimerText"></p>
+          </form>
+        </div>
+
+        <script>
+          // MANAGE VISIBILITY ON EDITS
+          function InfoHideCheck() {
+            const infotype = document.getElementById('infoTypeList').value;
+            switch (infotype) {
+              case 'Edit Name':
+                document.getElementById('newnamefield').setAttribute('style', 'display: block;');
+                document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+                document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                break;
+              case 'Edit steamID':
+                document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+                document.getElementById('newsteamidfield').setAttribute('style', 'display: block;');
+                document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+                document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                break;
+              case 'Edit discordID':
+                document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+                document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newsdiscidfield').setAttribute('style', 'display: block;');
+                document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+                document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                break;
+              case 'Edit Email':
+                document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+                document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newemailfield').setAttribute('style', 'display: block;');
+                document.getElementById('newemailfield').placeholder = "Enter new Email Address";
+                document.getElementById('newemailfield').maxlength = 70;
+                document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                break;
+              case 'Edit Supervisor Information':
+                document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+                document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newemailfield').setAttribute('style', 'display: block;');
+                document.getElementById('newemailfield').placeholder = "Enter new Supervisor's Email Address";
+                document.getElementById('newemailfield').maxlength = 70;
+                document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                break;
+              case 'Edit Note':
+                document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+                document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+                document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+                document.getElementById('newnotesfield').setAttribute('style', 'display: block;');
+                break;
+            }
+          }
+
+          // Submit Edit Data
+          function SubmitEdit(event) {
+            event.preventDefault();
+            console.time("Edit Submission Runtime");
+            const button = document.getElementById("editSubmitButton");
+            button.disabled = true;
+
+            const editdata = {
+              type: document.getElementById('infoTypeList').value,
+              current_email: document.getElementById('curremailfield').value,
+              name: document.getElementById('newnamefield').value,
+              steamid: document.getElementById('newsteamidfield').value,
+              discordid: document.getElementById('newsdiscidfield').value,
+              email: document.getElementById('newemailfield').value,
+              notes: document.getElementById('newnotesfield').value
+            };
+
+            let validEdit = false;
+            switch (editdata.type) {
+              case 'Edit Name':
+                if (editdata.name != '' && editdata.current_email != '') { validEdit = true; }
+                break;
+              case 'Edit steamID':
+                if (editdata.steamid != '' && editdata.current_email != '') { validEdit = true; }
+                break;
+              case 'Edit dicsordID':
+                if (editdata.discordid != '' && editdata.current_email != '') { validEdit = true; }
+                break;
+              case 'Edit Email':
+                if (editdata.email != '' && editdata.current_email != '') { validEdit = true; }
+                break;
+              case 'Edit Supervisor Information':
+                if (editdata.current_email != '' && editdata.email) { validEdit = true; }
+                break;
+              case 'Edit Note':
+                if (editdata.notes != '' && editdata.current_email != '') { validEdit = true; }
+                break;
+            }
+
+            if (validEdit == true) {
+              button.innerText = "";
+              button.innerHTML = '<div class="loader"></div>';
+              google.script.run.withSuccessHandler(response => {
+
+                if (response.includes("not")) {
+                  document.body.classList.add('shake');
+                  setTimeout(() => document.body.classList.remove('shake'), 200);
+                  button.classList.add('red');
+                } else if (!response.includes('something')) {
+                  document.getElementById('editform').reset();
+                  InfoHideCheck();
+                  button.classList.add('green');
+                }
+
+                // Manipulating button text to give info to user.
+                button.innerHTML = "";
+                button.innerText = response;
+                setTimeout(() => {
+                  button.innerText = "Submit";
+                  button.disabled = false;
+                  button.classList.remove('red');
+                  button.classList.remove('green');
+                }, 4000);
+                console.timeEnd("Edit Submission Runtime");
+              }).withFailureHandler(response => {
+                // Manipulating button text to give info to user.
+                button.innerHTML = "";
+                button.innerText = "Something went wrong";
+                setTimeout(() => {
+                  button.innerText = "Submit";
+                  button.disabled = false;
+                }, 4000);
+                console.timeEnd("Edit Submission Runtime");
+              }).ProcessInputEdits(editdata);
+            } else if (validEdit == false) {
+              // Make screen shake if not all questions were answered (idk seemed fun)
+              document.body.classList.add('shake');
+              setTimeout(() => document.body.classList.remove('shake'), 200);
+              console.log("You did not fill out all questions correctly -- Submission failed");
+              button.disabled = false;
+              console.timeEnd("Edit Submission Runtime");
+            }
+          }
+
+          document.addEventListener("DOMContentLoaded", function () {
+
+            document.getElementById('curremailfield').addEventListener('change', () => {
+              const emailField = document.getElementById('curremailfield');
+              const elements = ["newnamefield", "newsteamidfield", "newsdiscidfield", "newnotesfield"];
+              const button = document.getElementById('editSubmitButton');
+
+              emailField.disabled = true;
+              button.disabled = true;
+              elements.forEach(elementId => document.getElementById(elementId).disabled = true);
+              button.innerText = "";
+              button.innerHTML = '<div class="loader"></div>';
+
+              google.script.run.withSuccessHandler(targetData => {
+                try {
+                  targetData = JSON.parse(targetData);
+                  if (!targetData.row) {
+                    elements.forEach(element => document.getElementById(element[0]).value = "");
+                    elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+                    emailField.disabled = false;
+                    button.disabled = false;
+                    button.innerHTML = '';
+                    button.innerText = "Submit";
+                    return;
+                  }
+
+                  document.getElementById(elements[0]).value = targetData.name;
+                  document.getElementById(elements[1]).value = targetData.steamId;
+                  document.getElementById(elements[2]).value = targetData.discordId;
+                  document.getElementById(elements[3]).value = targetData.notes;
+
+                  elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+                  emailField.disabled = false;
+                  button.disabled = false;
+                  button.innerHTML = '';
+                  button.innerText = "Submit";
+                } catch (e) {
+                  emailField.disabled = false;
+                  button.disabled = false;
+                  elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+                  button.innerHTML = '';
+                  button.innerText = "Submit";
+                }
+              }).withFailureHandler(() => {
+                emailField.disabled = false;
+                button.disabled = false;
+                elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+                button.innerHTML = '';
+                button.innerText = "Submit";
+              }).GetUserData(emailField.value, true);
+            });
+          });
+        </script>
+        <div id="editForm" style="display: none;">
+          <form id="editform">
+            <h1>Staff Roster Info Editor Form</h1>
+            <br>
+            <p>Please fill out <strong>all</strong> the below questions in order to submit an edit.</p>
+            <p>Before submitting, double-check your answers as once you press the button, they can no longer be
+              adjusted.</p>
+            <br>
+            <hr><br>
+            <h3>Roster Edit Information</h3>
+            <select id="infoTypeList" onchange="InfoHideCheck()">
+              <option value="Edit Name">Edit Name</option>
+              <option value="Edit steamID">Edit Steam_ID</option>
+              <option value="Edit discordID">Edit Discord ID</option>
+              <option value="Edit Email">Edit Email Address</option>
+              <option value="Edit Supervisor Information">Edit Supervisor Information</option>
+              <option value="Edit Staff Group">Edit Staff Group</option>
+              <option value="Edit Note">Edit Notes</option>
+            </select>
+            <hr>
+            <label for="curremailfield" id="curremaillabel">Enter the Email address of the member you want to apply an
+              edit to:</label>
+            <input type="text" placeholder="Enter current Email Address" id="curremailfield" required />
+            <hr><br>
+            <input type="text" placeholder="Enter new name" id="newnamefield" maxlength="20" required />
+            <input type="text" placeholder="Enter new steamID" id="newsteamidfield" style="display: none;"
+              maxlength="25" required />
+            <input type="text" placeholder="Enter new discord ID" id="newsdiscidfield" style="display: none;"
+              maxlength="25" required />
+            <input type="email" placeholder="Enter new Email Address" id="newemailfield" style="display: none;"
+              maxlength="70" required />
+            <input type="text" placeholder="Enter new Extra Notes" id="newnotesfield" style="display: none;"
+              maxlength="125" required />
+            <button onclick="SubmitEdit(event)" type="submit" class="submitButton" id="editSubmitButton">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

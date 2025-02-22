@@ -1,0 +1,590 @@
+<style>
+    /* I regret not using a framework */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Lexend;
+    }
+
+    body {
+        background-color: #152e48;
+    }
+
+    ::-webkit-scrollbar {
+        display: none;
+    }
+
+    @keyframes shake {
+        0% {
+        transform: translate(1px, 1px) rotate(0deg);
+        }
+
+        10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+        }
+
+        20% {
+        transform: translate(-3px, 0px) rotate(1deg);
+        }
+
+        30% {
+        transform: translate(3px, 2px) rotate(0deg);
+        }
+
+        40% {
+        transform: translate(1px, -1px) rotate(1deg);
+        }
+
+        50% {
+        transform: translate(-1px, 2px) rotate(-1deg);
+        }
+
+        60% {
+        transform: translate(-3px, 1px) rotate(0deg);
+        }
+
+        70% {
+        transform: translate(3px, 1px) rotate(-1deg);
+        }
+
+        80% {
+        transform: translate(-1px, -1px) rotate(1deg);
+        }
+
+        90% {
+        transform: translate(1px, 2px) rotate(0deg);
+        }
+
+        100% {
+        transform: translate(1px, -2px) rotate(-1deg);
+        }
+    }
+
+    .shake {
+        overflow: hidden;
+        animation: shake 0.1s;
+    }
+
+    a {
+        text-decoration: none;
+        color: black;
+    }
+
+    .sidebar {
+        z-index: 2;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 80px;
+        background-color: #152e48;
+        padding: .4rem .8rem;
+        transition: all 0.5s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar ul {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Add this in case want a notifications tab
+    .sidebar ul li:last-child {
+        margin-top: auto;
+        margin-bottom: 1rem;
+    } 
+    */
+
+    .sidebar .top {
+        opacity: 0;
+        cursor: default;
+    }
+
+    .sidebar p {
+        opacity: 0;
+        transition-duration: 0.1s;
+    }
+
+    .sidebar ul li {
+        position: relative;
+        list-style-type: none;
+        height: 50px;
+        width: 90%;
+        margin: 0.8rem auto;
+        line-height: 50px;
+    }
+
+    .sidebar ul li button {
+        color: #fff;
+        all: unset;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        border-radius: 0.8rem;
+        width: 50px;
+        transition: 0.3s ease;
+    }
+
+    .sidebar ul li button:hover {
+        background-color: #fff;
+        color: #12171e;
+        transition: 0.3s ease;
+        cursor: pointer;
+    }
+
+    .sidebar ul li button i {
+        color: #fff;
+        min-width: 50px;
+        text-align: center;
+        height: 50px;
+        border-radius: 12px;
+        line-height: 50px;
+        transition: 0.3s ease;
+    }
+
+    .sidebar ul li button:hover i {
+        color: #222222;
+        transition: 0.3s ease;
+    }
+
+    .sidebar ul li button .tooltip {
+        position: absolute;
+        left: 125px;
+        background-color: #fff;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0.5rem 0.8rem black;
+        border-radius: .6rem;
+        padding: .4rem 1.2rem;
+        line-height: 1.8rem;
+        z-index: 3;
+        opacity: 0;
+        transition: 0.3s ease;
+    }
+
+    .sidebar ul li:hover button .tooltip {
+        opacity: 1;
+        transition: 0.3s ease;
+    }
+
+    .main-content {
+        position: relative;
+        background-color: #152e48;
+        min-height: 90vh;
+        margin-top: 20px;
+        top: 0;
+        left: 80px;
+        transition: all 0.5s ease;
+        width: calc(100% - 80px);
+        padding: 1rem;
+    }
+
+    .main-content .container {
+        background-color: #ababab;
+        min-height: 90vh;
+        top: 0;
+        left: 80px;
+        border-radius: 20px;
+        align-items: center;
+        box-shadow: 0 0.6rem 1rem black;
+    }
+
+    .main-content .container .textbox {
+        padding: 20px;
+        text-align: center;
+        overflow: hidden;
+        font-size: 13px;
+    }
+
+    .main-content .container .textbox hr {
+        border: 2px dashed black;
+        border-radius: 100%;
+    }
+
+    .main-content .container .textbox h1 {
+        font-size: 28px;
+    }
+
+    .main-content .container .textbox .box-container {
+        margin-top: 30px;
+        display: flex;
+        padding: 30px 5px;
+        background-color: #888888;
+        border-radius: 20px;
+        justify-content: space-around;
+        height: 20rem;
+    }
+
+    .main-content .container .textbox .box-container .option-box {
+        background-color: #4a4a4a;
+        color: whitesmoke;
+        text-align: center;
+        align-items: center;
+        border-radius: 20px;
+        box-shadow: 0 0.3rem 0.4rem #111111;
+        width: 45%;
+        padding: 10px;
+        border: 4px solid #111111;
+        transition: 0.5s ease;
+        overflow: hidden;
+    }
+
+    .main-content .container .textbox .box-container .option-box:hover {
+        background-color: #222222;
+        transition: 0.5s ease;
+        cursor: pointer;
+    }
+
+    .main-content .container .textbox .box-container .option-box:active {
+        background-color: #888888;
+        transition: 0s ease;
+    }
+
+    .main-content .container .textbox .box-container .option-box .button-text-align {
+        height: 13rem;
+        vertical-align: top;
+    }
+
+    .main-content .container .textbox .dashboard-manual {
+        padding: 10px 30px;
+        padding-top: 10px;
+        margin-top: 30px;
+        min-height: auto;
+    }
+
+    #manual-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin-top: 30px;
+        margin-bottom: 50px;
+        padding: 20px;
+        width: 100%;
+        min-height: 32rem;
+        overflow: scroll;
+    }
+
+    .left-text {
+        text-align: left;
+    }
+
+    .right-text {
+        text-align: right;
+    }
+
+    input,
+    select {
+        width: 60%;
+        align-self: center;
+        padding: 12px 20px;
+        margin-bottom: 40px;
+        box-sizing: border-box;
+        border: 4px solid #111111;
+        box-shadow: 0 0.3rem 0.4rem #111111;
+        border-radius: 10px;
+        -webkit-transition: 0.5s;
+        transition: 0.5s;
+        background-color: #444444;
+        text-align: center;
+        color: #fff;
+        outline: none;
+    }
+
+    input:hover,
+    select:hover {
+        border: 4px solid #ccc;
+    }
+
+    input:focus,
+    select:focus {
+        border: 4px solid #ccc;
+        background-color: #222222;
+    }
+
+    input:invalid,
+    select:invalid {
+        border: 4px solid #8B0000;
+    }
+
+    input:invalid:focus,
+    select:invalid:focus,
+    input:invalid:hover,
+    select:invalid:hover {
+        border: 4px solid red;
+    }
+
+    input:disabled {
+        background-color: #4a4a4a;
+        color: gray;
+        cursor: not-allowed;
+    }
+
+    input:disabled:hover {
+        border: 4px solid #111111;
+    }
+
+    label {
+        font-size: 20px;
+        color: black;
+        padding: 5px 5px;
+    }
+
+    #loggerForm,
+    #editForm {
+        display: flex;
+        justify-content: center;
+    }
+
+    #dataform,
+    #editform {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 95%;
+        padding: 20px 40px;
+    }
+
+    .submitButton {
+        background-color: #4a4a4a;
+        color: whitesmoke;
+        text-align: center;
+        align-self: center;
+        border-radius: 20px;
+        box-shadow: 0 0.3rem 0.4rem #111111;
+        width: 45%;
+        padding: 20px 20px;
+        font-size: 20px;
+        border: 4px solid #111111;
+        transition: 0.5s ease;
+        overflow: hidden;
+    }
+
+    .submitButton:hover {
+        background-color: #222222;
+        transition: 0.5s ease;
+        cursor: pointer;
+    }
+
+    .submitButton:disabled,
+    #editSubmitButton:disabled {
+        background-color: #4a4a4a;
+        color: gray;
+        cursor: not-allowed;
+    }
+
+    .red {
+        background-color: red !important;
+        color: black !important;
+    }
+
+    .green {
+        background-color: green !important;
+        color: black !important;
+    }
+
+    .submitButton-mini {
+        background-color: #4a4a4a;
+        color: whitesmoke;
+        text-align: center;
+        align-self: center;
+        border-radius: 10px;
+        box-shadow: 0 0.3rem 0.4rem #111111;
+        width: 10%;
+        height: 3.12rem;
+        padding: 10px 10px;
+        font-size: 15px;
+        border: 3px solid #111111;
+        transition: 0.5s ease;
+        overflow: hidden;
+    }
+
+    .submitButton-mini:hover {
+        background-color: #222222;
+        transition: 0.5s ease;
+        cursor: pointer;
+    }
+
+    .submitButton-mini-mini {
+        background-color: #4a4a4a;
+        color: whitesmoke;
+        text-align: center;
+        align-self: center;
+        border-radius: 10px;
+        box-shadow: 0 0.3rem 0.4rem #111111;
+        width: 5%;
+        height: 3.12rem;
+        padding: 5px 5px;
+        font-size: 13px;
+        border: 3px solid #111111;
+        transition: 0.5s ease;
+        overflow: hidden;
+    }
+
+    .submitButton-mini-mini:hover {
+        background-color: #222222;
+        transition: 0.5s ease;
+        cursor: pointer;
+    }
+
+    .submitButton-mini-mini:disabled {
+        background-color: #4a4a4a;
+        color: gray;
+        cursor: not-allowed;
+    }
+
+    #data-forms h3 {
+        font-weight: 600;
+        font-size: 17px;
+    }
+
+    #outputDiv {
+        text-align: left;
+    }
+
+    #loggerSubmitButton:disabled {
+        opacity: 0.65;
+        box-shadow: none;
+    }
+
+    .visible-link {
+        text-decoration: underline;
+        color: #222222;
+    }
+
+    .visible-link:hover {
+        color: #555555;
+    }
+
+    .lockdown-banner {
+        z-index: 10;
+        top: 10%;
+        width: 100%;
+        background-color: rgb(255, 70, 70);
+        color: black;
+        font-weight: 600;
+        font-size: 20px;
+        height: 2rem;
+        text-align: center;
+    }
+
+    #restoreBackupButton, #resetButton, #backupButton, #lockdownButton {
+        width: 100%;
+    }
+
+    #backupTime:hover {
+        cursor: pointer;
+    }
+
+    /* Toggle Switch CSS ************************************
+    */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #4a4a4a;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+
+    input:checked+.slider {
+        background-color: green;
+    }
+
+    input:focus+.slider {
+        box-shadow: 0 0 1px green;
+    }
+
+    input:checked+.slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+    }
+
+    .slider.round {
+        border-radius: 34px;
+    }
+
+    .slider.round:before {
+        border-radius: 50%;
+    }
+
+    .config-switches {
+        text-align: left;
+        justify-self: center;
+        width: 40%;
+        font-weight: bold;
+        font-size: 18px;
+        word-wrap: break-word;
+        border-collapse: collapse;
+        border: none;
+    }
+
+    .config-switches tr {
+        border-top: 1px solid black;
+    }
+
+    .config-switches tr:first-child {
+        border-top: none;
+    }
+
+    .config-switches td {
+        border: none !important;
+        padding: 1rem;
+    }
+
+    /* Circle Loading ************************
+    */
+    .loader {
+        border: 16px solid #666666;
+        border-top: 16px solid black;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1.2s linear infinite;
+        justify-self: center;
+    }
+
+    @keyframes spin {
+        0% {
+        transform: rotate(0deg);
+        }
+
+        100% {
+        transform: rotate(360deg);
+        }
+    }
+</style>

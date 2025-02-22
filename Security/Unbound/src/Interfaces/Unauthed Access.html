@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- This page will be displayed if the user does not have authorization to open this admin menu -->
+  <base target="_top">
+  <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
+  <style>
+    body {
+      padding: 30px 80px;
+      background-color: gray;
+    }
+
+    .central_container {
+      background-color: #222222;
+      color: white;
+      padding: 2px 2px;
+      opacity: 0.94;
+      border: solid black 10px;
+      border-radius: 15px;
+      text-align: center;
+      margin-top: 30px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: Lexend;
+    }
+
+    p {
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="central_container">
+    <? if (type == "unauthed") { ?>
+    <h1>Unauthorized Access<h1>
+    <hr>
+    <p>You do not have permissions to access the [BS] Staff Roster Admin Menu.<br>
+    If you would like edits to be made to said roster, please contact the approperiate staff members.<br><br>
+    Your interaction with this script has been reported.</p><br>
+    <p>You are currently signed in as <?= Session.getActiveUser().getEmail(); ?></p>
+    <? } else if (type == "lockdown") { ?>
+    <h1>Access Denied - Active Lockdown<h1>
+    <hr>
+    <p>The Staff Roster Admin menu is currently undergoing a full lockdown, meaning only Community Leadership and Lead Admins are able to use this web application in order to resolve the cause of said lockdown. <br>Please wait while they invesitage the issue, you will be notified over discord once the situation is resolved.<br>Thank you for your patience.</p><br>
+    <p>You are currently signed in as <?= Session.getActiveUser().getEmail(); ?></p>
+    <? } ?>
+  </div>
+</body>
+
+</html>
