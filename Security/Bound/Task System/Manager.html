@@ -326,31 +326,117 @@
           })
           .ChangeAssignment(data);
       };
+
+      window.SubmitPriority = function(event) {
+        event.preventDefault();
+        const priority = document.getElementById("priority").value;
+        const button = document.getElementById("assignButton");
+        const rowElement = document.getElementById("row");
+        const colElement = document.getElementById("col");
+        const titleElement = document.getElementById("title");
+
+        // Check if the elements exist before accessing their innerText
+        if (!rowElement || !colElement || !titleElement) {
+          console.error("Row or column element not found!");
+          return;
+        }
+
+        let row = rowElement.innerText;
+        let col = colElement.innerText;
+        let title = titleElement.innerText;
+
+        if (!priority || !row || !col) {
+          document.body.classList.add("shake");
+          setTimeout(() => {
+            document.body.classList.remove("shake");
+          }, 100);
+          console.error("Invalid arguments");
+          return;
+        };
+        button.disabled = true;
+        button.innerHTML = '<div class="loader"></div>';
+
+        const data = {
+          priority: priority,
+          row: row,
+          col: col,
+          title: title
+        };
+
+        google.script.run
+          .withSuccessHandler(response => {
+            if (response) {
+              button.innerText = response;
+              if (response.includes("Edited")) {
+                button.classList.add("green");
+              } else {
+                button.classList.add("red");
+              }
+              setTimeout(() => {
+                button.disabled = false;
+                if (response.includes("Edited")) {
+                  button.classList.remove("green");
+                } else {
+                  button.classList.remove("red");
+                }
+                google.script.host.close();
+              }, 2000);
+            }
+          })
+          .withFailureHandler(() => {
+            button.innerText = "Something went wrong";
+            document.body.classList.add("shake");
+            setTimeout(() => {
+              document.body.classList.remove("shake");
+            }, 100);
+            setTimeout(() => {
+              button.disabled = false;
+              button.innerHTML = "";
+              button.innerText = "Submit";
+            }, 2000);
+          })
+          .ChangePriority(data);
+      };      
     });
   </script>
 </head>
 
 <body>
   <? if (type == "Postpone") { ?>
-  <h1>Postpone this task</h1>
-  <p>Fill out all of the below questions in order to edit the deadline for this task.</p>
-  <hr>
-  <form>
-    <label for="deadline">New Deadline:</label>
-    <input type="date" id="deadline" placeholder="Select a new deadline for the task" required>
-    <button onclick="SubmitNewDeadline(event)" type="submit" class="submitButton" id="postponeButton">Submit</button>
-  </form>
+    <h1>Postpone this task</h1>
+    <p>Fill out all of the below questions in order to edit the deadline for this task.</p>
+    <hr>
+    <form>
+      <label for="deadline">New Deadline:</label>
+      <input type="date" id="deadline" placeholder="Select a new deadline for the task" required>
+      <button onclick="SubmitNewDeadline(event)" type="submit" class="submitButton" id="postponeButton">Submit</button>
+    </form>
   <? } else if (type == "Assign") { ?>
-  <h1>Assign</h1>
-  <p>Fill out all of the below questions in order to assign or unassign a member of security command to this task.<br>
-  If the assigned member was to be removed, they will be unassigned automatically.<br>
-  If the task would not be completed by the deadline, all assigned members will receive a "normal" infraction.</p>
-  <hr>
-  <form>
-    <label for="gmail">Gmail address of person to assign:</label>
-    <input type="text" id="gmail" placeholder="Enter the gmail address of the person you want to assign this task to." maxlength="50" required>
-    <button onclick="SubmitAssignment(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
-  </form>
+    <h1>Assign</h1>
+    <p>Fill out all of the below questions in order to assign or unassign a member of security command to this task.<br>
+    If the assigned member was to be removed, they will be unassigned automatically.<br>
+    If the task would not be completed by the deadline, all assigned members will receive a "normal" infraction.</p>
+    <hr>
+    <form>
+      <label for="gmail">Gmail address of person to assign:</label>
+      <input type="text" id="gmail" placeholder="Enter the gmail address of the person you want to assign this task to." maxlength="50" required>
+      <button onclick="SubmitAssignment(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
+    </form>
+  <? } else if (type == "Priority") { ?>
+    <h1>Change Priority</h1>
+    <p>Fill out all of the below questions in order to change the priority level of this task.</p>
+    <hr>
+    <form>
+      <label for="priority">Select new priority level:</label>
+      <select id="priority" required>
+        <option value=""></option>
+        <option value="Low Priority">Low Priority</option>
+        <option value="Medium Priority">Medium Priority</option>
+        <option value="High Priority">High Priority</option>
+        <option value="Urgent">Urgent</option>
+      </select>
+      <button onclick="SubmitPriority(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
+    </form>
   <? } ?>
   <p style="font-size: 1px;" id="row"><?= row ?></p>
   <p style="font-size: 1px;" id="col"><?= col ?></p>

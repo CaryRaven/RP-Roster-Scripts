@@ -12,59 +12,60 @@ function SendDiscordMessage(type, inputData, targetData = {}) {
   let footerMessage = '';
   let date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
   let content = '';
-  let deadline;
 
   // Set case-specific data to create speclialized discord notifs
   switch (type) {
     case "New":
-      embedTitle = `🎯 New Task: ${inputData.title} 🎯`;
+      embedTitle = `🎯 New Task: "${inputData.title}" 🎯`;
       embedColor = "1143627";
       field1Name = 'Task Information';
-      deadline = Utilities.formatDate(new Date(inputData.deadline), "GMT", 'dd MMMM yyyy');
-      info = `${inputData.description}\n${inputData.priority}\n\nThis task must be completed by ${deadline}`;
+      info = `${inputData.description}\n\n${inputData.priority}\n\nThis task must be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "";
       break;
     case 'Delete':
-      embedTitle = `🗑️ Task ${inputData.title} Deleted 🗑️`;
+      embedTitle = `🗑️ Task "${inputData.title}" Deleted 🗑️`;
       embedColor = '11600386';
       field1Name = '';
       info = ``;
       footerMessage = 'This action cannot be undone.';
       break;
     case 'Status':
-      embedTitle = `${inputData.status === "Backlog" ? `👷 ${inputData.title} In Progress 👷` : `🏁 ${inputData.title} Completed 🏁`}`;
-      embedColor = `${inputData.status === "In Progress" ? '16758272' : '1143627'}`;
+      embedTitle = `${inputData.status === "Backlog" ? `👷 "${inputData.title}" In Progress 👷` : `🏁 "${inputData.title}" Completed 🏁`}`;
+      embedColor = `${inputData.status === "Backlog" ? '16758272' : '1143627'}`;
       field1Name = `Task Information`;
-      deadline = Utilities.formatDate(new Date(inputData.deadline), "GMT", 'dd MMMM yyyy');
-      info = `Due date was ${deadline}`;
+      info = `Due date was ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = '';
       break;
     case 'Assigned':
-      embedTitle = `🛠️ ${targetData.name} assigned to ${inputData.title} 🛠️`;
+      embedTitle = `🛠️ ${targetData.name} assigned to "${inputData.title}" 🛠️`;
       embedColor = '1143627';
       field1Name = 'Task Information';
-      deadline = Utilities.formatDate(new Date(inputData.deadline), "GMT", 'dd MMMM yyyy');
-      info = `${inputData.description}\n\nThis task must be completed by ${deadline}`;
+      info = `${inputData.description}\n\nThis task must be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "Make sure you complete the task in time, as you will receive an infraction if you don't.";
       content = `<@${targetData.discordId}>`;
       break;
     case 'Unassigned':
-      embedTitle = `🛠️ ${targetData.name} unassigned from ${inputData.title} 🛠️`;
+      embedTitle = `🛠️ ${targetData.name} unassigned from "${inputData.title}" 🛠️`;
       embedColor = '16758272';
       field1Name = 'Task Information';
-      deadline = Utilities.formatDate(new Date(inputData.deadline), "GMT", 'dd MMMM yyyy');
-      info = `${inputData.description}\n\nThis task must be completed by ${deadline}`;
+      info = `${inputData.description}\n\nThis task must be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "This person is no longer assigned to this task, they won't be held accountable for it.";
       content = `<@${targetData.discordId}>`;
       break;
     case 'Postpone':
-      embedTitle = `⌛ ${inputData.title} Postponed ⌛`;
+      embedTitle = `⌛ "${inputData.title}" Postponed ⌛`;
       embedColor = '16758272';
       field1Name = 'Task Information';
-      deadline = Utilities.formatDate(new Date(inputData.deadline), "GMT", 'dd MMMM yyyy');
-      info = `${inputData.description}\n\nThis task must now be completed by ${deadline}`;
+      info = `${inputData.description}\n\nThis task must now be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "Make sure you complete the task in time, as you will receive an infraction if you don't.";
       break;
+    case "Priority":
+      embedTitle = `⚠️ "${inputData.title}" ⚠️`;
+      embedColor = '16758272';
+      field1Name = `Task Priority changed to ${inputData.priority}`;
+      break;
+    default:
+      throw new Error("SendDiscordMessage: No matching type found");
   }
 
   let webhookURL = PropertiesService.getDocumentProperties().getProperty('WebhookURL');
@@ -72,7 +73,7 @@ function SendDiscordMessage(type, inputData, targetData = {}) {
   // Compose discord embed
   let payload = JSON.stringify({
     username: 'Security Task Manager',
-    content: '',
+    content: content,
     embeds: [{
       title: embedTitle,
       color: embedColor,
@@ -99,4 +100,10 @@ function SendDiscordMessage(type, inputData, targetData = {}) {
   UrlFetchApp.fetch(webhookURL, params);
 
   Logger.log('Discord Notification Sent Successfully.');
+}
+
+function ReturnDeadline(dateValue) {
+  // Timezone stuff
+  const adjustedDate = new Date(dateValue.getTime() - (dateValue.getTimezoneOffset() * 60000));
+  return Utilities.formatDate(adjustedDate, "GMT", 'dd MMMM yyyy');
 }
