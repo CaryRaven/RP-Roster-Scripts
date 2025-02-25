@@ -822,7 +822,7 @@
           </tr>
           <tr>
             <td>
-              Reset all Staff Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>
+              Reset all Security Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>
             </td>
             <td class="config-switch">
               <button class="submitButton-mini-mini" id="resetButton" onclick="ResetPerms(event)">Reset</button>
@@ -830,7 +830,7 @@
           </tr>
           <tr>
             <td>
-              <span id="lockdownIdentifier"></span> a full Lockdown of all Staff Documentation:
+              <span id="lockdownIdentifier"></span> a full Lockdown of all Security Documentation:
             </td>
             <td class="config-switch">
               <button class="submitButton-mini-mini" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
@@ -1006,11 +1006,10 @@
       const button = document.getElementById("loggerSubmitButton");
       button.disabled = true;
 
-      // Set some data if a New Staff was logged so it can use the same script as Rank Change in the logger engine
-      let data_type = document.getElementById('logTypeList').value == "New Staff" ? "Rank Change" : document.getElementById('logTypeList').value;
-      let data_rankchangetype = document.getElementById('logTypeList').value == "New Staff" ? "Passed Interview" : document.getElementById('rctypefield').value;
-      let data_type_check = document.getElementById('logTypeList').value == "New Staff" ? "New Staff" : document.getElementById('logTypeList').value;
-      let branch_check = document.getElementById('branchfield').value ? document.getElementById('branchfield').value : null;
+      // Set some data if a New Captain was logged so it can use the same script as Rank Change in the logger engine
+      let data_type = document.getElementById('logTypeList').value == "New Captain" ? "Rank Change" : document.getElementById('logTypeList').value;
+      let data_rankchangetype = document.getElementById('logTypeList').value == "New Captain" ? "Passed Interview" : document.getElementById('rctypefield').value;
+      let data_type_check = document.getElementById('logTypeList').value == "New Captain" ? "New Captain" : document.getElementById('logTypeList').value;
 
       const dataToSubmit = {
         type: data_type,
@@ -1023,12 +1022,8 @@
         reason: document.getElementById('reasonfield').value,
         infraction_type: document.getElementById('infrtypelist').value,
         end_date: document.getElementById('enddatefield').value,
-        mentorlog_type: document.getElementById('mentorlist').value,
         blacklist_appealable: document.getElementById('appealable').value,
-        certificate_type: document.getElementById('certfield').value,
         log_id: document.getElementById('idfield').value,
-        branch: branch_check,
-        mentor_email: document.getElementById('emailfield_Mentor').value,
         blacklist_type: document.getElementById('bltypelist').value
       };
 
@@ -1045,13 +1040,7 @@
         case 'LOA Log':
           if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
           break;
-        case 'Mentor Log':
-          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.mentorlog_type != '' && dataToSubmit.mentor_email != '') { valid = true; }
-          break;
-        case 'Certificate Log':
-          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.certificate_type != '') { valid = true; }
-          break;
-        case 'Staff Blacklist':
+        case 'Blacklist':
           if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.end_date != '' && dataToSubmit.reason != '' && dataToSubmit.blacklist_appealable != '') {
             switch (dataToSubmit.blacklist_type) {
               case "Suspension":
@@ -1064,20 +1053,40 @@
           }
           break;
         case 'Infraction Appeal':
-          if (dataToSubmit.reason != '' && dataToSubmit.log_id >= 7) { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.log_id >= 7) valid = true;
           break;
         case 'Blacklist Appeal':
-          if (dataToSubmit.log_id >= 7) { valid = true; }
+          if (dataToSubmit.log_id >= 7) valid = true;
           break;
-        case "New Staff":
-          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '' && dataToSubmit.branch != '') { valid = true; }
+        case "New Captain":
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '' && dataToSubmit.branch != '') valid = true;
           break;
         default:
           break;
       }
 
+      if (
+        dataToSubmit.name.includes('"') || dataToSubmit.name.includes("'") || dataToSubmit.name.includes("`")
+        || dataToSubmit.steamid.includes('"') || dataToSubmit.steamid.includes("'") || dataToSubmit.steamid.includes("`")
+        || dataToSubmit.discordid.includes('"') || dataToSubmit.discordid.includes("'") || dataToSubmit.discordid.includes("`")
+        || dataToSubmit.email.includes('"') || dataToSubmit.email.includes("'") || dataToSubmit.email.includes("`")
+        || dataToSubmit.reason.includes('"') || dataToSubmit.reason.includes("'") || dataToSubmit.reason.includes("`")
+        || dataToSubmit.log_id.includes('"') || dataToSubmit.log_id.includes("'") || dataToSubmit.log_id.includes("`")
+      ) {
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 200);
+        button.innerText = "No quotes of any type allowed in inputs";
+        console.log("You did not fill out all questions correctly -- Submission failed");
+        setTimeout(() => {
+          button.innerText = "Submit";
+          button.disabled = false;
+        }, 3000);
+        console.timeEnd("Log Submission Runtime");
+        return;
+      }
+
       // Actually submitting data
-      if (valid == true) {
+      if (valid === true) {
         button.innerText = "";
         button.innerHTML = '<div class="loader"></div>';
         google.script.run.withSuccessHandler(response => {
@@ -1105,7 +1114,6 @@
             button.classList.remove('green');
           }, 4000);
           document.getElementById('rctypefield').value = "";
-          document.getElementById('mentorlist').value = "";
           document.getElementById('bltypelist').value = "";
           console.timeEnd("Log Submission Runtime");
 
@@ -1227,7 +1235,7 @@
             <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
             <input type="email" placeholder="Email Address" id='emailfield' maxlength="40" required />
             <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
-            <select type="text" id="rctypefield" style='display: block;' onchange="EnableTransfer()" required>
+            <select type="text" id="rctypefield" style='display: block;' required>
               <option value=''></option>
               <option value='Promotion'>Promotion</option>
               <option value="Demotion">Demotion</option>

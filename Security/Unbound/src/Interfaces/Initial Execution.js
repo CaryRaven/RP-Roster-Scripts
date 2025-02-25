@@ -3,9 +3,15 @@
  */
 function doGet() {
   const user = Session.getActiveUser().getEmail();
-  const userData = GetUserData(user);
-  PropertiesService.getUserProperties().setProperty("userData", JSON.stringify(userData));
+  let userData = GetUserData(user);
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
+
+  if (allowedStaff.includes(user)) {
+    userData.name = "N/A";
+    userData.steamId = "N/A";
+    userData.rank = "Blackshadow Staff";
+  }
+  PropertiesService.getUserProperties().setProperty("userData", JSON.stringify(userData));
 
   const ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
   const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");

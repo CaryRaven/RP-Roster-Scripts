@@ -34,7 +34,7 @@ function GetUserData(query, stringify = false) {
         name: s.getRange(i, 5).getValue(),
         steamId: s.getRange(i, 6).getValue(),
         discordId: s.getRange(i, 7).getValue(),
-        gmail: s.getRange(i, 8).getValue(),
+        email: s.getRange(i, 8).getValue(),
         rank: s.getRange(i, 4).getValue(),
         infractions: s.getRange(i, 10).getDisplayValue(),
         status: s.getRange(i, 11).getDisplayValue(),
@@ -82,7 +82,6 @@ function GetStartRankRow(rank) {
  * @returns {Array} Array with length of 2: [rowNumber, sheetObject]
  */
 function GetFirstRankRow(rank) {
-  rank = "Security Chief";
   if (!rank) return;
   const sheet = getCollect(2063800821);
   let match_row = 0;
@@ -107,7 +106,7 @@ function GetFirstRankRow(rank) {
  */
 function GetLastRow(sheet) {
   for (let r = 6; r <= 1003; r++) {
-    if (sheet.getRange(r, 3).getValue() === '') {
+    if (sheet.getRange(r, 3).getValue() == '') {
       return r;
     }
   }
@@ -128,4 +127,84 @@ function DateToMilliseconds(dateString) {
   // months are 0-indexed
   const date = new Date(year, month - 1, day);
   return date.getTime();
+}
+
+/**
+ * Move data of a member from searchSlot to openSlot
+ * @param {Object} roster 
+ * @param {Number} searchSlot 
+ * @param {Number} openSlot
+ * @returns {Void}
+ */
+function MoveMember(roster, searchSlot, openSlot) {
+
+  const cols = [5, 6, 7, 8, 12, 17];
+  const moveData = cols.map(col => roster.getRange(searchSlot, col).getValue());
+
+  cols.forEach(col => roster.getRange(searchSlot, col).setValue(''));
+  cols.forEach((col, i) => {
+    if (col <= 8) {
+      roster.getRange(openSlot, col).setValue(moveData[i]);
+    }
+  });
+}
+
+/**
+ * Add viewer/editor perms to folders (used in rank changes & email editing)
+ * @param {Array} folders - Extract the "folders" DocumentProperty
+ * @param {String} emailToAdd - Gmail address of the target to add access to
+ */
+function AddDocAccess(folders, emailToAdd) {
+  let folder;
+  let accessFolders = JSON.parse(PropertiesService.getUserProperties().getProperty("accessFolders"));
+  let folderChangeList = accessFolders ? accessFolders : [];
+  try {
+    if(folders.viewerAccess.length) folders.viewerAccess.forEach(folderId => {
+      folder = DriveApp.getFolderById(folderId);
+      folder.addViewer(emailToAdd);
+      console.log(`Added viewer access to ${emailToAdd} in ${folder.getName()}`);
+      folderChangeList.push({ folderName: folder.getName(), permission: "Viewer"});
+    });
+    
+    if(folders.editorAccess.length) folders.editorAccess.forEach(folderId => {
+      folder = DriveApp.getFolderById(folderId);
+      folder.addEditor(emailToAdd);
+      console.log(`Added editor access to ${emailToAdd} in ${folder.getName()}`);
+      folderChangeList.push({ folderName: folder.getName(), permission: "Editor"});
+    });
+    PropertiesService.getUserProperties().setProperty("accessFolders", JSON.stringify(folderChangeList));
+    } catch(e) {
+      console.log(`Error: ${e}`);
+  }
+}
+
+/**
+ * Reset a person document access
+ * @param {Array} folders - Extract the "folders" DocumentProperty
+ * @param {String} emailToRemove - Gmail address of the target to remove access from
+ */
+function RemoveDocAccess(folders, emailToRemove){
+  try{
+    folders[2].forEach(folderId => DocAccessHandler(DriveApp.getFolderById(folderId.toString()), emailToRemove));
+    PropertiesService.getUserProperties().deleteProperty("accessFolders");
+  }catch(e){
+    console.log(`Invalid Folder ID. Error: ${e}`);
+  }
+}
+
+/**
+ * Helper function to RemoveDocAccess
+ * @param {Object} folder 
+ * @param {String} emailToRemove 
+ */
+function DocAccessHandler(folder, emailToRemove) {
+  try {
+    let access = folder.getAccess(emailToRemove).name();
+    if(access !== "NONE"){
+      folder.revokePermissions(emailToRemove);
+      folder.getAccess(emailToRemove).name() === "NONE" && console.log("Successfully removed " + access.toLowerCase() + " perms from " + folder.getName());
+    }
+  } catch(e) {
+    console.log(`Error at ${folder.getName()}: ${e}`);
+  }
 }
