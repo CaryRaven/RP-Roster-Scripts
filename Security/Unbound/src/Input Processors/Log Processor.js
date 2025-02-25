@@ -173,7 +173,25 @@ function ProcessLog(inputData) {
             ProtectRange("N", sheet, null, insertLogRow, null);
             break;
         case "Blacklist":
-            return "Feature not supported yet";
+            sheet = getCollect(1787594911);
+            insertLogRow = GetLastRow(sheet);
+
+            sheet.getRange(insertLogRow, 3, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, inputData.blacklist_appealable, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+            ProtectRange("A", sheet, 10, insertLogRow, null);
+
+            if (inputData.blacklist_type === "Blacklist") {
+                if (targetData.row) {
+                    sheet = getCollect(789793193);
+                    dataColumns.forEach(col => { roster.getRange(targetData.row, col).setValue('')});
+                    inputData.rankchangetype = "Blacklisted";
+                    insertLogRow = GetLastRow(sheet);
+
+                    MoveMember(roster, firstRankRow[0], targetData.row);
+                    InsertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
+                    ProtectRange("N", sheet, null, insertLogRow, null);
+                    RemoveDocAccess(folders, targetData.email);
+                }
+            }
             break;
         case "Blacklist Appeal":
             return "Feature not supported yet";
