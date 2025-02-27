@@ -46,7 +46,6 @@ function GetUserData(query, stringify = false) {
     }
   });
 
-  console.log(data)
   if (stringify) { return JSON.stringify(data); } else { return data; }
 }
 
@@ -143,7 +142,7 @@ function MoveMember(roster, searchSlot, openSlot) {
 
   cols.forEach(col => roster.getRange(searchSlot, col).setValue(''));
   cols.forEach((col, i) => {
-    if (col <= 8) {
+    if (col <= 12) {
       roster.getRange(openSlot, col).setValue(moveData[i]);
     }
   });
@@ -207,4 +206,16 @@ function DocAccessHandler(folder, emailToRemove) {
   } catch(e) {
     console.log(`Error at ${folder.getName()}: ${e}`);
   }
+}
+
+function GetAllEmails() {
+  let emails = [];
+  
+  const sheet = getCollect(2063800821);
+  sheet.getRange(6, 8, (sheet.getMaxRows() - 6), 1).getValues().forEach(email => {
+    if (!email[0]) return;
+    emails.push(email[0].toLowerCase());
+  });
+
+  return emails;
 }

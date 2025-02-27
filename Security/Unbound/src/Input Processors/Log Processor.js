@@ -1,4 +1,5 @@
 function ProcessLog(inputData) {
+  if (!inputData) throw new Error("Do not run this function from the editor");
 
     // Server side double check
     let valid = false;
@@ -38,8 +39,7 @@ function ProcessLog(inputData) {
         break;
     }
 
-    if (
-        inputData.name.includes('"') || inputData.name.includes("'") || inputData.name.includes("`")
+    if (inputData.name.includes('"') || inputData.name.includes("'") || inputData.name.includes("`")
         || inputData.steamid.includes('"') || inputData.steamid.includes("'") || inputData.steamid.includes("`")
         || inputData.discordid.includes('"') || inputData.discordid.includes("'") || inputData.discordid.includes("`")
         || inputData.email.includes('"') || inputData.email.includes("'") || inputData.email.includes("`")
@@ -47,13 +47,14 @@ function ProcessLog(inputData) {
         || inputData.log_id.includes('"') || inputData.log_id.includes("'") || inputData.log_id.includes("`")
     ) valid = false;
 
-    if (valid === false) return "Do not attempt to avoid answer validation";
+    if (valid !== true) return "Do not attempt to avoid answer validation";
     let userData;
     let targetData;
     let ranks;
     let folders;
     let allowedStaff;
     let firstRankRow;
+    let appealable_bool;
     
       // Only do all these calculations when needed (runtime reduction)
     if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal") {
@@ -64,7 +65,8 @@ function ProcessLog(inputData) {
         folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
         allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
-        if (!targetData) return "User not found";
+        if (!targetData.row) return "User not found";
+        if (inputData.blacklist_appealable == 'Yes') { appealable_bool = true; } else { appealable_bool = false; }
 
         // New Captain/BL => data was manually inputted
         if (inputData.type_check == "New Captain" || inputData.blacklist_type == "Blacklist") {
@@ -73,7 +75,8 @@ function ProcessLog(inputData) {
             targetData.discordId = inputData.discordid;
             targetData.rank = ranks[0];
         }
-
+        
+        if (targetData.steamId == userData.steamId) return "You cannot manage yourself";
         if (ranks[3].includes(targetData.rank) || ranks[2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
         if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
 
@@ -98,6 +101,7 @@ function ProcessLog(inputData) {
 
             switch (inputData.rankchangetype) {
                 case "Promotion":
+                    if (targetData.status == "LOA") return "You cannot promote members who are on LOA";
                     if (Number(targetData.infractions) !== 0) return "You cannot promote members with an active infraction";
                     const promotionDestination = ranks[currentRankIndex + 1];
                     if (!promotionDestination || currentRankIndex === 1) return "This user cannot be promoted any further";
@@ -164,6 +168,7 @@ function ProcessLog(inputData) {
         case "LOA Log":
             const timeDiff = new Date().valueOf() - DateToMilliseconds(targetData.loaEnd);
             if (timeDiff < 0) return "This user is already on LOA, you cannot log another one";
+            // TODO
             if (timeDiff <= 1210000000) return "You must wait two weeks between LOAs";
 
             sheet = getCollect(977408594);
@@ -176,7 +181,7 @@ function ProcessLog(inputData) {
             sheet = getCollect(1787594911);
             insertLogRow = GetLastRow(sheet);
 
-            sheet.getRange(insertLogRow, 3, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, inputData.blacklist_appealable, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+            sheet.getRange(insertLogRow, 3, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
             ProtectRange("A", sheet, 10, insertLogRow, null);
 
             if (inputData.blacklist_type === "Blacklist") {
@@ -194,12 +199,37 @@ function ProcessLog(inputData) {
             }
             break;
         case "Blacklist Appeal":
-            return "Feature not supported yet";
+            sheet = getCollect(1787594911);
+            // Check if the given id corresponds to a log
+            if (sheet.getRange(Number(inputData.log_id), 9).getValue() != '') {
+              // Check if log is not appealed yet
+              if (sheet.getRange(Number(inputData.log_id), 10).getValue() == false) {
+                sheet.getRange(Number(inputData.log_id), 10).setValue(true);
+                ProtectRange("S", sheet, 10, null, Number(inputData.log_id));
+              } else {
+                return "You cannot appeal an appealed Blacklist/Suspension";
+              }
+            } else {
+              return "Blacklist/Suspension was not found";
+            }
             break;
         case "Infraction Appeal":
-            return "Feature not supported yet";
+            sheet = getCollect(343884184);
+            // Check if the given id corresponds to a log
+            if (sheet.getRange(Number(inputData.log_id), 8).getValue() != '') {
+              // Check if log is not appealed yet
+              if (sheet.getRange(Number(inputData.log_id), 9).getValue() == false) {
+                sheet.getRange(Number(inputData.log_id), 9).setValue(true);
+                ProtectRange("S", sheet, 9, null, Number(inputData.log_id));
+              } else {
+                return "You cannot appeal an appealed Infraction";
+              }
+            } else {
+              return "Infraction was not found";
+            }
             break;
     }
+    SendDiscordLog(inputData, targetData, userData);
     return "Log submitted";
 }
 

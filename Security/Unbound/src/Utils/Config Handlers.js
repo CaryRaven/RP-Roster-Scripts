@@ -1,3 +1,84 @@
+/**
+ * Add one extra slot to the rank passed in as arg
+ * @param {String} rank - Name of the rank to add a slot to
+ * @returns {Void|String}
+ */
+function AddRankRow(rank) {
+  if (!rank) return "no";
+  const rowData = GetFirstRankRow(rank);
+  const lastRankRow = GetLastRankRow(rank);
+  let specialRow = false;
+
+  // Determine if you're inserting a row at the bottom (different borders & clamp)
+  if (rowData[0] >= Number(lastRankRow)) {
+    specialRow = true;
+  } else if (rowData[0] == 0) {
+    rowData[0] = lastRankRow;
+    specialRow = true;
+  }
+  const insertRow = rowData[0] + 1;
+  const sheet = rowData[1];
+
+  // Insert Row & Data
+  sheet.insertRowAfter(rowData[0]);
+  sheet.getRange(insertRow, 4, 1, 14).setValues([[
+    rank, "", "", "", "", "", 
+    `= INFRACTIONS(F${insertRow}, Infractions!E:E, Infractions!C:C, Infractions!H:H, Infractions!I:I)`,
+    `= STATUS(F${insertRow}, G${insertRow}, E${insertRow}, H${insertRow}, 'LOA Logs'!E:E, N${insertRow}, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P${insertRow})`,
+    "",
+    `= LAST_RANKCHANGE(F${insertRow}, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
+    `= LOA_DATE(F${insertRow}, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
+    false,
+    `= BLACKLIST_DATE(F${insertRow}, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!C:C)`, ""
+  ]]);
+
+  if (specialRow) {
+    [[5, 8], [10, 15], [17, 17]].forEach(cellpair => {
+      let numcols = (cellpair[1] - cellpair[0]) + 1;
+      sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+    });
+    const startMergedRange = GetStartRankRow(rank);
+    sheet.getRange(startMergedRange, 3, ((insertRow - startMergedRange) + 1), 1).merge();
+  }
+
+  SendDiscordConfigRankRow(rank, true);
+}
+
+/**
+ * Remove a slot from the rank (name) passed in as arg
+ * @param {String} rank - Name of rank to remove a slot from
+ * @returns {Void|String}
+ */
+function RemoveRankRow(rank) {
+  const rowData = GetFirstRankRow(rank);
+  const lastRankRow = GetLastRankRow(rank);
+  let specialRow = false;
+
+  if (rowData[0] == 0) return "no";
+
+  // Determine if you're inserting a row at the bottom (different borders & clamp)
+  if ((rowData[0] + 1) >= Number(lastRankRow)) {
+    rowData[0] = rowData[0] - 1;
+    specialRow = true;
+  } else if (rowData[0] == 0) {
+    rowData[0] = lastRankRow;
+    specialRow = true;
+  }
+  const removeRow = rowData[0] + 1;
+  const sheet = rowData[1];
+  sheet.deleteRow(removeRow);
+
+  if (specialRow) {
+    [[5, 8], [10, 15], [17, 17]].forEach(cellpair => {
+      let numcols = (cellpair[1] - cellpair[0]) + 1;
+      sheet.getRange(removeRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+    });
+  }
+
+  SendDiscordConfigRankRow(rank, false);
+}
+
 function ToggleManualEditing(value) {
   value = value == true ? false : true;
   PropertiesService.getScriptProperties().setProperty("manualEnabled", value);
@@ -56,6 +137,14 @@ function ReturnLockdown() {
   return lockdownValue;
 }
 
+function ResetPermissions() {
+  RemoveAllDocAccess();
+  RestoreAllDocAccess();
+  console.log("Staff Documentation Permissions reset");
+  SendDiscordConfig("resetPerms", null);
+  PermissionsGuard();
+}
+
 function GetLastBackupTime() {
   const backupTime = JSON.parse(PropertiesService.getScriptProperties().getProperty("backupTime"));
   const backupDate = backupTime ? new Date(backupTime) : new Date();
@@ -67,16 +156,19 @@ function GetLastBackupTime() {
  * Used when initializing a lockdown, removes all access to all folders
  */
 function RemoveAllDocAccess() {
-
-  let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
+  let unaffected = ["micheal.labus@gmail.com", "rykitala@gmail.com"];
   let folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
+  const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   const sheet = getCollect(2063800821);
+
   sheet.getRange(6, 8, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
-    if (!email[0]) return;
+    if (!email[0] || !email[0].includes("@")) return;
     i = i + 6;
-    if (sheet.getRange(i, 4).getValue() !== "Security Chief" || sheet.getRange(i, 4).getValue() !== "Site Management") return;
+    if (sheet.getRange(i, 4).getValue() !== "Security Chief" && sheet.getRange(i, 4).getValue() !== "Site Management") return;
     unaffected.push(email[0].toLowerCase());
   });
+
+  unaffected = unaffected.concat(allowedStaff);
 
   folders[2].forEach(folderID => {
     try {
@@ -101,6 +193,32 @@ function RemoveAllDocAccess() {
     } catch (e) {
       console.log(e);
     }
+  });
+}
+
+/**
+ * Restores all document access for all staff members, used when lockdown is deactivated
+ */
+function RestoreAllDocAccess() {
+  let allStaff = GetAllEmails();
+  let folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
+  let ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
+  const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
+  let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
+  const sheet = getCollect(2063800821);
+  unaffected = unaffected.concat(allowedStaff);
+
+  sheet.getRange(6, 8, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
+    if (!email[0] || !email[0].includes("@")) return;
+    i = i + 6;
+    if (sheet.getRange(i, 4).getValue() !== "Security Chief" && sheet.getRange(i, 4).getValue() !== "Site Management") return;
+    unaffected.push(email[0].toLowerCase());
+  });
+
+  allStaff.forEach(email => {
+    if (unaffected.includes(email)) return;
+    let userData = GetUserData(email);
+    AddDocAccess(folders[ranks.indexOf(userData.rank)], email);
   });
 }
 

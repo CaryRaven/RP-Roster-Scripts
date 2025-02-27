@@ -9,6 +9,7 @@ function doGet() {
   if (allowedStaff.includes(user)) {
     userData.name = "N/A";
     userData.steamId = "N/A";
+    userData.discordId = "N/A";
     userData.rank = "Blackshadow Staff";
   }
   PropertiesService.getUserProperties().setProperty("userData", JSON.stringify(userData));
@@ -36,6 +37,7 @@ function doGet() {
     // SendDiscordUnauthed();
     const unauthedPage = HtmlService.createTemplateFromFile("Interfaces/Unauthed Access");
     unauthedPage.type = "unauthed";
+    SendDiscordUnauthed();
     return unauthedPage.evaluate();
   }
 }

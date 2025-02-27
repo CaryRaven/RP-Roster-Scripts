@@ -107,14 +107,12 @@
           <span class="tooltip">Search</span>
         </button>
       </li>
-      <? if(ranks[2].includes(data.rank) || ranks[3].includes(data.rank) || allowedStaff.includes(user)) { ?>
       <li>
         <button onclick="ShowConfig()">
           <i class='bx bx-shield-quarter bx-tada-hover'></i>
           <span class="tooltip">Config</span>
         </button>
       </li>
-      <? } ?>
       <!-- <li>
         <button onclick="">
           <i class='bx bx-bell bx-tada-hover' ></i>
@@ -460,13 +458,13 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       try {
-        google.script.run.withSuccessHandler(r => {
-          document.getElementById('manualEditingSlider').checked = !(r === "true");
-        }).ReturnManualEditing();
+        // google.script.run.withSuccessHandler(r => {
+        //   document.getElementById('manualEditingSlider').checked = !(r === "true");
+        // }).ReturnManualEditing();
 
         google.script.run.withSuccessHandler(re => {
           google.script.run.withSuccessHandler(response => {
-            document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+            // document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
             document.getElementById('backupSlider').checked = (re === "true");
             document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
             document.getElementById('config-loading').innerHTML = '';
@@ -482,17 +480,17 @@
           }
         }).ReturnLockdown();
 
-        google.script.run.withSuccessHandler(resp => {
-          document.getElementById('sheetRestoreSlider').checked = (resp === "true");
-        }).ReturnRestoreType();
+        // google.script.run.withSuccessHandler(resp => {
+        //   document.getElementById('sheetRestoreSlider').checked = (resp === "true");
+        // }).ReturnRestoreType();
       } catch (e) { }
 
-      document.getElementById('manualEditingSlider').addEventListener('change', function () {
-        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        google.script.run.withSuccessHandler(() => {
-          document.getElementById('config-loading').innerHTML = '';
-        }).ToggleManualEditing(this.checked);
-      });
+      // document.getElementById('manualEditingSlider').addEventListener('change', function () {
+      //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      //   google.script.run.withSuccessHandler(() => {
+      //     document.getElementById('config-loading').innerHTML = '';
+      //   }).ToggleManualEditing(this.checked);
+      // });
 
       document.getElementById('backupSlider').addEventListener('change', function () {
         document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
@@ -501,12 +499,12 @@
         }).ToggleBackup(this.checked);
       });
 
-      document.getElementById('sheetRestoreSlider').addEventListener('change', function () {
-        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        google.script.run.withSuccessHandler(() => {
-          document.getElementById('config-loading').innerHTML = '';
-        }).ToggleSheetRestore(this.checked);
-      });
+      // document.getElementById('sheetRestoreSlider').addEventListener('change', function () {
+      //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      //   google.script.run.withSuccessHandler(() => {
+      //     document.getElementById('config-loading').innerHTML = '';
+      //   }).ToggleSheetRestore(this.checked);
+      // });
 
       window.LockdownInit = function (event) {
         event.preventDefault();
@@ -710,14 +708,14 @@
         }).BackupSheet();
       };
 
-      window.RefreshBackupTime = function (event) {
-        event.preventDefault();
-        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        google.script.run.withSuccessHandler(response => {
-          document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
-          document.getElementById('config-loading').innerHTML = '';
-        }).GetLastBackupTime();
-      }
+      // window.RefreshBackupTime = function (event) {
+      //   event.preventDefault();
+      //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      //   google.script.run.withSuccessHandler(response => {
+      //     document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+      //     document.getElementById('config-loading').innerHTML = '';
+      //   }).GetLastBackupTime();
+      // }
 
       window.ResetPerms = function (event) {
         event.preventDefault();
@@ -740,35 +738,23 @@
     <div class="container">
       <div class="textbox" id="config-textbox" style="display: none;">
         <h1>Config Panel</h1><br>
-        <p>Configure all sorts of aspects of the Staff Roster here!<br>When changing something in this menu, wait for
-          the loading animation to stop before performing another operation.</p>
+        <p>Configure all sorts of aspects of the Security Roster here!<br>When changing something in this menu, wait for
+          the loading animation at the bottom of the page to stop before performing another operation.</p>
         <br>
         <hr><br>
-        <!-- Managing Admin Ranks & Adding/removing rank slots is currently not operational
-          I will probably not re-add 'managing admin ranks' as that should really be changed for something like staff (will be used for RP roster probably)
-            <form id="config-form-adminRanks">
-            <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br><br>Current allowed ranks: <span id="allowedRanks"></span>
-            </label><br>
-            <select id="amdin-role-select">
-              <option value=""></option>
-              <option value="Moderator">Moderator</option>
-              <option value="Head Moderator">Head Moderator</option>
-              <option value="Administrator">Administrator</option>
-              <option value="Staff Manager">Staff Manager</option>
-            </select>
-            <button onclick="SaveChanges_AdminRanks(event)" type="submit" class="submitButton-mini">Add/Remove</button>
-          </form><br> -->
         <form id="config-form-rankRow">
           <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
           <select id="new-rank-select">
             <option value=""></option>
+            <option value="Captain">Captain</option>
+            <option value="Captain Major">Captain Major</option>
           </select>
           <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button">Add</button>
           <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini"
             id="removerankrow-button">Remove</button>
         </form><br>
         <table class="config-switches">
-          <tr>
+          <!-- <tr> TODO: Manual Edits
             <td>
               Enable Manual Editing of the roster:
             </td>
@@ -789,7 +775,7 @@
                 <span class="slider round"></span>
               </label>
             </td>
-          </tr>
+          </tr> -->
           <tr>
             <td>
               Enable time-based (12h) Backups being made of the roster:
@@ -801,7 +787,8 @@
               </label>
             </td>
           </tr>
-          <? if (allowedStaff.includes(user)) { ?>
+
+          <? if (user == "dontorro208@gmail.com") { ?> <!-- For now restricted to me -->
           <tr>
             <td>
               Make a roster backup immediately:
@@ -810,8 +797,6 @@
               <button class="submitButton-mini-mini" id="backupButton" onclick="MakeBackup(event)">Backup</button>
             </td>
           </tr>
-          <? } ?>
-          <? if (allowedStaff.includes(user) || ranks[3].includes(data.rank)) { ?>
           <tr>
             <td>
               Restore the roster to its latest backup:<br><span id="backupTime" style="font-weight: 200; font-size: 12px;" onclick="RefreshBackupTime(event)"></span>
@@ -820,6 +805,8 @@
               <button class="submitButton-mini-mini" id="restoreBackupButton" onclick="RestoreBackup(event)">Restore</button>
             </td>
           </tr>
+          <? } ?>
+          
           <tr>
             <td>
               Reset all Security Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>
@@ -836,7 +823,6 @@
               <button class="submitButton-mini-mini" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
             </td>
           </tr>
-          <? } ?>
         </table>
       </div>
       <p id="config-loading" style="margin-top: 15px;"></p>
@@ -1075,7 +1061,7 @@
       ) {
         document.body.classList.add('shake');
         setTimeout(() => document.body.classList.remove('shake'), 200);
-        button.innerText = "No quotes of any type allowed in inputs";
+        button.innerText = "No quotes of any kind allowed in inputs";
         console.log("You did not fill out all questions correctly -- Submission failed");
         setTimeout(() => {
           button.innerText = "Submit";
@@ -1262,6 +1248,7 @@
                 document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
                 document.getElementById('newemailfield').setAttribute('style', 'display: none;');
                 document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                document.getElementById('specfield').setAttribute('style', 'display: none;');
                 break;
               case 'Edit steamID':
                 document.getElementById('newnamefield').setAttribute('style', 'display: none;');
@@ -1269,6 +1256,7 @@
                 document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
                 document.getElementById('newemailfield').setAttribute('style', 'display: none;');
                 document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                document.getElementById('specfield').setAttribute('style', 'display: none;');
                 break;
               case 'Edit discordID':
                 document.getElementById('newnamefield').setAttribute('style', 'display: none;');
@@ -1276,24 +1264,24 @@
                 document.getElementById('newsdiscidfield').setAttribute('style', 'display: block;');
                 document.getElementById('newemailfield').setAttribute('style', 'display: none;');
                 document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                document.getElementById('specfield').setAttribute('style', 'display: none;');
                 break;
               case 'Edit Email':
                 document.getElementById('newnamefield').setAttribute('style', 'display: none;');
                 document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
                 document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
                 document.getElementById('newemailfield').setAttribute('style', 'display: block;');
-                document.getElementById('newemailfield').placeholder = "Enter new Email Address";
                 document.getElementById('newemailfield').maxlength = 70;
                 document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                document.getElementById('specfield').setAttribute('style', 'display: none;');
                 break;
-              case 'Edit Supervisor Information':
+              case 'Edit Specialization':
                 document.getElementById('newnamefield').setAttribute('style', 'display: none;');
                 document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
                 document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
-                document.getElementById('newemailfield').setAttribute('style', 'display: block;');
-                document.getElementById('newemailfield').placeholder = "Enter new Supervisor's Email Address";
-                document.getElementById('newemailfield').maxlength = 70;
+                document.getElementById('newemailfield').setAttribute('style', 'display: none;');
                 document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+                document.getElementById('specfield').setAttribute('style', 'display: block;');
                 break;
               case 'Edit Note':
                 document.getElementById('newnamefield').setAttribute('style', 'display: none;');
@@ -1301,6 +1289,7 @@
                 document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
                 document.getElementById('newemailfield').setAttribute('style', 'display: none;');
                 document.getElementById('newnotesfield').setAttribute('style', 'display: block;');
+                document.getElementById('specfield').setAttribute('style', 'display: none;');
                 break;
             }
           }
@@ -1319,6 +1308,7 @@
               steamid: document.getElementById('newsteamidfield').value,
               discordid: document.getElementById('newsdiscidfield').value,
               email: document.getElementById('newemailfield').value,
+              specialization: document.getElementById('specfield').value,
               notes: document.getElementById('newnotesfield').value
             };
 
@@ -1336,12 +1326,32 @@
               case 'Edit Email':
                 if (editdata.email != '' && editdata.current_email != '') { validEdit = true; }
                 break;
-              case 'Edit Supervisor Information':
-                if (editdata.current_email != '' && editdata.email) { validEdit = true; }
+              case 'Edit Specialization':
+                if (editdata.current_email != '' && editdata.specialization != '') { validEdit = true; }
                 break;
               case 'Edit Note':
                 if (editdata.notes != '' && editdata.current_email != '') { validEdit = true; }
                 break;
+            }
+
+            if (editdata.current_email.includes('"') || editdata.current_email.includes("'") || editdata.current_email.includes("`")
+              || editdata.name.includes('"') || editdata.name.includes("'") || editdata.name.includes("`")
+              || editdata.discordid.includes('"') || editdata.discordid.includes("'") || editdata.discordid.includes("`")
+              || editdata.email.includes('"') || editdata.email.includes("'") || editdata.email.includes("`")
+              || editdata.notes.includes('"') || editdata.notes.includes("'") || editdata.notes.includes("`")
+              || editdata.steamid.includes('"') || editdata.steamid.includes("'") || editdata.steamid.includes("`")
+              || editdata.specialization.includes('"') || editdata.specialization.includes("'") || editdata.specialization.includes("`")
+            ) {
+              document.body.classList.add('shake');
+              setTimeout(() => document.body.classList.remove('shake'), 200);
+              button.innerText = "No quotes of any kind allowed in inputs";
+              console.log("You did not fill out all questions correctly -- Submission failed");
+              setTimeout(() => {
+                button.innerText = "Submit";
+                button.disabled = false;
+              }, 3000);
+              console.timeEnd("Log Submission Runtime");
+              return;
             }
 
             if (validEdit == true) {
@@ -1457,7 +1467,7 @@
               <option value="Edit steamID">Edit Steam_ID</option>
               <option value="Edit discordID">Edit Discord ID</option>
               <option value="Edit Email">Edit Email Address</option>
-              <option value="Edit Supervisor Information">Edit Supervisor Information</option>
+              <option value="Edit Specialization">Edit Specialization</option>
               <option value="Edit Staff Group">Edit Staff Group</option>
               <option value="Edit Note">Edit Notes</option>
             </select>
@@ -1473,6 +1483,7 @@
               maxlength="25" required />
             <input type="email" placeholder="Enter new Email Address" id="newemailfield" style="display: none;"
               maxlength="70" required />
+            <input type="text" placeholder="Enter new Specialization" id="specfield" style="display: none;" maxlength="40" required>
             <input type="text" placeholder="Enter new Extra Notes" id="newnotesfield" style="display: none;"
               maxlength="125" required />
             <button onclick="SubmitEdit(event)" type="submit" class="submitButton" id="editSubmitButton">Submit</button>
