@@ -1,0 +1,222 @@
+/**
+ * Get the sheet based on sheet ID.
+ * @param {Number} sheet_id - ID of the sheet
+ * @param {String} spreadsheetId - (Optional) ID of the spreadsheet. if none provided: default LIBRARY_SETTINGS.rosterIds[0]
+ * @returns {Spreadsheet.Sheet} The found sheet
+ */
+function getCollect(sheet_id, spreadsheetId = null) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (typeof sheet_id != "number") throw new Error("No valid sheet id provided");
+
+  if (!sheet_id) sheet_id = LIBRARY_SETTINGS.rosterIds[0];
+  const wb = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
+  return wb.getSheets().find(sheet => sheet.getSheetId() === sheet_id);
+}
+
+/**
+* Extract all user's data located on rosters using a query (has to be a gmail address)
+* Only gets data from last roster, multiple positions not possible
+* @param {String} query - Gmail address of the targeted staff member
+* @param {Number} colToSearch - Column on the roster to search for query (default: LIBRARY_SETTINGS.dataCols.email)
+* @param {Boolean} stringify
+* @returns {Object}
+*/
+function getUserData(query, colToSearch = null, stringify = false) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!LIBRARY_SETTINGS) throw new Error("getUserData: No settings provided");
+  if (!query || typeof query != "string") throw new Error("getUserData: No valid query provided");
+
+  let data = {};
+
+  LIBRARY_SETTINGS.rosterIds.forEach((rosterId, index) => {
+
+    const s = this.getCollect(rosterId);
+    const r = s.getRange(LIBRARY_SETTINGS.firstMemberRow, colToSearch ? colToSearch : LIBRARY_SETTINGS.dataCols.email, s.getMaxRows(), 1).getValues();
+
+    r.forEach((email, i) => {
+      email = email[0];
+      i = i + LIBRARY_SETTINGS.firstMemberRow;
+      if (email == query) {
+
+        data = {
+          row: i,
+          rank: s.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue(),
+          name: s.getRange(i, LIBRARY_SETTINGS.dataCols.name).getValue(),
+          steamId: s.getRange(i, LIBRARY_SETTINGS.dataCols.steamId).getValue(),
+          discordId: s.getRange(i, LIBRARY_SETTINGS.dataCols.discordId).getValue(),
+          email: s.getRange(i, LIBRARY_SETTINGS.dataCols.email).getValue(),
+          infractions: s.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getDisplayValue(),
+          status: s.getRange(i, LIBRARY_SETTINGS.dataCols.status).getDisplayValue(),
+          loaEnd: s.getRange(i, LIBRARY_SETTINGS.dataCols.loaEnd).getDisplayValue(),
+          blacklistEnd: s.getRange(i, LIBRARY_SETTINGS.dataCols.blacklistEnd).getDisplayValue(),
+          notes: s.getRange(i, LIBRARY_SETTINGS.dataCols.notes).getValue(),
+
+          // Only used on security roster
+          specialization: s.getRange(i, LIBRARY_SETTINGS.dataCols.specialization).getValue(),
+
+          // Only used on staff roster
+          // 0 = Staff Admin, 1 = Server Staff, 2 = Discord Staff & 3 = DMs & 4 = CL
+          branch: s.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() == "Community Leadership" ? 4 : index,
+          cooldown: s.getRange(i, LIBRARY_SETTINGS.dataCols.cooldown).getDisplayValue(),
+          supervisor_name: s.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_name).getValue(),
+          supervisor_steamId: s.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_steamId).getValue()
+        };
+
+      }
+    });
+  });
+
+  if (stringify) { return JSON.stringify(data); } else { return data; }
+}
+
+/**
+* @param {String} rank - Name of rank to get the last row of
+* @param {Number} branch - Branch to search the rank in (range between 0 & 3)
+*/
+function getLastRankRow(rank, branch = 0) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!rank || typeof rank != "string") throw new Error("GetLastRankRow: No valid rank provided");
+
+  // Abstractify branch (rosterIds.length - 1)
+  branch = branch == 4 ? 0 : branch;
+  if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
+
+  const sheet = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const total_rows = sheet.getMaxRows();
+  
+  for (let i = 2; i <= total_rows; i++) {
+    if (sheet.getRange(i - 1, LIBRARY_SETTINGS.dataCols.rank).getValue() == rank && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() != rank) return i - 1;
+  }
+}
+
+/**
+* Gets first row of a rank, regardless if it is occupied or not
+* @param {String} rank - Name of rank to get the start row of
+* @param {Number} branch - Branch to search the rank in (range between 0 & 3)
+*/
+function getStartRankRow(rank, branch = 0) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!rank || typeof rank != "string") throw new Error("GetLastRankRow: No valid rank provided");
+
+  branch = branch == 4 ? 0 : branch;
+  if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
+
+  const sheet = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const total_rows = sheet.getMaxRows();
+
+  for (let i = 1; i <= total_rows; i++) {
+    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() == rank) return i;
+  }
+}
+
+/**
+* Get the first empty slot of a certian rank, not to be confused with GetStartRankRow()
+* @param {String} rank - Rank name of the target
+* @returns {Array} Array with length of 2: [rowNumber, sheetObject]
+*/
+function getFirstRankRow(rank, branch = 0) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (typeof rank != "string") throw new Error("GetLastRankRow: No rank valid provided");
+
+  branch = branch == 4 ? 0 : branch;
+  if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
+
+  const sheet = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const total_rows = sheet.getMaxRows();
+
+  for (let i = 1; i <= total_rows; i++) {
+
+    // Check if col D = rank & steamID isn't empty
+    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() === rank && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.email).getValue() === '') {
+      return [i, sheet];
+    }
+  }
+
+  return [0, sheet];
+}
+
+/**
+* Get the last row where the date has not yet been logged
+* @param {Object} [LIBRARY_SETTINGS] - Only required if using sheetId
+* @param {Object} [sheetObject] - Sheet object (use getCollect() to extract this object using sheet ID)
+* @param {Number} [sheetId] - If a sheetObject is specified, sheetId is redundant
+*/
+function getLastRow(sheetObject = null, sheetId = 0) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (typeof sheetId != "number") throw new Error("No valid sheet id: sheetId has to be an integer");
+
+  const sheet = sheetObject ? sheetObject : this.getCollect(sheetId);
+  for (let r = 6; r <= sheet.getMaxRows(); r++) {
+    if (sheet.getRange(r, 3).getValue() == '') {
+      return r;
+    }
+  }
+  return 7;
+}
+
+/**
+ * Convert any date into milliseconds
+ * @param {String} dateString
+ * @returns {Number}
+ */
+function dateToMilliseconds(dateString) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (typeof dateString != "string") throw new Error("dateString has to be a string");
+
+  const parts = dateString.split("/");
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+
+  // months are 0-indexed
+  const date = new Date(year, month - 1, day);
+  return date.getTime();
+}
+
+/**
+ * Get all email addresses currently stored on all rosters
+ */
+function getAllEmails() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  let emails = [];
+
+  LIBRARY_SETTINGS.rosterIds.forEach(rosterId => {
+    const sheet = this.getCollect(rosterId);
+    sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach(email => {
+      if (!email[0] || email[0].toLowerCase() == "n/a") return;
+      emails.push(email[0].toLowerCase());
+    });
+  });
+
+  return emails;
+}
+
+/**
+ * Get emails of people that aren't mentioned on the roster but should still get access to the admin menu
+ * @returns {JSON.String[]}
+ */
+function getAllowedStaff() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
+  let rows = staffAdminRoster.getMaxRows();
+  let emails = [];
+
+  staffAdminRoster.getRange(8, 8, rows, 1).getValues().forEach(row => {
+      const email = row[0];
+      if (!email) return;
+      emails.push(email);
+  });
+
+  const seniorsRoster = SpreadsheetApp.openById('1H_7iso49sh1IfVQGEuUGAymPcAuoUdSygX7_sOM1wWw').getSheetById(675133232);
+  rows = seniorsRoster.getMaxRows();
+  
+  seniorsRoster.getRange(8, 8, rows, 1).getValues().forEach((row, i) => {
+    const email = row[0];
+    if (!email) return;
+    if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
+  });
+  
+  return JSON.stringify(emails);
+}

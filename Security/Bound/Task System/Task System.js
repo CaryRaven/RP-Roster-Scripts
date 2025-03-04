@@ -517,7 +517,7 @@ function DateToMilliseconds(dateString) {
   const month = parseInt(parts[1], 10);
   const year = parseInt(parts[2], 10);
 
-  // months are 0-indexed
+  // months start at 0
   const date = new Date(year, month - 1, day);
   return date.getTime();
 }

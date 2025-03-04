@@ -1,9 +1,13 @@
+// Initializing instance of library
+let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getProperty("settings"));
+RosterService.init(LIBRARY_SETTINGS);
+
 /**
  * Function that runs when web app is opened / refreshed. Default google function thus it cannot be used in your project, only defined/declared once
  */
 function doGet() {
   const user = Session.getActiveUser().getEmail();
-  let userData = GetUserData(user);
+  let userData = RosterService.getUserData(user);
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
   if (allowedStaff.includes(user)) {
@@ -34,14 +38,61 @@ function doGet() {
     if (!template) return;
     return template.evaluate();
   } else {
-    // SendDiscordUnauthed();
+    RosterService.sendDiscordUnauthed();
     const unauthedPage = HtmlService.createTemplateFromFile("Interfaces/Unauthed Access");
     unauthedPage.type = "unauthed";
-    SendDiscordUnauthed();
+    RosterService.sendDiscordUnauthed();
     return unauthedPage.evaluate();
   }
 }
 
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function ReturnUserData(inputData, bool) {
+  return RosterService.getUserData(inputData, null, bool);
+}
+
+function Set() {
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
+    dataCols: {
+      rank: 4,
+      name: 5,
+      steamId: 6,
+      discordId: 7,
+      email: 8,
+      infraction: 10,
+      status: 11,
+      specialization: 12,
+      loaEnd: 14,
+      blacklistEnd: 16,
+      notes: 17,
+      supervisor_name: 1,
+      supervisor_steamId: 1,
+      cooldown: 1
+    },
+
+    rosterIds: [2063800821],
+    firstMemberRow: 6,
+    spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
+    rankchangeId: 789793193,
+    factionName: "Security",
+    folders: [
+      {
+        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE"],
+        "editorAccess":[]
+      },
+      {
+        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE"],
+        "editorAccess":["13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A"]
+      },
+      [
+        "1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE",
+        "13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A",
+        "1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-"
+      ]
+    ],
+    ranks: ["Captain","Captain Major","Security Chief","Site Management"]
+  }));
 }

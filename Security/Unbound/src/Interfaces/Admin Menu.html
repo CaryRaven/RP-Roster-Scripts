@@ -464,7 +464,7 @@
 
         google.script.run.withSuccessHandler(re => {
           google.script.run.withSuccessHandler(response => {
-            // document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+            document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
             document.getElementById('backupSlider').checked = (re === "true");
             document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
             document.getElementById('config-loading').innerHTML = '';
@@ -708,14 +708,14 @@
         }).BackupSheet();
       };
 
-      // window.RefreshBackupTime = function (event) {
-      //   event.preventDefault();
-      //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-      //   google.script.run.withSuccessHandler(response => {
-      //     document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
-      //     document.getElementById('config-loading').innerHTML = '';
-      //   }).GetLastBackupTime();
-      // }
+      window.RefreshBackupTime = function (event) {
+        event.preventDefault();
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+          document.getElementById('config-loading').innerHTML = '';
+        }).GetLastBackupTime();
+      }
 
       window.ResetPerms = function (event) {
         event.preventDefault();
@@ -1448,7 +1448,7 @@
                 elements.forEach(elementId => document.getElementById(elementId).disabled = false);
                 button.innerHTML = '';
                 button.innerText = "Submit";
-              }).GetUserData(emailField.value, true);
+              }).ReturnUserData(emailField.value, true);
             });
           });
         </script>

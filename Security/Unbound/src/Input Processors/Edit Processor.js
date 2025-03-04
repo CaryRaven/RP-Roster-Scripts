@@ -36,7 +36,7 @@ function ProcessInputEdits(inputData) {
 
   const ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const targetData = GetUserData(inputData.current_email);
+  const targetData = RosterService.getUserData(LIBRARY_SETTINGS, inputData.current_email);
   const roster = getCollect(2063800821);
 
   if (!targetData.row) return "User not found";
@@ -55,10 +55,9 @@ function ProcessInputEdits(inputData) {
       break;
     case "Edit Email":
       roster.getRange(targetData.row, 8).setValue(inputData.email);
-      const folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
       const ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
-      RemoveDocAccess(folders, inputData.current_email);
-      AddDocAccess(folders[ranks.indexOf(targetData.rank)], inputData.email);
+      RosterService.removeDocAccess(inputData.current_email);
+      RosterService.addDocAccess(ranks.indexOf(targetData.rank), inputData.email);
       break;
     case "Edit Specialization":
       roster.getRange(targetData.row, 12).setValue(inputData.specialization);

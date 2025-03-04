@@ -5,8 +5,8 @@
  */
 function AddRankRow(rank) {
   if (!rank) return "no";
-  const rowData = GetFirstRankRow(rank);
-  const lastRankRow = GetLastRankRow(rank);
+  const rowData = RosterService.getFirstRankRow(rank);
+  const lastRankRow = RosterService.getLastRankRow(rank);
   let specialRow = false;
 
   // Determine if you're inserting a row at the bottom (different borders & clamp)
@@ -38,7 +38,7 @@ function AddRankRow(rank) {
       sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
     });
-    const startMergedRange = GetStartRankRow(rank);
+    const startMergedRange = RosterService.getStartRankRow(rank);
     sheet.getRange(startMergedRange, 3, ((insertRow - startMergedRange) + 1), 1).merge();
   }
 
@@ -51,8 +51,8 @@ function AddRankRow(rank) {
  * @returns {Void|String}
  */
 function RemoveRankRow(rank) {
-  const rowData = GetFirstRankRow(rank);
-  const lastRankRow = GetLastRankRow(rank);
+  const rowData = RosterService.getFirstRankRow(rank);
+  const lastRankRow = RosterService.getLastRankRow(rank);
   let specialRow = false;
 
   if (rowData[0] == 0) return "no";
@@ -200,25 +200,28 @@ function RemoveAllDocAccess() {
  * Restores all document access for all staff members, used when lockdown is deactivated
  */
 function RestoreAllDocAccess() {
-  let allStaff = GetAllEmails();
-  let folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
-  let ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
+  let allStaff = RosterService.getAllEmails();
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
-  const sheet = getCollect(2063800821);
+  const sheet = RosterService.getCollect(2063800821);
   unaffected = unaffected.concat(allowedStaff);
 
-  sheet.getRange(6, 8, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
+  console.log(unaffected);
+
+  sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;
     i = i + 6;
-    if (sheet.getRange(i, 4).getValue() !== "Security Chief" && sheet.getRange(i, 4).getValue() !== "Site Management") return;
+    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2] 
+      && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) return;
     unaffected.push(email[0].toLowerCase());
   });
 
+  return console.log(unaffected);
+
   allStaff.forEach(email => {
     if (unaffected.includes(email)) return;
-    let userData = GetUserData(email);
-    AddDocAccess(folders[ranks.indexOf(userData.rank)], email);
+    let userData = RosterService.getUserData(email);
+    RosterService.addDocAccess(LIBRARY_SETTINGS.ranks.indexOf(userData.rank), email);
   });
 }
 

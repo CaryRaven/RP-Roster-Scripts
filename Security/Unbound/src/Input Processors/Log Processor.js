@@ -51,7 +51,6 @@ function ProcessLog(inputData) {
     let userData;
     let targetData;
     let ranks;
-    let folders;
     let allowedStaff;
     let firstRankRow;
     let appealable_bool;
@@ -60,9 +59,8 @@ function ProcessLog(inputData) {
     if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal") {
         console.log("Processing Data");
         userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-        targetData = GetUserData(inputData.email);
+        targetData = RosterService.getUserData(inputData.email);
         ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
-        folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
         allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
         if (!targetData.row) return "User not found";
@@ -81,13 +79,12 @@ function ProcessLog(inputData) {
         if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
 
         // used when moving members around
-        firstRankRow = GetFirstRankRow(targetData.rank);
-        firstRankRow[0] = firstRankRow[0] == 0 ? GetLastRankRow(targetData.rank) : firstRankRow[0] - 1;
+        firstRankRow = RosterService.getFirstRankRow(targetData.rank);
+        firstRankRow[0] = firstRankRow[0] == 0 ? RosterService.getLastRankRow(targetData.rank) : firstRankRow[0] - 1;
     }
 
     let sheet;
     let insertLogRow;
-    const rosters = [591802026, 1909134230, 1817701302, 1213738552];
     const dataColumns = [5, 6, 7, 8, 12, 17];
 
     // Main case
@@ -95,9 +92,9 @@ function ProcessLog(inputData) {
         case "Rank Change":
             let rowDestination;
             let currentRankIndex = ranks.indexOf(targetData.rank);
-            sheet = getCollect(789793193);
-            const roster = getCollect(2063800821);
-            insertLogRow = GetLastRow(sheet);
+            sheet = RosterService.getCollect(789793193);
+            const roster = RosterService.getCollect(2063800821);
+            insertLogRow = RosterService.getLastRow(sheet);
 
             switch (inputData.rankchangetype) {
                 case "Promotion":
@@ -106,44 +103,42 @@ function ProcessLog(inputData) {
                     const promotionDestination = ranks[currentRankIndex + 1];
                     if (!promotionDestination || currentRankIndex === 1) return "This user cannot be promoted any further";
                     
-                    rowDestination = GetFirstRankRow(promotionDestination);
+                    rowDestination = RosterService.getFirstRankRow(promotionDestination);
                     if (rowDestination[0] == 0) return `${promotionDestination} has reached capacity`;
                     targetData["newRank"] = promotionDestination;
 
-                    MoveMember(roster, targetData.row, rowDestination[0]);
-                    MoveMember(roster, firstRankRow[0], targetData.row);
-                    InsertRankChangeLog(inputData, userData, targetData, promotionDestination, insertLogRow);
-                    ProtectRange("N", sheet, null, insertLogRow, null);
-                    RemoveDocAccess(folders, targetData.email);
-                    AddDocAccess(folders[currentRankIndex + 1], targetData.email);
+                    RosterService.moveMember(targetData.row, rowDestination[0]);
+                    RosterService.moveMember(firstRankRow[0], targetData.row);
+                    RosterService.insertRankChangeLog(inputData, userData, targetData, promotionDestination, insertLogRow);
+                    RosterService.protectRange("N", sheet, null, insertLogRow);
+                    RosterService.removeDocAccess(targetData.email);
+                    RosterService.addDocAccess(currentRankIndex + 1, targetData.email);
                     break;
                 case "Demotion":
                     const demotionDestination = ranks[currentRankIndex - 1];
                     if (!demotionDestination || currentRankIndex === 0) return "This user cannot be demoted any further, consider a removal";
 
-                    rowDestination = GetFirstRankRow(demotionDestination);
+                    rowDestination = RosterService.getFirstRankRow(demotionDestination);
                     if (rowDestination[0] == 0) return `${demotionDestination} has reached capacity`;
                     targetData["newRank"] = demotionDestination;
 
-                    MoveMember(roster, targetData.row, rowDestination[0]);
-                    MoveMember(roster, firstRankRow[0], targetData.row);
-                    InsertRankChangeLog(inputData, userData, targetData, demotionDestination, insertLogRow);
-                    ProtectRange("N", sheet, null, insertLogRow, null);
-                    RemoveDocAccess(folders, targetData.email);
-                    AddDocAccess(folders[currentRankIndex - 1], targetData.email);
+                    RosterService.moveMember(targetData.row, rowDestination[0]);
+                    RosterService.moveMember(firstRankRow[0], targetData.row);
+                    RosterService.insertRankChangeLog(inputData, userData, targetData, demotionDestination, insertLogRow);
+                    RosterService.protectRange("N", sheet, null, insertLogRow);
+                    RosterService.removeDocAccess(targetData.email);
+                    RosterService.addDocAccess(currentRankIndex - 1, targetData.email);
                     break;
                 case "Removal":
-                    dataColumns.forEach(col => {
-                        roster.getRange(targetData.row, col).setValue('');
-                    });
-                    MoveMember(roster, firstRankRow[0], targetData.row);
-                    InsertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
-                    ProtectRange("N", sheet, null, insertLogRow, null);
-                    RemoveDocAccess(folders, targetData.email);
+                    RosterService.moveMember(targetData.row);
+                    RosterService.moveMember(firstRankRow[0], targetData.row);
+                    RosterService.insertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
+                    RosterService.protectRange("N", sheet, null, insertLogRow);
+                    RosterService.removeDocAccess(targetData.email);
                     break;
                 case "Passed Interview":
                     const newStaffDestination = ranks[0];
-                    rowDestination = GetFirstRankRow(newStaffDestination);
+                    rowDestination = RosterService.getFirstRankRow(newStaffDestination);
                     if (rowDestination[0] === 0) return `${newStaffDestination} has reached capacity`;
                     targetData["newRank"] = newStaffDestination;
 
@@ -151,61 +146,61 @@ function ProcessLog(inputData) {
                     const dataToInsert = [[new Date(), targetData.name, targetData.steamId, targetData.discordId, "Member", inputData.rankchangetype, ranks[0], inputData.reason, "", userData.name, userData.steamId, userData.rank]];
                     sheet.getRange(insertLogRow, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
 
-                    ProtectRange("N", sheet, null, insertLogRow, null);
-                    RemoveDocAccess(folders, inputData.email);
-                    AddDocAccess(folders[0], inputData.email);
+                    RosterService.protectRange("N", sheet, null, insertLogRow);
+                    RosterService.removeDocAccess(inputData.email);
+                    RosterService.addDocAccess(0, inputData.email);
                     break;
             }
             break;
         case "Infraction Log":
             if (targetData.status == "Suspended") return "You cannot strike suspended members, consider a removal/blacklist";
-            sheet  = getCollect(343884184);
-            insertLogRow = GetLastRow(sheet);
+            sheet  = RosterService.getCollect(343884184);
+            insertLogRow = RosterService.getLastRow(sheet);
 
             sheet.getRange(insertLogRow, 3, 1, 12).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.infraction_type, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
-            ProtectRange("A", sheet, 9, insertLogRow, null);
+            RosterService.protectRange("A", sheet, 9, insertLogRow);
             break;
         case "LOA Log":
-            const timeDiff = new Date().valueOf() - DateToMilliseconds(targetData.loaEnd);
+            const timeDiff = new Date().valueOf() - RosterService.dateToMilliseconds(targetData.loaEnd);
             if (timeDiff < 0) return "This user is already on LOA, you cannot log another one";
             // TODO
             if (timeDiff <= 1210000000) return "You must wait two weeks between LOAs";
 
-            sheet = getCollect(977408594);
-            insertLogRow = GetLastRow(sheet);
+            sheet = RosterService.getCollect(977408594);
+            insertLogRow = RosterService.getLastRow(sheet);
 
             sheet.getRange(insertLogRow, 3, 1, 10).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
-            ProtectRange("N", sheet, null, insertLogRow, null);
+            RosterService.protectRange("N", sheet, null, insertLogRow);
             break;
         case "Blacklist":
-            sheet = getCollect(1787594911);
-            insertLogRow = GetLastRow(sheet);
+            sheet = RosterService.getCollect(1787594911);
+            insertLogRow = RosterService.getLastRow(sheet);
 
             sheet.getRange(insertLogRow, 3, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
-            ProtectRange("A", sheet, 10, insertLogRow, null);
+            RosterService.protectRange("A", sheet, 10, insertLogRow);
 
             if (inputData.blacklist_type === "Blacklist") {
                 if (targetData.row) {
-                    sheet = getCollect(789793193);
-                    dataColumns.forEach(col => { roster.getRange(targetData.row, col).setValue('')});
+                    sheet = RosterService.getCollect(789793193);
+                    RosterService.moveMember(targetData.row);
                     inputData.rankchangetype = "Blacklisted";
-                    insertLogRow = GetLastRow(sheet);
+                    insertLogRow = RosterService.getLastRow(sheet);
 
-                    MoveMember(roster, firstRankRow[0], targetData.row);
-                    InsertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
-                    ProtectRange("N", sheet, null, insertLogRow, null);
-                    RemoveDocAccess(folders, targetData.email);
+                    RosterService.moveMember(firstRankRow[0], targetData.row);
+                    RosterService.insertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
+                    RosterService.protectRange("N", sheet, null, insertLogRow);
+                    RosterService.removeDocAccess(targetData.email);
                 }
             }
             break;
         case "Blacklist Appeal":
-            sheet = getCollect(1787594911);
+            sheet = RosterService.getCollect(1787594911);
             // Check if the given id corresponds to a log
             if (sheet.getRange(Number(inputData.log_id), 9).getValue() != '') {
               // Check if log is not appealed yet
               if (sheet.getRange(Number(inputData.log_id), 10).getValue() == false) {
                 sheet.getRange(Number(inputData.log_id), 10).setValue(true);
-                ProtectRange("S", sheet, 10, null, Number(inputData.log_id));
+                RosterService.protectRange("S", sheet, 10, Number(inputData.log_id));
               } else {
                 return "You cannot appeal an appealed Blacklist/Suspension";
               }
@@ -214,13 +209,13 @@ function ProcessLog(inputData) {
             }
             break;
         case "Infraction Appeal":
-            sheet = getCollect(343884184);
+            sheet = RosterService.getCollect(343884184);
             // Check if the given id corresponds to a log
             if (sheet.getRange(Number(inputData.log_id), 8).getValue() != '') {
               // Check if log is not appealed yet
               if (sheet.getRange(Number(inputData.log_id), 9).getValue() == false) {
                 sheet.getRange(Number(inputData.log_id), 9).setValue(true);
-                ProtectRange("S", sheet, 9, null, Number(inputData.log_id));
+                RosterService.protectRange("S", sheet, 9, Number(inputData.log_id));
               } else {
                 return "You cannot appeal an appealed Infraction";
               }
@@ -229,58 +224,7 @@ function ProcessLog(inputData) {
             }
             break;
     }
-    SendDiscordLog(inputData, targetData, userData);
+    let accessFolders = JSON.parse(PropertiesService.getUserProperties().getProperty("accessFolders"));
+    RosterService.sendDiscordLog(inputData, targetData, userData, accessFolders);
     return "Log submitted";
-}
-
-function InsertRankChangeLog(inputData, userData, targetData, newRank, insertLogRow) {
-    const sheet = getCollect(789793193);
-    const dataToInsert = [[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.rankchangetype, newRank, inputData.reason, "", userData.name, userData.steamId, userData.rank]];
-    sheet.getRange(insertLogRow, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
-}
-
-/**
- * Protect cells when logged so data cannot be griefed
- * @param {String} type - Single character: N (normal), A (Appealable) or S (Single)
- * @param {Object} sh - Sheet Object (use getCollect() to extract this object using sheet ID)
- * @param {Number|Null} unprotectedCell - Column number of cell to leave unprotected (null in case of N type)
- * @param {Number|Null} empty_row - Number of row to protect (null in case of S type)
- * @param {Number|Null} id - Number of row to protect (null in case of N or A types)
- * return {Void}
- */
-function ProtectRange(type, sh, unprotectedCell, empty_row, id) {
-
-    let protections;
-    switch (type) {
-      // NORMAL (full row)
-      case "N":
-        protections = sh.getRange(empty_row, 1, 1, sh.getMaxColumns()).protect();
-  
-        protections.removeEditors(protections.getEditors());
-        if (protections.canDomainEdit()) {
-          protections.setDomainEdit(false);
-        }
-        break;
-      // APPEALABLE (leave one cell unprotected => unprotectedCell)
-      case "A":
-        protections = sh.getRange(empty_row, 1, 1, (unprotectedCell - 1)).protect();
-        protections.removeEditors(protections.getEditors());
-        if (protections.canDomainEdit()) {
-          protections.setDomainEdit(false);
-        }
-        protections = sh.getRange(empty_row, (unprotectedCell + 1), 1, sh.getMaxColumns()).protect();
-        protections.removeEditors(protections.getEditors());
-        if (protections.canDomainEdit()) {
-          protections.setDomainEdit(false);
-        }
-        break;
-      // SINGLE (protect a single cell => unprotectedCell)
-      case "S":
-        protections = sh.getRange(id, unprotectedCell, 1, 1).protect();
-        protections.removeEditors(protections.getEditors());
-        if (protections.canDomainEdit()) {
-          protections.setDomainEdit(false);
-        }
-        break;
-    }
 }

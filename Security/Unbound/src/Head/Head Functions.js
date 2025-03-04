@@ -1,28 +1,9 @@
 /**
- * Get the emails of all staff members that are allowed to access this admin menu
+ * Time based trigger
  * @returns {Void}
  */
 function GetAllowedStaff() {
-    const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
-    let rows = staffAdminRoster.getMaxRows();
-    let emails = [];
-
-    staffAdminRoster.getRange(8, 8, rows, 1).getValues().forEach(row => {
-        const email = row[0];
-        if (!email) return;
-        emails.push(email);
-    });
-
-    const seniorsRoster = SpreadsheetApp.openById('1H_7iso49sh1IfVQGEuUGAymPcAuoUdSygX7_sOM1wWw').getSheetById(675133232);
-    rows = seniorsRoster.getMaxRows();
-    
-    seniorsRoster.getRange(8, 8, rows, 1).getValues().forEach((row, i) => {
-      const email = row[0];
-      if (!email) return;
-      if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
-    });
-    console.log(emails);
-    PropertiesService.getScriptProperties().setProperty("allowedStaff", JSON.stringify(emails));
+  PropertiesService.getScriptProperties().setProperty("allowedStaff", RosterService.getAllowedStaff());
 }
 
 /**
@@ -62,7 +43,7 @@ function BackupSheet() {
  * Checks all current staff Folders for unwanted access & reports it
  */
 function PermissionsGuard() {
-  let authed = GetAllEmails();
+  let authed = RosterService.getAllEmails();
   let ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
   let folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
   const exempt = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
@@ -105,12 +86,12 @@ function ProcessPermissions(users, authed, exemptUsers, accessType, folderName, 
     if (exemptUsers.includes(email)) return "User is exempt";
 
     if (!authed.includes(email)) return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
-    const userData = GetUserData(email);
+    const userData = RosterService.getUserData(LIBRARY_SETTINGS, email);
 
     if (ranks[2].includes(userData.rank) || ranks[3].includes(userData.rank)) return "User is exempt";
 
     const allowedFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].viewerAccess : folderData[ranks.indexOf(userData.rank)].editorAccess;
-    const wrongFolders = accessType === "VIEW" ?folderData[ranks.indexOf(userData.rank)].editorAccess : folderData[ranks.indexOf(userData.rank)].viewerAccess;
+    const wrongFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].editorAccess : folderData[ranks.indexOf(userData.rank)].viewerAccess;
     if (allowedFolders.includes(folderId)) return;
 
     if (wrongFolders.includes(folderId)) {
