@@ -47,6 +47,7 @@ class SettingsTemplate {
     this.factionName = "";
     this.folders = [];
     this.ranks = [];
+    this.adminRanks = [];
     this.rankchangeId = 0;
   }
 }

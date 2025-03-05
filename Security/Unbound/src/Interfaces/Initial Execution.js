@@ -1,6 +1,11 @@
 // Initializing instance of library
 let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getProperty("settings"));
+console.log(LIBRARY_SETTINGS);
 RosterService.init(LIBRARY_SETTINGS);
+
+function T() {
+  
+}
 
 /**
  * Function that runs when web app is opened / refreshed. Default google function thus it cannot be used in your project, only defined/declared once
@@ -16,29 +21,43 @@ function doGet() {
     userData.discordId = "N/A";
     userData.rank = "Blackshadow Staff";
   }
-  PropertiesService.getUserProperties().setProperty("userData", JSON.stringify(userData));
 
-  const ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
+  PropertiesService.getUserProperties().setProperty("userData", JSON.stringify(userData));
   const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
 
   if (lockdown === "true") {
-    if (!ranks[2].includes(userData.rank) && !ranks[3].includes(userData.rank) && !allowedStaff.includes(user)) {
+    if (!LIBRARY_SETTINGS.adminRanks.includes(userData.rank) && !allowedStaff.includes(user)) {
       const lockdownPage = HtmlService.createTemplateFromFile("Interfaces/Unauthed Access");
       lockdownPage.type = "lockdown";
       return lockdownPage.evaluate();
     }
   }
 
-  if ((allowedStaff.includes(user) || ranks[2].includes(userData.rank) || ranks[3].includes(userData.rank)) && userData.status != "Suspended") {
+  if ((allowedStaff.includes(user) || LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) && userData.status != "Suspended") {
     const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
     template.user = user;
     template.data = userData;
-    template.ranks = ranks;
+    template.ranks = LIBRARY_SETTINGS.ranks;
+    template.adminRanks = LIBRARY_SETTINGS.adminRanks;
     template.allowedStaff = allowedStaff;
     if (!template) return;
+
+    const lastOpen = PropertiesService.getUserProperties().getProperty("lastOpenTime");
+    const latestChangelog = JSON.parse(PropertiesService.getScriptProperties().getProperty("lastestChangeLog"));
+    let changeDate = latestChangelog.date;
+    let changeTime = new Date(changeDate).valueOf();
+
+    if (lastOpen - changeTime < 0) {
+      template.viewChange = true;
+      template.changeDate = Utilities.formatDate(new Date(changeDate), "GMT", "dd MMMM yyyy");
+    } else {
+      template.viewChange = false;
+      template.changeDate = null;
+    }
+
+    PropertiesService.getUserProperties().setProperty("lastOpenTime", new Date().valueOf());
     return template.evaluate();
   } else {
-    RosterService.sendDiscordUnauthed();
     const unauthedPage = HtmlService.createTemplateFromFile("Interfaces/Unauthed Access");
     unauthedPage.type = "unauthed";
     RosterService.sendDiscordUnauthed();
@@ -52,6 +71,10 @@ function include(filename) {
 
 function ReturnUserData(inputData, bool) {
   return RosterService.getUserData(inputData, null, bool);
+}
+
+function ReportError(error) {
+  RosterService.sendDiscordError(error);
 }
 
 function Set() {
@@ -78,6 +101,7 @@ function Set() {
     spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
     rankchangeId: 789793193,
     factionName: "Security",
+    adminRanks: ["Security Chief"],
     folders: [
       {
         "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE"],

@@ -45,7 +45,7 @@ function getUserData(query, colToSearch = null, stringify = false) {
           steamId: s.getRange(i, LIBRARY_SETTINGS.dataCols.steamId).getValue(),
           discordId: s.getRange(i, LIBRARY_SETTINGS.dataCols.discordId).getValue(),
           email: s.getRange(i, LIBRARY_SETTINGS.dataCols.email).getValue(),
-          infractions: s.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getDisplayValue(),
+          infractions: s.getRange(i, LIBRARY_SETTINGS.dataCols.infraction).getDisplayValue(),
           status: s.getRange(i, LIBRARY_SETTINGS.dataCols.status).getDisplayValue(),
           loaEnd: s.getRange(i, LIBRARY_SETTINGS.dataCols.loaEnd).getDisplayValue(),
           blacklistEnd: s.getRange(i, LIBRARY_SETTINGS.dataCols.blacklistEnd).getDisplayValue(),
@@ -197,7 +197,7 @@ function getAllEmails() {
  * @returns {JSON.String[]}
  */
 function getAllowedStaff() {
-  if (!isInit) throw new Error("Library is not yet initialized");
+  // if (!isInit) throw new Error("Library is not yet initialized");
 
   const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
   let rows = staffAdminRoster.getMaxRows();
@@ -218,5 +218,22 @@ function getAllowedStaff() {
     if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
   });
   
+  console.log(emails);
   return JSON.stringify(emails);
+}
+
+/**
+ * Filters inputData for quotes, to prevent code injection
+ * @param {Object} inputData - data that you want to filter
+ * @returns {Boolean}
+ */
+function filterQuotes(inputData) {
+  const values = Object.values(inputData);
+  let valid = true;
+
+  values.forEach(value => {
+    if (value.includes('"') || value.includes("'") || value.includes("`")) valid = false;
+  })
+
+  return valid;
 }

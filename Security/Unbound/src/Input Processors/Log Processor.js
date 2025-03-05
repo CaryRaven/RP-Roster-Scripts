@@ -16,14 +16,14 @@ function ProcessLog(inputData) {
         break;
     case 'Blacklist':
         if (inputData.email.includes("@") && inputData.email.includes(".") && inputData.end_date != '' && inputData.reason != '' && inputData.blacklist_appealable != '') {
-        switch (inputData.blacklist_type) {
-            case "Suspension":
-            valid = true;
-            break;
-            case "Blacklist":
-            if (inputData.name != '' && inputData.steamid != '' && inputData.discordid != '' && inputData.blacklist_type != '') valid = true;
-            break;
-        }
+          switch (inputData.blacklist_type) {
+              case "Suspension":
+              valid = true;
+              break;
+              case "Blacklist":
+              if (inputData.name != '' && inputData.steamid != '' && inputData.discordid != '' && inputData.blacklist_type != '') valid = true;
+              break;
+          }
         }
         break;
     case 'Infraction Appeal':
@@ -32,26 +32,20 @@ function ProcessLog(inputData) {
     case 'Blacklist Appeal':
         if (Number(inputData.log_id) >= 7) valid = true;
         break;
-    case "New Captain":
+    case "New Member":
         if (inputData.email.includes('.') && inputData.email.includes('@') && inputData.steamid.includes("STEAM_") && inputData.reason != '' && inputData.branch != '') valid = true;
         break;
     default:
         break;
     }
 
-    if (inputData.name.includes('"') || inputData.name.includes("'") || inputData.name.includes("`")
-        || inputData.steamid.includes('"') || inputData.steamid.includes("'") || inputData.steamid.includes("`")
-        || inputData.discordid.includes('"') || inputData.discordid.includes("'") || inputData.discordid.includes("`")
-        || inputData.email.includes('"') || inputData.email.includes("'") || inputData.email.includes("`")
-        || inputData.reason.includes('"') || inputData.reason.includes("'") || inputData.reason.includes("`")
-        || inputData.log_id.includes('"') || inputData.log_id.includes("'") || inputData.log_id.includes("`")
-    ) valid = false;
+    valid = RosterService.filterQuotes(inputData);
 
     if (valid !== true) return "Do not attempt to avoid answer validation";
-    let userData;
-    let targetData;
-    let ranks;
-    let allowedStaff;
+    let userData = {};
+    let targetData = {};
+    let ranks = [];
+    let allowedStaff = [];
     let firstRankRow;
     let appealable_bool;
     
@@ -60,14 +54,14 @@ function ProcessLog(inputData) {
         console.log("Processing Data");
         userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
         targetData = RosterService.getUserData(inputData.email);
-        ranks = JSON.parse(PropertiesService.getScriptProperties().getProperty("ranks"));
+        ranks = LIBRARY_SETTINGS.ranks;
         allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
         if (!targetData.row) return "User not found";
         if (inputData.blacklist_appealable == 'Yes') { appealable_bool = true; } else { appealable_bool = false; }
 
-        // New Captain/BL => data was manually inputted
-        if (inputData.type_check == "New Captain" || inputData.blacklist_type == "Blacklist") {
+        // New Member/BL => data was manually inputted
+        if (inputData.type_check == "New Member" || inputData.blacklist_type == "Blacklist") {
             targetData.name = inputData.name;
             targetData.steamId = inputData.steamid;
             targetData.discordId = inputData.discordid;
@@ -75,7 +69,7 @@ function ProcessLog(inputData) {
         }
         
         if (targetData.steamId == userData.steamId) return "You cannot manage yourself";
-        if (ranks[3].includes(targetData.rank) || ranks[2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
+        if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
         if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
 
         // used when moving members around
@@ -85,7 +79,6 @@ function ProcessLog(inputData) {
 
     let sheet;
     let insertLogRow;
-    const dataColumns = [5, 6, 7, 8, 12, 17];
 
     // Main case
     switch (inputData.type) {
@@ -163,7 +156,7 @@ function ProcessLog(inputData) {
         case "LOA Log":
             const timeDiff = new Date().valueOf() - RosterService.dateToMilliseconds(targetData.loaEnd);
             if (timeDiff < 0) return "This user is already on LOA, you cannot log another one";
-            // TODO
+            // TODO: make config
             if (timeDiff <= 1210000000) return "You must wait two weeks between LOAs";
 
             sheet = RosterService.getCollect(977408594);
@@ -196,13 +189,21 @@ function ProcessLog(inputData) {
         case "Blacklist Appeal":
             sheet = RosterService.getCollect(1787594911);
             // Check if the given id corresponds to a log
-            if (sheet.getRange(Number(inputData.log_id), 9).getValue() != '') {
-              // Check if log is not appealed yet
-              if (sheet.getRange(Number(inputData.log_id), 10).getValue() == false) {
-                sheet.getRange(Number(inputData.log_id), 10).setValue(true);
-                RosterService.protectRange("S", sheet, 10, Number(inputData.log_id));
+            if (sheet.getRange(Number(inputData.log_id), 8).getValue() != '') {
+              if (sheet.getRange(Number(inputData.log_id), 9).getValue() == true) {
+                // Check if log is not appealed yet
+                if (sheet.getRange(Number(inputData.log_id), 10).getValue() == false) {
+                  sheet.getRange(Number(inputData.log_id), 10).setValue(true);
+                  RosterService.protectRange("S", sheet, 10, Number(inputData.log_id));
+
+                  targetData["name"] = sheet.getRange(Number(inputData.log_id), 4).getValue();
+                  targetData["steamId"] = sheet.getRange(Number(inputData.log_id), 5).getValue();
+                  targetData["discordId"] = sheet.getRange(Number(inputData.log_id), 6).getValue();
+                } else {
+                  return "You cannot appeal an appealed Blacklist/Suspension";
+                }
               } else {
-                return "You cannot appeal an appealed Blacklist/Suspension";
+                return "This infraction is not appealable";
               }
             } else {
               return "Blacklist/Suspension was not found";
@@ -216,6 +217,10 @@ function ProcessLog(inputData) {
               if (sheet.getRange(Number(inputData.log_id), 9).getValue() == false) {
                 sheet.getRange(Number(inputData.log_id), 9).setValue(true);
                 RosterService.protectRange("S", sheet, 9, Number(inputData.log_id));
+
+                targetData.name = sheet.getRange(Number(inputData.log_id), 4).getValue();
+                targetData.steamId = sheet.getRange(Number(inputData.log_id), 5).getValue();
+                targetData.discordId = sheet.getRange(Number(inputData.log_id), 6).getValue();
               } else {
                 return "You cannot appeal an appealed Infraction";
               }
@@ -224,7 +229,6 @@ function ProcessLog(inputData) {
             }
             break;
     }
-    let accessFolders = JSON.parse(PropertiesService.getUserProperties().getProperty("accessFolders"));
-    RosterService.sendDiscordLog(inputData, targetData, userData, accessFolders);
+    RosterService.sendDiscordLog(inputData, targetData, userData);
     return "Log submitted";
 }

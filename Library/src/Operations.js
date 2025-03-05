@@ -158,7 +158,7 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
   let cols = Object.values(libCols);
   let dataCols = [];
 
-  cols = cols.filter((col) => col >= 4);
+  cols = cols.filter((col) => col > 4);
   const moveData = cols.map(col => {
     const r = roster.getRange(rowToSearch, col);
     if (!r.getFormula()) {
@@ -167,6 +167,9 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
     }
     return null;
   }).filter(data => data != null);
+
+  console.log(cols);
+  console.log(dataCols);
 
   dataCols.forEach(col => roster.getRange(rowToSearch, col).clearContent());
   if (destinationRow || destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i]));
@@ -195,4 +198,37 @@ function restoreAllDocAccess(allowedStaff) {
     let userData = getUserData(email);
     addDocAccess(LIBRARY_SETTINGS.ranks.indexOf(userData.rank), email);
   });
+}
+
+/**
+ * Head Function - Not to be used in other scripts
+ * @param {Array} users - All people with access to folder, regardless if they're allowed or not
+ * @param {Array} authed - All people who could have access to the folder
+ * @param {Array} exemptUsers - Users who should not be checked (owner of folder & Vigil)
+ * @param {String} accessType - Type of access to check for: "VIEW" or "EDIT"
+ * @return {Array}
+ */
+function processPermissions(users, authed, exemptUsers, accessType, folderName, folderId, folderData, ranks) {
+  var flagArray = [];
+  users.forEach(user => {
+    const email = user.getEmail().toLowerCase();
+    if (exemptUsers.includes(email)) return "User is exempt";
+
+    if (!authed.includes(email)) return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
+    const userData = getUserData(email);
+
+    if (ranks[ranks.length - 2].includes(userData.rank) || ranks[ranks.length - 1].includes(userData.rank)) return "User is exempt";
+
+    const allowedFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].viewerAccess : folderData[ranks.indexOf(userData.rank)].editorAccess;
+    const wrongFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].editorAccess : folderData[ranks.indexOf(userData.rank)].viewerAccess;
+    if (allowedFolders.includes(folderId)) return;
+
+    if (wrongFolders.includes(folderId)) {
+      return flagArray.push({ email: email, folderName: folderName, expectedPermission: accessType === "VIEW" ? "EDIT" : "VIEW", reason: "Incorrect permissions" });
+    } else {
+      return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
+    }
+
+  });
+  return flagArray;
 }

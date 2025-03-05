@@ -210,6 +210,15 @@
         font-size: 28px;
     }
 
+    .main-content .container .textbox .changelog {
+      margin-top: 20px;
+      /* display: block; */
+      padding: 30px 5px;
+      text-align: left;
+      justify-self: center;
+      width: 40%;
+    }
+
     .main-content .container .textbox .box-container {
         margin-top: 30px;
         display: flex;
@@ -276,6 +285,14 @@
 
     .right-text {
         text-align: right;
+    }
+
+    #changes {
+      text-align: left;
+      justify-content: top;
+      word-wrap: break-word;
+      resize: none;
+      text-align: left;
     }
 
     input,
@@ -410,6 +427,12 @@
         cursor: pointer;
     }
 
+    .submitButton-mini:disabled, .submitButton-mini:disabled:hover {
+      background-color: #4a4a4a !important;
+      color: gray !important;
+      cursor: not-allowed !important;
+    }
+
     .submitButton-mini-mini {
         background-color: #4a4a4a;
         color: whitesmoke;
@@ -479,6 +502,27 @@
 
     #backupTime:hover {
         cursor: pointer;
+    }
+
+    #collapsible {
+      width: 70%;
+    }
+
+    #newRankContent {
+      width: 70%; 
+      justify-self: center; 
+      display: none;
+      background-color: #333333;
+      margin-bottom: 30px;
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+      transition: 0.5s ease;
+      color: whitesmoke;
+      min-height: 6rem;
+    }
+
+    #newRankContent label {
+      color: whitesmoke;
     }
 
     /* Toggle Switch CSS ************************************
