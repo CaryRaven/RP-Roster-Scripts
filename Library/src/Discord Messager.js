@@ -393,6 +393,8 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       info = `The roster has been fully restored to its latest backup, which was made ${timeSinceBackup} minutes ago.`;
       footerMessage = "";
       break;
+    default:
+      throw new Error("This type is not supported");
   }
 
   // Compose discord embed
@@ -456,6 +458,60 @@ function sendDiscordConfigRankRow(rank, added, userData) {
           {
             name: "Configured by",
             value: `Name: ${userData.name}\nSteamID: ${userData.steamId}\nDiscord ID: ${userData.discordId}`,
+            inline: false,
+          },
+        ],
+        footer: {
+          text:
+            "Logged on " +
+            Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
+        },
+      },
+    ],
+  });
+
+  var params = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    payload: payload,
+    muteHttpExceptions: true,
+  };
+
+  let webhookURLs;
+  switch(LIBRARY_SETTINGS.factionName) {
+    case "Security":
+      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
+      break;
+    case "Staff":
+      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
+    default:
+      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
+  }
+
+  webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
+}
+
+/**
+ * Send config message that a rank slot was added/removed
+ * @param {String} rank - Name of the rank that a slot was added/removed to/from
+ * @param {Boolean} added - True = added, false = removed
+ * @returns {Void}
+ */
+function sendDiscordNewRank(rank, added = true) {
+
+  // Compose discord embed
+  let payload = JSON.stringify({
+    username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
+    embeds: [
+      {
+        title: `[🛠️] ${rank} Rank ${added ? "Added" : "Removed"}`,
+        color: `${added ? "1143627" : "11600386"}`,
+        fields: [
+          {
+            name: `The rank of ${rank} has been ${added ? "added to" : "removed from"} the ${LIBRARY_SETTINGS.factionName} roster.`,
+            value: ``,
             inline: false,
           },
         ],

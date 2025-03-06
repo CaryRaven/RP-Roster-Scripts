@@ -520,7 +520,7 @@
 
           google.script.run.withSuccessHandler(re => {
             google.script.run.withSuccessHandler(response => {
-              document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+              // document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
               document.getElementById('backupSlider').checked = (re === "true");
               document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
               document.getElementById('config-loading').innerHTML = '';
@@ -540,11 +540,16 @@
           //   document.getElementById('sheetRestoreSlider').checked = (resp === "true");
           // }).ReturnRestoreType();
 
-          let initRanks = document.getElementById("ranks").innerText;
+          let initRanks = document.getElementById("ranks")?.innerText;
           let rankSelect = document.getElementById("amdin-role-select");
           let rankRowSelect = document.getElementById("new-rank-select");
           let addRankSelect = document.getElementById("new-rank-before-select");
-          initRanks = initRanks.split(",");
+
+          if (initRanks) {
+            initRanks = initRanks.split(",");
+          } else {
+            initRanks = [];
+          }
 
           initRanks.forEach(rankName => {
             const rankOption = document.createElement("option");
@@ -573,12 +578,14 @@
         //   }).ToggleManualEditing(this.checked);
         // });
 
-        document.getElementById('backupSlider').addEventListener('change', function () {
-          document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-          google.script.run.withSuccessHandler(() => {
-            document.getElementById('config-loading').innerHTML = '';
-          }).ToggleBackup(this.checked);
-        });
+        try {
+          document.getElementById('backupSlider').addEventListener('change', function () {
+            document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+            google.script.run.withSuccessHandler(() => {
+              document.getElementById('config-loading').innerHTML = '';
+            }).ToggleBackup(this.checked);
+          });
+        } catch(e) {}
 
         // document.getElementById('sheetRestoreSlider').addEventListener('change', function () {
         //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
@@ -782,45 +789,45 @@
           }).RestoreSheet();
         };
 
-        window.MakeBackup = function (event) {
-          event.preventDefault();
-          const button = document.getElementById('backupButton');
-          document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-          button.disabled = true;
+        // window.MakeBackup = function (event) {
+        //   event.preventDefault();
+        //   const button = document.getElementById('backupButton');
+        //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        //   button.disabled = true;
 
-          google.script.run.withSuccessHandler(response => {
-            document.getElementById('config-loading').innerHTML = '';
-            if (response) {
-              button.classList.add("red");
-              setTimeout(() => {
-                button.classList.remove("red");
-                button.disabled = false;
-              }, 2000);
-            } else {
-              button.disabled = false;
-            }
+        //   google.script.run.withSuccessHandler(response => {
+        //     document.getElementById('config-loading').innerHTML = '';
+        //     if (response) {
+        //       button.classList.add("red");
+        //       setTimeout(() => {
+        //         button.classList.remove("red");
+        //         button.disabled = false;
+        //       }, 2000);
+        //     } else {
+        //       button.disabled = false;
+        //     }
 
-            // Update last backup time
-            google.script.run.withSuccessHandler(response => {
-              document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
-            }).GetLastBackupTime();
-          }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
-            document.getElementById('config-loading').innerHTML = '';
-            button.disabled = false;
-            button.classList.add("red");
-            setTimeout(() => button.classList.remove("red"), 2000);
-          }).BackupSheet();
-        };
+        //     // Update last backup time
+        //     google.script.run.withSuccessHandler(response => {
+        //       document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+        //     }).GetLastBackupTime();
+        //   }).withFailureHandler(error => {
+        //     google.script.run.ReportError(error);
+        //     document.getElementById('config-loading').innerHTML = '';
+        //     button.disabled = false;
+        //     button.classList.add("red");
+        //     setTimeout(() => button.classList.remove("red"), 2000);
+        //   }).BackupSheet();
+        // };
 
-        window.RefreshBackupTime = function (event) {
-          event.preventDefault();
-          document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-          google.script.run.withSuccessHandler(response => {
-            document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
-            document.getElementById('config-loading').innerHTML = '';
-          }).GetLastBackupTime();
-        }
+        // window.RefreshBackupTime = function (event) {
+        //   event.preventDefault();
+        //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        //   google.script.run.withSuccessHandler(response => {
+        //     document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+        //     document.getElementById('config-loading').innerHTML = '';
+        //   }).GetLastBackupTime();
+        // }
 
         window.ResetPerms = function (event) {
           event.preventDefault();
@@ -913,8 +920,7 @@
 
         window.AddNewRank = function(event) {
           event.preventDefault();
-          document.getElementById("newrankForm").reset();
-          return;
+          let button = document.getElementById("newrank-button");
           let data = {
             title: document.getElementById("newRankTitle").value,
             rankBefore: document.getElementById("new-rank-before-select").value,
@@ -928,21 +934,46 @@
           }
 
           Object.values(data).forEach(value => {
-            if (
-                value.title.includes('"') || value.title.includes("'") || value.title.includes("`")
-                || value.rankBefore.includes('"') || value.rankBefore.includes("'") || value.rankBefore.includes("`")
-                || value.viewerFolders.includes('"') || value.viewerFolders.includes("'") || value.viewerFolders.includes("`")
-                || value.editorFolders.includes('"') || value.editorFolders.includes("'") || value.editorFolders.includes("`")
-              ) {
+            if (value && (value.includes('"') || value.includes("'") || value.includes("`"))) {
               document.body.classList.add('shake');
               setTimeout(() => document.body.classList.remove('shake'), 200);
             }
           });
 
-          google.script.run.withSuccessHandler(() => {
+          button.disabled = true;
+          button.innerHTML = '<div class="loader"></div>';
 
+          google.script.run.withSuccessHandler((response) => {
+            if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already")) {
+              document.body.classList.add('shake');
+              setTimeout(() => document.body.classList.remove('shake'), 200);
+              button.classList.add('red');
+            } else {
+              button.classList.add('green');
+              document.getElementById("newrankForm").reset();
+            }
+
+            button.innerHTML = "";
+            button.innerText = response;
+            setTimeout(() => {
+              button.innerText = "Submit New Rank";
+              button.disabled = false;
+              button.classList.remove('red');
+              button.classList.remove('green');
+            }, 3000);
+
+          }).withFailureHandler(error => {
+            google.script.run.ReportError(error);
+
+            // Manipulating button text to give info to user.
+            button.innerHTML = "";
+            button.innerText = "Something went wrong";
+            setTimeout(() => {
+              button.innerText = "Submit New Rank";
+              button.disabled = false;
+            }, 4000);
           }).AddNewRank(data);
-        }
+        };
 
       });
     </script>
@@ -978,6 +1009,7 @@
             <input type="message" id="changes" placeholder="Add your changes, seperated by a comma" minlength="20" required></input>
             <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
           </form><br>
+          <? } ?>
           <button id="collapsible" class="submitButton">Add New Rank</button>
           <div id="newRankContent" class="container">
             <form id="newrankForm">
@@ -989,12 +1021,11 @@
               </select><br>
               <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
-              <label for="newRankViewFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
+              <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma"><br>
               <button onclick="AddNewRank(event)" class="submitButton" id="newrank-button" type="submit">Submit New Rank</button>
             </form>
           </div><br>
-          <? } ?>
           <table class="config-switches" style="margin-top: 30px;">
             <!-- <tr> TODO: Manual Edits
               <td>

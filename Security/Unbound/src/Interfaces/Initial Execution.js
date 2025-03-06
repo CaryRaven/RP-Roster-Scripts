@@ -1,6 +1,5 @@
 // Initializing instance of library
 let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getProperty("settings"));
-console.log(LIBRARY_SETTINGS);
 RosterService.init(LIBRARY_SETTINGS);
 
 function T() {
@@ -11,7 +10,7 @@ function T() {
  * Function that runs when web app is opened / refreshed. Default google function thus it cannot be used in your project, only defined/declared once
  */
 function doGet() {
-  const user = Session.getActiveUser().getEmail();
+  let user = Session.getActiveUser().getEmail();
   let userData = RosterService.getUserData(user);
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 

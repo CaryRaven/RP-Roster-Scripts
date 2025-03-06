@@ -12,19 +12,15 @@ function GetChangeNotes() {
 }
 
 function AddNewRank(inputData) {
-  inputData = {
-    rankBefore: "Captain",
-    title: "Lieutenant",
-    viewerFolders: "1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE, 13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A"
-  }
-  if (!inputData) return;
+  if (!inputData) return "No input data";
   
   let valid = false;
   let viewerFolders = [];
   let editorFolders = [];
   valid = RosterService.filterQuotes(inputData);
 
-  if (valid !== true) return;
+  if (valid !== true) return "Invalid data";
+  if (LIBRARY_SETTINGS.ranks.indexOf(inputData.title) >= 0) return "Rank Already exists";
 
   // Add new row to settings (backend)
   if (inputData.viewerFolders) {
@@ -37,7 +33,7 @@ function AddNewRank(inputData) {
         valid = false;
       }
     });
-    if (valid !== true) return console.log("Unable to open viewer folder");
+    if (valid !== true) return "Error: Not able to open viewer folders";
   } else { viewerFolders = []; }
 
   if (inputData.editorFolders) {
@@ -50,7 +46,7 @@ function AddNewRank(inputData) {
         valid = false;
       }
     });
-    if (valid !== true) return console.log("Unable to open editor folder");
+    if (valid !== true) return "Error: Not able to open editor folders";
   } else { editorFolders = []; }
 
   LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
@@ -62,8 +58,32 @@ function AddNewRank(inputData) {
 
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 
-  // TODO: add new row to roster (frontend)
-  
+  const lastBeforeRow = RosterService.getLastRankRow(inputData.rankBefore);
+  const s = RosterService.getCollect(2063800821);
+
+  s.insertRowAfter(lastBeforeRow + 1);
+  s.insertRowAfter(lastBeforeRow);
+  s.moveRows(s.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
+  const insertRow = lastBeforeRow + 2;
+
+  [[3, 3], [5, 8], [10, 15], [17, 17]].forEach(cellpair => {
+    let numcols = (cellpair[1] - cellpair[0]) + 1;
+    s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+    s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+  });
+
+  s.getRange(insertRow, 3, 1, 15).setValues([[
+    inputData.title, inputData.title, "", "", "", "", "", 
+    `= INFRACTIONS(F${insertRow}, Infractions!E:E, Infractions!C:C, Infractions!H:H, Infractions!I:I)`,
+    `= STATUS(F${insertRow}, G${insertRow}, E${insertRow}, H${insertRow}, 'LOA Logs'!E:E, N${insertRow}, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P${insertRow})`,
+    "",
+    `= LAST_RANKCHANGE(F${insertRow}, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
+    `= LOA_DATE(F${insertRow}, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
+    false,
+    `= BLACKLIST_DATE(F${insertRow}, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
+  ]]);
+  RosterService.sendDiscordNewRank(inputData.title);
+  return "Successfully added new rank";
 }
 
 /**
@@ -111,10 +131,16 @@ function AddRankRow(rank, num = 1) {
       });
       const startMergedRange = RosterService.getStartRankRow(rank);
       sheet.getRange(startMergedRange, 3, ((insertRow - startMergedRange) + 1), 1).merge();
+    } else {
+      [[5, 8], [10, 15], [17, 17]].forEach(cellpair => {
+        let numcols = (cellpair[1] - cellpair[0]) + 1;
+        sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, true, null, true, null, null,"black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+        sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, null, true, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      });
     }
   }
 
-  RosterService.sendDiscordConfig(rank, true, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
+  RosterService.sendDiscordConfigRankRow(rank, true, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
 /**
@@ -149,9 +175,12 @@ function RemoveRankRow(rank, num = 1) {
         sheet.getRange(removeRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       });
     }
+
+    const startRow = RosterService.getStartRankRow(rank);
+    sheet.getRange(startRow, 3).setValue(rank);
   }
 
-  RosterService.sendDiscordConfig(rank, false, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
+  RosterService.sendDiscordConfigRankRow(rank, false, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
 function ToggleManualEditing(value) {
@@ -310,10 +339,9 @@ function GetSpreadsheetData(inputValue) {
   const results = [];
 
   sheets.forEach(sheetInfo => {
+    const sheet = getCollect(sheetInfo.id);
+    const sheetName = sheet.getName();
     try {
-      const sheet = getCollect(sheetInfo.id);
-      const sheetName = sheet.getName();
-
       if (!sheet) {
         Logger.log(`Sheet not found: ${sheetName}`);
         return;
