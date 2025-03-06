@@ -47,8 +47,11 @@ function ProcessInputEdits(inputData) {
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordid);
       break;
     case "Edit Email":
-      RosterService.removeDocAccess(inputData.current_email);
-      RosterService.addDocAccess(ranks.indexOf(targetData.rank), inputData.email);
+      const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+      if (lockdown === "false") {
+        RosterService.removeDocAccess(inputData.current_email);
+        RosterService.addDocAccess(ranks.indexOf(targetData.rank), inputData.email);
+      }
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.email).setValue(inputData.email);
       break;
     case "Edit Specialization":

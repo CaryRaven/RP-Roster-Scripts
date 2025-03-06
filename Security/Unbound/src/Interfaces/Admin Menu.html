@@ -22,6 +22,11 @@
         document.getElementById("changeLoader").setAttribute("style", "display: none;");
         document.getElementById("admin-menu").setAttribute("style", "display: block;");
       }
+
+      window.Shake = function() {
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 200);
+      };
     });
   </script>
   <div class="loader" id="changeLoader"></div>
@@ -365,8 +370,7 @@
         event.preventDefault();
         const inputValue = document.getElementById('inputField').value;
         if (inputValue === "" || !inputValue.includes("STEAM_")) {
-          document.body.classList.add('shake');
-          setTimeout(() => document.body.classList.remove('shake'), 200);
+          Shake();
           return;
         }
 
@@ -513,6 +517,49 @@
     <!-- Config Panel -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        
+        window.SetRankSelects = function() {
+          let initRanks = document.getElementById("ranks")?.innerText;
+          let rankSelect = document.getElementById("amdin-role-select");
+          let rankRowSelect = document.getElementById("new-rank-select");
+          let addRankSelect = document.getElementById("new-rank-before-select");
+          let removeRankSelect = document.getElementById("remove-rank-select");
+
+          if (initRanks) {
+            initRanks = initRanks.split(",");
+          } else {
+            initRanks = [];
+          }
+
+          rankSelect.innerHTML = '<option value=""></option>';
+          rankRowSelect.innerHTML = '<option value=""></option>';
+          addRankSelect.innerHTML = '<option value=""></option>';
+          removeRankSelect.innerHTML = '<option value=""></option>';
+
+          initRanks.forEach(rankName => {
+            const rankOption = document.createElement("option");
+            rankOption.value = rankName;
+            rankOption.innerText = rankName;
+            rankSelect.appendChild(rankOption);
+
+            if (!rankName.includes("Site") && !rankName.includes("Chief")) {
+              const rankRowOption = document.createElement("option");
+              rankRowOption.value = rankName;
+              rankRowOption.innerText = rankName;
+              rankRowSelect.appendChild(rankRowOption);
+
+              const addRankOption = document.createElement("option");
+              addRankOption.value = rankName;
+              addRankOption.innerText = rankName;
+              addRankSelect.appendChild(addRankOption);
+
+              const removeRankOption = document.createElement("option");
+              removeRankOption.value = rankName;
+              removeRankOption.innerText = rankName;
+              removeRankSelect.appendChild(removeRankOption);
+            }
+          });
+        }
         try {
           // google.script.run.withSuccessHandler(r => {
           //   document.getElementById('manualEditingSlider').checked = !(r === "true");
@@ -540,35 +587,7 @@
           //   document.getElementById('sheetRestoreSlider').checked = (resp === "true");
           // }).ReturnRestoreType();
 
-          let initRanks = document.getElementById("ranks")?.innerText;
-          let rankSelect = document.getElementById("amdin-role-select");
-          let rankRowSelect = document.getElementById("new-rank-select");
-          let addRankSelect = document.getElementById("new-rank-before-select");
-
-          if (initRanks) {
-            initRanks = initRanks.split(",");
-          } else {
-            initRanks = [];
-          }
-
-          initRanks.forEach(rankName => {
-            const rankOption = document.createElement("option");
-            rankOption.value = rankName;
-            rankOption.innerText = rankName;
-            rankSelect.appendChild(rankOption);
-
-            const rankRowOption = document.createElement("option");
-            rankRowOption.value = rankName;
-            rankRowOption.innerText = rankName;
-            rankRowSelect.appendChild(rankRowOption);
-
-            if (!rankName.includes("Site")) {
-              const addRankOption = document.createElement("option");
-              addRankOption.value = rankName;
-              addRankOption.innerText = rankName;
-              addRankSelect.appendChild(addRankOption);
-            }
-          });
+          SetRankSelects();
         } catch (e) { google.script.run.ReportError(e); }
 
         // document.getElementById('manualEditingSlider').addEventListener('change', function () {
@@ -627,17 +646,18 @@
 
         window.AddRankRow = function (event) {
           event.preventDefault();
-          const rankElement = document.getElementById('new-rank-select');
+          let rankElement = document.getElementById('new-rank-select');
+          const rank = rankElement.value;
           let rowAmount = document.getElementById("rankRowAmount").value;
           rowAmount = Number(rowAmount);
 
-          if (!rowAmount || rowAmount <= 0) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+          if (!rank) return Shake();
+          if (!rowAmount || rowAmount <= 0 || rowAmount > 15) {
+            Shake();
+            if (rowAmount) alert("You must select a number of rows to add between 1 and 15");
             return;
           }
 
-          const rank = rankElement.value;
           const buttonAdd = document.getElementById('addrankrow-button');
           const buttonRemove = document.getElementById('removerankrow-button');
           let configLoading = document.getElementById('config-loading');
@@ -646,16 +666,6 @@
           buttonAdd.disabled = true;
           buttonRemove.disabled = true;
           rankElement.disabled = true;
-
-          if (!rank) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
-            configLoading.innerHTML = '';
-            buttonAdd.disabled = false;
-            buttonRemove.disabled = false;
-            rankElement.disabled = false;
-            return;
-          }
 
           google.script.run.withSuccessHandler(response => {
             configLoading.innerHTML = '';
@@ -670,8 +680,7 @@
             }, 3000);
           }).withFailureHandler((error) => {
             google.script.run.ReportError(error);
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+            Shake();
             configLoading.innerHTML = '';
             configLoading.innerText = "Something went wrong while adding a rank slot";
             buttonAdd.classList.add('red');
@@ -695,8 +704,7 @@
           rowAmount = Number(rowAmount);
 
           if (!rowAmount || rowAmount <= 0) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+            Shake();
             return;
           }
 
@@ -710,8 +718,7 @@
           rankElement.disabled = true;
 
           if (!rank) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+            Shake();
             configLoading.innerHTML = '';
             buttonAdd.disabled = false;
             buttonRemove.disabled = false;
@@ -724,8 +731,7 @@
             if (response) {
               buttonAdd.classList.add('red');
               buttonRemove.classList.add('red');
-              document.body.classList.add('shake');
-              setTimeout(() => document.body.classList.remove('shake'), 200);
+              Shake();
               setTimeout(() => {
                 buttonAdd.classList.remove('red');
                 buttonRemove.classList.remove('red');
@@ -746,8 +752,7 @@
             }
           }).withFailureHandler(error => {
             google.script.run.ReportError(error);
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+            Shake();
             configLoading.innerHTML = '';
             configLoading.innerText = "Something went wrong while adding a rank slot";
             buttonAdd.classList.add('red');
@@ -853,8 +858,7 @@
           let rank = document.getElementById("rank").innerText;
 
           if (!accessRank) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+            Shake();
             button.disabled = false;
             return;
           }
@@ -892,8 +896,7 @@
           const button = document.getElementById("changelogButton");
 
           if (changelog.length < 20) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
+            Shake();
             return;
           }
 
@@ -928,25 +931,32 @@
             editorFolders: document.getElementById("newRankEditFolders").value
           }
 
-          if (!data.title || !data.rankBefore) {
-            document.body.classList.add('shake');
-            setTimeout(() => document.body.classList.remove('shake'), 200);
-          }
+          if (!data.title || !data.rankBefore) return Shake();
 
+          let valid = true;
           Object.values(data).forEach(value => {
             if (value && (value.includes('"') || value.includes("'") || value.includes("`"))) {
-              document.body.classList.add('shake');
-              setTimeout(() => document.body.classList.remove('shake'), 200);
+              valid = false;
             }
           });
+
+          if (!valid) {
+            Shake();
+            button.innerText = "No quotes allowed in input values";
+            button.disabled = true;
+            setTimeout(() => {
+              button.innerText = "Submit New Rank";
+              button.disabled = false;
+            }, 2000);
+            return;
+          }
 
           button.disabled = true;
           button.innerHTML = '<div class="loader"></div>';
 
           google.script.run.withSuccessHandler((response) => {
             if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already")) {
-              document.body.classList.add('shake');
-              setTimeout(() => document.body.classList.remove('shake'), 200);
+              Shake();
               button.classList.add('red');
             } else {
               button.classList.add('green');
@@ -962,6 +972,12 @@
               button.classList.remove('green');
             }, 3000);
 
+            google.script.run.withSuccessHandler(ranks => {
+              ranks = JSON.parse(ranks);
+              document.getElementById("ranks").innerText = ranks;
+              SetRankSelects();
+            }).GetRanks();
+
           }).withFailureHandler(error => {
             google.script.run.ReportError(error);
 
@@ -973,6 +989,51 @@
               button.disabled = false;
             }, 4000);
           }).AddNewRank(data);
+        };
+
+        window.RemoveRank = function(event) {
+          event.preventDefault();
+          const button = document.getElementById("removeRank-button");
+          const rank = document.getElementById("remove-rank-select").value;
+
+          if (!rank) return Shake();
+
+          const proceed = confirm(`You are about to remove the rank of ${rank} from the roster. Press OK if you would like to continue this action.`);
+
+          if (proceed == true) {
+            button.disabled = true;
+            document.getElementById('config-loading').innerHTML = '<div class="loader" style="width: 10px; height: 10px;"></div>';
+
+            google.script.run.withSuccessHandler(response => {
+              if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already")) {
+                Shake();
+                button.classList.add('red');
+              } else {
+                button.classList.add('green');
+                document.getElementById("newrankForm").reset();
+              }
+
+              button.innerText = response;
+              setTimeout(() => {
+                button.innerText = "Delete";
+                document.getElementById('config-loading').innerHTML = "";
+                button.disabled = false;
+                button.classList.remove('red');
+                button.classList.remove('green');
+              }, 3000);
+
+              google.script.run.withSuccessHandler(ranks => {
+                ranks = JSON.parse(ranks);
+                document.getElementById("ranks").innerText = ranks;
+                SetRankSelects();
+              }).GetRanks();
+            }).withFailureHandler(error => {
+              google.script.run.ReportError(error);
+              button.disabled = false;
+              button.innerText = "Delete";
+              document.getElementById('config-loading').innerHTML = "";
+            }).RemoveRank(rank);
+          }
         };
 
       });
@@ -989,19 +1050,8 @@
             <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br><br>Current allowed ranks: <span id="allowedRanks"><?= adminRanks ?></span>
             </label><br>
             <select id="amdin-role-select">
-              <option value=""></option>
             </select>
             <button id="AdminRankButton" onclick="SaveAdminRanks(event)" type="submit" class="submitButton-mini">Add/Remove</button>
-          </form><br>
-          <form id="config-form-rankRow">
-            <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
-            <select id="new-rank-select" style="width: 55%;">
-              <option value=""></option>
-            </select>
-            <input type="number" id="rankRowAmount" style="width: 5%;" placeholder="#">
-            <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button">Add</button>
-            <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini"
-              id="removerankrow-button">Remove</button>
           </form><br>
           <? if (allowedStaff.includes(user)) { ?>
           <form id="changelog-form">
@@ -1010,21 +1060,34 @@
             <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
           </form><br>
           <? } ?>
-          <button id="collapsible" class="submitButton">Add New Rank</button>
+          <button id="collapsible" class="submitButton">Manage Ranks</button>
           <div id="newRankContent" class="container">
             <form id="newrankForm">
               <label for="newRankTitle">Add a title to your rank:</label><br>
               <input id="newRankTitle" type="text" placeholder="Add rank Title" required><br>
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:</label><br>
               <select id="new-rank-before-select" required>
-                <option value=""></option>
               </select><br>
               <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
               <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma"><br>
               <button onclick="AddNewRank(event)" class="submitButton" id="newrank-button" type="submit">Submit New Rank</button>
-            </form>
+            </form><br><hr><br>
+            <form id="config-form-removeRank">
+              <label for="remove-rank-select"><strong>Select a rank to delete from the roster:</strong></label><br>
+              <select id="remove-rank-select" style="width: 50%;">
+              </select>
+              <button onclick="RemoveRank(event)" class="submitButton-mini" id="removeRank-button">Delete</button>
+            </form><br><hr><br>
+            <form id="config-form-rankRow">
+              <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
+              <select id="new-rank-select" style="width: 42%;">
+              </select>
+              <input type="number" id="rankRowAmount" style="width: 8%;" placeholder="#">
+              <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button">Add</button>
+              <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button">Remove</button>
+            </form><br>
           </div><br>
           <table class="config-switches" style="margin-top: 30px;">
             <!-- <tr> TODO: Manual Edits
@@ -1334,8 +1397,7 @@
           || dataToSubmit.reason.includes('"') || dataToSubmit.reason.includes("'") || dataToSubmit.reason.includes("`")
           || dataToSubmit.log_id.includes('"') || dataToSubmit.log_id.includes("'") || dataToSubmit.log_id.includes("`")
         ) {
-          document.body.classList.add('shake');
-          setTimeout(() => document.body.classList.remove('shake'), 200);
+          Shake();
           button.innerText = "No quotes of any kind allowed in inputs";
           console.log("You did not fill out all questions correctly -- Submission failed");
           setTimeout(() => {
@@ -1356,8 +1418,7 @@
             console.log("Log sucessfully submitted");
 
             if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
-              document.body.classList.add('shake');
-              setTimeout(() => document.body.classList.remove('shake'), 200);
+              Shake();
               button.classList.add('red');
             } else if (!response.includes('something')) {
               document.getElementById('dataform').reset();
@@ -1393,8 +1454,7 @@
           }).ProcessLog(dataToSubmit);
         } else if (valid == false) {
           // Make screen shake if not all questions were answered (idk seemed fun)
-          document.body.classList.add('shake');
-          setTimeout(() => document.body.classList.remove('shake'), 200);
+          Shake();
           console.log("You did not fill out all questions correctly -- Submission failed");
           button.disabled = false;
           console.timeEnd("Log Submission Runtime");
@@ -1618,8 +1678,7 @@
                 || editdata.steamid.includes('"') || editdata.steamid.includes("'") || editdata.steamid.includes("`")
                 || editdata.specialization.includes('"') || editdata.specialization.includes("'") || editdata.specialization.includes("`")
               ) {
-                document.body.classList.add('shake');
-                setTimeout(() => document.body.classList.remove('shake'), 200);
+                Shake();
                 button.innerText = "No quotes of any kind allowed in inputs";
                 console.log("You did not fill out all questions correctly -- Submission failed");
                 setTimeout(() => {
@@ -1636,8 +1695,7 @@
                 google.script.run.withSuccessHandler(response => {
 
                   if (response.includes("not")) {
-                    document.body.classList.add('shake');
-                    setTimeout(() => document.body.classList.remove('shake'), 200);
+                    Shake();
                     button.classList.add('red');
                   } else if (!response.includes('something')) {
                     document.getElementById('editform').reset();
@@ -1669,8 +1727,7 @@
                 }).ProcessInputEdits(editdata);
               } else if (validEdit == false) {
                 // Make screen shake if not all questions were answered (idk seemed fun)
-                document.body.classList.add('shake');
-                setTimeout(() => document.body.classList.remove('shake'), 200);
+                Shake();
                 console.log("You did not fill out all questions correctly -- Submission failed");
                 button.disabled = false;
                 console.timeEnd("Edit Submission Runtime");

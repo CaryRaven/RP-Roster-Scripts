@@ -88,13 +88,19 @@ function ProcessLog(inputData) {
             sheet = RosterService.getCollect(789793193);
             const roster = RosterService.getCollect(2063800821);
             insertLogRow = RosterService.getLastRow(sheet);
+            const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
 
             switch (inputData.rankchangetype) {
                 case "Promotion":
                     if (targetData.status == "LOA") return "You cannot promote members who are on LOA";
                     if (Number(targetData.infractions) !== 0) return "You cannot promote members with an active infraction";
+                    if (targetData.status == "Suspended") return "You cannot promote suspended members";
                     const promotionDestination = ranks[currentRankIndex + 1];
-                    if (!promotionDestination || currentRankIndex === 1) return "This user cannot be promoted any further";
+                    if (!promotionDestination || currentRankIndex === ranks.length - 3) return "This user cannot be promoted any further";
+
+                    const lastRankChange = RosterService.dateToMilliseconds(roster.getRange(targetData.row, LIBRARY_SETTINGS.lastRankChange).getDisplayValue());
+                    const timeDiff = new Date().valueOf() - lastRankChange;
+                    if (timeDiff <= 1210000000) return `You must wait 14 days between Promotions`;
                     
                     rowDestination = RosterService.getFirstRankRow(promotionDestination);
                     if (rowDestination[0] == 0) return `${promotionDestination} has reached capacity`;
@@ -104,8 +110,11 @@ function ProcessLog(inputData) {
                     RosterService.moveMember(firstRankRow[0], targetData.row);
                     RosterService.insertRankChangeLog(inputData, userData, targetData, promotionDestination, insertLogRow);
                     RosterService.protectRange("N", sheet, null, insertLogRow);
-                    RosterService.removeDocAccess(targetData.email);
-                    RosterService.addDocAccess(currentRankIndex + 1, targetData.email);
+
+                    if (lockdown === "false") {
+                      RosterService.removeDocAccess(targetData.email);
+                      RosterService.addDocAccess(currentRankIndex + 1, targetData.email);
+                    }
                     break;
                 case "Demotion":
                     const demotionDestination = ranks[currentRankIndex - 1];
@@ -119,8 +128,12 @@ function ProcessLog(inputData) {
                     RosterService.moveMember(firstRankRow[0], targetData.row);
                     RosterService.insertRankChangeLog(inputData, userData, targetData, demotionDestination, insertLogRow);
                     RosterService.protectRange("N", sheet, null, insertLogRow);
-                    RosterService.removeDocAccess(targetData.email);
-                    RosterService.addDocAccess(currentRankIndex - 1, targetData.email);
+
+                    // Only add doc access if no lockdown
+                    if (lockdown === "false") {
+                      RosterService.removeDocAccess(targetData.email);
+                      RosterService.addDocAccess(currentRankIndex - 1, targetData.email);
+                    }
                     break;
                 case "Removal":
                     RosterService.moveMember(targetData.row);
@@ -140,8 +153,11 @@ function ProcessLog(inputData) {
                     sheet.getRange(insertLogRow, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
 
                     RosterService.protectRange("N", sheet, null, insertLogRow);
-                    RosterService.removeDocAccess(inputData.email);
-                    RosterService.addDocAccess(0, inputData.email);
+
+                    if (lockdown === "false") {
+                      RosterService.removeDocAccess(inputData.email);
+                      RosterService.addDocAccess(0, inputData.email);
+                    }
                     break;
             }
             break;
@@ -157,7 +173,7 @@ function ProcessLog(inputData) {
             const timeDiff = new Date().valueOf() - RosterService.dateToMilliseconds(targetData.loaEnd);
             if (timeDiff < 0) return "This user is already on LOA, you cannot log another one";
             // TODO: make config
-            if (timeDiff <= 1210000000) return "You must wait two weeks between LOAs";
+            if (timeDiff <= 1210000000) return "You must wait 14 days between LOAs";
 
             sheet = RosterService.getCollect(977408594);
             insertLogRow = RosterService.getLastRow(sheet);

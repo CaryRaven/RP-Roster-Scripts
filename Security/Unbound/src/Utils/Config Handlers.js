@@ -11,6 +11,10 @@ function GetChangeNotes() {
   return PropertiesService.getScriptProperties().getProperty("lastestChangeLog");
 }
 
+function GetRanks() {
+  return JSON.stringify(LIBRARY_SETTINGS.ranks);
+}
+
 function AddNewRank(inputData) {
   if (!inputData) return "No input data";
   
@@ -87,6 +91,33 @@ function AddNewRank(inputData) {
 }
 
 /**
+ * Remove an entire rank
+ * @param {String} rank
+ * @returns {String}
+ */
+function RemoveRank(rank) {
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
+  if (!rank || rankIndex < 0) return console.log("Invalid rank");
+
+  let firstRankRow = RosterService.getFirstRankRow(rank);
+  firstRankRow = firstRankRow[0];
+  const startRankRow = RosterService.getStartRankRow(rank);
+  const lastRankRow = RosterService.getLastRankRow(rank);
+
+  if (firstRankRow != startRankRow) return console.log("Cannot remove a rank with active members");
+
+  const sheet = RosterService.getCollect(2063800821);
+  sheet.deleteRows(startRankRow - 1, (lastRankRow - startRankRow) + 2);
+
+  console.log(LIBRARY_SETTINGS);
+  LIBRARY_SETTINGS.ranks.splice(rankIndex, 1);
+  LIBRARY_SETTINGS.folders.splice(rankIndex, 1);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.sendDiscordNewRank(rank, false);
+  return `Success`;
+}
+
+/**
  * Add one extra slot to the rank passed in as arg
  * @param {String} rank - Name of the rank to add a slot to
  * @param {Number} num (optional)
@@ -140,7 +171,7 @@ function AddRankRow(rank, num = 1) {
     }
   }
 
-  RosterService.sendDiscordConfigRankRow(rank, true, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
+  RosterService.sendDiscordConfigRankRow(rank, true, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), num);
 }
 
 /**
@@ -180,7 +211,7 @@ function RemoveRankRow(rank, num = 1) {
     sheet.getRange(startRow, 3).setValue(rank);
   }
 
-  RosterService.sendDiscordConfigRankRow(rank, false, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
+  RosterService.sendDiscordConfigRankRow(rank, false, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), num);
 }
 
 function ToggleManualEditing(value) {
@@ -224,12 +255,12 @@ function ReturnBackup() {
 }
 
 function ToggleLockdown(value) {
-  PropertiesService.getScriptProperties().setProperty("lockdownEnabled", value);
   if (value) {
     RemoveAllDocAccess();
   } else {
     RestoreAllDocAccess();
   }
+  PropertiesService.getScriptProperties().setProperty("lockdownEnabled", value);
   RosterService.sendDiscordConfig("lockdown", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
@@ -261,9 +292,9 @@ function GetLastBackupTime() {
  */
 function RemoveAllDocAccess() {
   let unaffected = ["micheal.labus@gmail.com", "rykitala@gmail.com"];
-  let folders = JSON.parse(PropertiesService.getScriptProperties().getProperty("folders"));
+  let folders = LIBRARY_SETTINGS.folders;
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const sheet = getCollect(2063800821);
+  const sheet = RosterService.getCollect(2063800821);
 
   sheet.getRange(6, 8, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;

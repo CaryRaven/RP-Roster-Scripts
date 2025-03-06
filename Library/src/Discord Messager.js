@@ -178,6 +178,7 @@ function sendDiscordUnauthed() {
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
+    content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
     embeds: [{
       title: "Unauthed Access",
       color: "11600386",
@@ -277,7 +278,7 @@ function sendDiscordPermissionReport(flagArray) {
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Access Report`,
-    content: "", // TODO change to Chief / SM ping in future
+    content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
     embeds: [
       {
         title: "Flagged Users",
@@ -443,16 +444,17 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
  * @param {String} rank - Name of the rank that a slot was added/removed to/from
  * @param {Boolean} added - True = added, false = removed
  * @param {Object} userData
+ * @param {Number} num - Amount of slots
  * @returns {Void}
  */
-function sendDiscordConfigRankRow(rank, added, userData) {
+function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
 
   // Compose discord embed
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
     embeds: [
       {
-        title: `[🛠️] ${rank} Slot ${added ? "Added" : "Removed"}`,
+        title: `[🛠️] ${num} ${rank} Slot${num > 1 ? "s" : ""} ${added ? "Added" : "Removed"}`,
         color: `${added ? "1143627" : "11600386"}`,
         fields: [
           {
@@ -557,6 +559,7 @@ function sendDiscordChangeLog(notes) {
 
    let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
+    content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
     embeds: [
       {
         title: `⚙️ Admin Menu Update ⚙️`,

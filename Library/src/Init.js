@@ -49,5 +49,7 @@ class SettingsTemplate {
     this.ranks = [];
     this.adminRanks = [];
     this.rankchangeId = 0;
+    this.lastRankChange = 0;
+    this.leaderPing = 0;
   }
 }

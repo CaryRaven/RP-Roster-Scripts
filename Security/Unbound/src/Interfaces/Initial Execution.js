@@ -3,7 +3,7 @@ let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getPro
 RosterService.init(LIBRARY_SETTINGS);
 
 function T() {
-  
+  console.log(LIBRARY_SETTINGS);
 }
 
 /**
@@ -14,7 +14,13 @@ function doGet() {
   let userData = RosterService.getUserData(user);
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
-  if (allowedStaff.includes(user)) {
+  // TODO: differentiate Staff from SM somehow
+  if (userData.email == "N/A") {
+    userData.name = "N/A";
+    userData.steamId = "N/A";
+    userData.discordId = "N/A";
+    userData.rank = "Site Management";
+  } else if (allowedStaff.includes(user)) {
     userData.name = "N/A";
     userData.steamId = "N/A";
     userData.discordId = "N/A";
@@ -97,8 +103,10 @@ function Set() {
 
     rosterIds: [2063800821],
     firstMemberRow: 6,
+    lastRankChange: 13,
     spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
     rankchangeId: 789793193,
+    leaderPing: 1186431632647921736,
     factionName: "Security",
     adminRanks: ["Security Chief"],
     folders: [
