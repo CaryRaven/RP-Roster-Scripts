@@ -14,8 +14,12 @@ function GetAllowedStaff() {
 function BackupSheet() {
   const backupEnabled = PropertiesService.getScriptProperties().getProperty("backupEnabled");
   if (backupEnabled == "false") return;
-  const wbBackup = SpreadsheetApp.openById("1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64");
-  const wb = SpreadsheetApp.openById("1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE");
+  const wbBackup = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
+  const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
+
+  const value = PropertiesService.getScriptProperties().getProperty("manualEnabled");
+  const s = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  s.getRange(10, 1).setValue(value);
 
   wbBackup.getSheets().forEach(sheet => {
     const sheetId = sheet.getSheetId();

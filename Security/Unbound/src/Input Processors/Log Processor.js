@@ -86,7 +86,7 @@ function ProcessLog(inputData) {
             let rowDestination;
             let currentRankIndex = ranks.indexOf(targetData.rank);
             sheet = RosterService.getCollect(789793193);
-            const roster = RosterService.getCollect(2063800821);
+            const roster = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
             insertLogRow = RosterService.getLastRow(sheet);
             const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
 

@@ -15,8 +15,7 @@ function init(InputSettings) {
 
   for (var i = 0; i < settingKeys.length; i++) {
     if (!libraryKeys.includes(settingKeys[i])) throw new Error("Incorrect settings configuration for " + settingKeys[i]);
-    // console.log(`Type of libVal: ${typeof libraryValues[i]}, type of settingVal: ${typeof settingValues[i]}`);
-    // if (typeof libraryValues[settingKeys[i]] != typeof settingValues[settingKeys[i]]) throw new Error("Incorrect setting type for " + settingKeys[i]);
+    if (typeof InputSettings[settingKeys[i]] != typeof settings[settingKeys[i]]) throw new Error("Incorrect setting type for " + settingKeys[i]);
   }
   LIBRARY_SETTINGS = InputSettings;
   isInit = true;
@@ -50,6 +49,7 @@ class SettingsTemplate {
     this.adminRanks = [];
     this.rankchangeId = 0;
     this.lastRankChange = 0;
-    this.leaderPing = 0;
+    this.leaderPing = '';
+    this.backupsbeetId = '';
   }
 }

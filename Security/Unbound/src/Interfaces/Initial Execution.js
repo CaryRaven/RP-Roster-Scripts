@@ -3,18 +3,19 @@ let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getPro
 RosterService.init(LIBRARY_SETTINGS);
 
 function T() {
-  console.log(LIBRARY_SETTINGS);
+  
 }
 
 /**
- * Function that runs when web app is opened / refreshed. Default google function thus it cannot be used in your project, only defined/declared once
+ * Web app entry point. Default google function thus it cannot be used in your project, only defined/declared once
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
+  Logger.log(user);
+  let userProperty = PropertiesService.getUserProperties();
   let userData = RosterService.getUserData(user);
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
-  // TODO: differentiate Staff from SM somehow
   if (userData.email == "N/A") {
     userData.name = "N/A";
     userData.steamId = "N/A";
@@ -27,27 +28,55 @@ function doGet() {
     userData.rank = "Blackshadow Staff";
   }
 
-  PropertiesService.getUserProperties().setProperty("userData", JSON.stringify(userData));
-  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+  userProperty.setProperty("userData", JSON.stringify(userData));
 
+  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
   if (lockdown === "true") {
     if (!LIBRARY_SETTINGS.adminRanks.includes(userData.rank) && !allowedStaff.includes(user)) {
-      const lockdownPage = HtmlService.createTemplateFromFile("Interfaces/Unauthed Access");
+      const lockdownPage = HtmlService.createTemplateFromFile("Interfaces/Utility");
       lockdownPage.type = "lockdown";
+      lockdownPage.rank = userData.rank;
+      lockdownPage.name = userData.name;
+      lockdownPage.factionName = LIBRARY_SETTINGS.factionName;
       return lockdownPage.evaluate();
     }
   }
 
-  if ((allowedStaff.includes(user) || LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) && userData.status != "Suspended") {
+  if ((allowedStaff.includes(user) || LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) && userData.status !== "Suspended") {
+    const lastOpen = userProperty.getProperty("lastOpenTime");
+    let configShowTerminal = userProperty.getProperty("configShowTerminal");
+    let terminalShownThisSession = userProperty.getProperty("terminalShownThisSession");
+
+    // Ensure configShowTerminal is initialized
+    if (!lastOpen) {
+      userProperty.setProperty("configShowTerminal", "false");
+      configShowTerminal = "true";
+    }
+
+    if (configShowTerminal === "true" && terminalShownThisSession !== "true") {
+      const terminal = HtmlService.createTemplateFromFile("Interfaces/Utility");
+      terminal.rank = userData.rank;
+      terminal.factionName = LIBRARY_SETTINGS.factionName;
+      terminal.type = "first";
+      terminal.name = userData.name;
+
+      // Mark that Utility has been shown for this session
+      userProperty.setProperty("terminalShownThisSession", "true");
+      userProperty.setProperty("lastOpenTime", new Date().valueOf());
+      return terminal.evaluate();
+    }
+
+    // Reset terminalShownThisSession so it works on the next refresh
+    userProperty.deleteProperty("terminalShownThisSession");
+
+    // Load the Admin Menu
     const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
     template.user = user;
     template.data = userData;
     template.ranks = LIBRARY_SETTINGS.ranks;
     template.adminRanks = LIBRARY_SETTINGS.adminRanks;
     template.allowedStaff = allowedStaff;
-    if (!template) return;
 
-    const lastOpen = PropertiesService.getUserProperties().getProperty("lastOpenTime");
     const latestChangelog = JSON.parse(PropertiesService.getScriptProperties().getProperty("lastestChangeLog"));
     let changeDate = latestChangelog.date;
     let changeTime = new Date(changeDate).valueOf();
@@ -60,14 +89,26 @@ function doGet() {
       template.changeDate = null;
     }
 
-    PropertiesService.getUserProperties().setProperty("lastOpenTime", new Date().valueOf());
+    const value = PropertiesService.getScriptProperties().getProperty("manualEnabled");
+    const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+    sheet.getRange(10, 1).setValue(value);
+
+    userProperty.setProperty("lastOpenTime", new Date().valueOf());
     return template.evaluate();
   } else {
-    const unauthedPage = HtmlService.createTemplateFromFile("Interfaces/Unauthed Access");
+    const unauthedPage = HtmlService.createTemplateFromFile("Interfaces/Utility");
     unauthedPage.type = "unauthed";
+    unauthedPage.rank = "user";
+    unauthedPage.factionName = LIBRARY_SETTINGS.factionName;
+    unauthedPage.name = "Undefined";
     RosterService.sendDiscordUnauthed();
     return unauthedPage.evaluate();
   }
+}
+
+function GetScriptUrl() {
+  PropertiesService.getUserProperties().setProperty("showTerminal", false);
+  return ScriptApp.getService().getUrl();
 }
 
 function include(filename) {
@@ -105,8 +146,9 @@ function Set() {
     firstMemberRow: 6,
     lastRankChange: 13,
     spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
+    backupsbeetId: "1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64",
     rankchangeId: 789793193,
-    leaderPing: 1186431632647921736,
+    leaderPing: '1186431632647921736',
     factionName: "Security",
     adminRanks: ["Security Chief"],
     folders: [

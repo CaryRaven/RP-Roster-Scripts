@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Typing Effect Terminal</title>
+  <style>
+    * {
+      font-size: 24px;
+    }
+    body {
+      font-family: monospace;
+      background-color: black;
+      color: green;
+      padding: 20px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: block;
+    }
+
+    input {
+      background: black;
+      color: green;
+      border: none;
+      font-family: monospace;
+      outline: none;
+    }
+    @keyframes glitch {
+      0% { transform: translate(0, 0); filter: hue-rotate(0deg); }
+      20% { transform: translate(-2px, 2px); filter: hue-rotate(20deg); }
+      40% { transform: translate(2px, -2px); filter: hue-rotate(-20deg); }
+      60% { transform: translate(-1px, 1px); filter: hue-rotate(10deg); }
+      80% { transform: translate(1px, -1px); filter: hue-rotate(-10deg); }
+      100% { transform: translate(0, 0); filter: hue-rotate(0deg); }
+    }
+    .glitch-effect {
+      animation: glitch 0.1s infinite;
+    }
+    .glitch-text {
+      display: inline-block;
+      position: relative;
+    }
+
+    .glitch-text::before,
+    .glitch-text::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      opacity: 0.8;
+    }
+
+    .glitch-text::before {
+      color: red;
+      transform: translate(-2px, -1px);
+      clip-path: inset(20% 0 30% 0);
+    }
+
+    .glitch-text::after {
+      color: blue;
+      transform: translate(2px, 1px);
+      clip-path: inset(40% 0 10% 0);
+    }
+
+    #redirectButton {
+      background-color: black;
+      border: solid green 2px;
+      color: green;
+      z-inex: 2;
+      position: fixed;
+      bottom: 10px;
+    }
+
+    #redirectButton:hover {
+      border: solid #66FF99 3px;
+      color: #66FF99;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const rank = document.getElementById("rank").innerText;
+      const factionName = document.getElementById("factionName").innerText;
+      const type = document.getElementById("type").innerText;
+      const userName = document.getElementById("name").innerText;
+      let lines;
+
+      switch (type) {
+        case "first":
+          lines = [
+            "Booting terminal...",
+            "Loading system env...",
+            "Established secure connection to host << all systems online",
+            "Enter your name and press enter to continue operation:",
+            "Analyzing fingerprint and database matches...                 ",
+            "Enter your 5-digit password:",
+            "Processing...                ",
+            `Access granted. Welcome, ${rank}.`,
+            " ",
+            "Closing secure connection, please stand by                            ",
+            `Press [redirect] to connect to the ${factionName} Admin Menu...<br><br>`,
+            " ",
+            ">> Loading application: 8%",
+            ">> Loading application: 23%",
+            ">> Loading application: 31%",
+            ">> Loading application: 38%",
+            ">> Loading application: 45%",
+            ">> Loading application: 47%",
+            ">> Loading application: 48%",
+            "<!> Loading application: [DATA EXPUNGED]",
+            ">> Loading application: 71%",
+            ">> Loading application: 79%",
+            ">> Loading application: 84%",
+            ">> Loading application: 97%",
+            "Finished Loading",
+          ];
+          break;
+        case "lockdown":
+          lines = [
+            "Booting terminal <#emergency mode>...", 
+            "Loading system env...",
+            "Established secure connection to host << all systems online",
+            "             ",
+            "Fetching message...                ",
+            "",
+            `Dear ${rank},`,
+            `${factionName} documentation is currently undergoing a lockdown, we apologise for the inconvenience.`,
+            "",
+            "Please wait while the cause is being invesitaged, you will be notified over discord once the situation is resolved.",
+            "Thank you for your patience.",
+            "  ",
+            "Kind regards",
+            "",
+            "-- Message terminated...",
+            "//Terminal Closed//"
+          ];
+          break;
+        case "unauthed":
+          lines = [
+            "Booting terminal...", 
+            "Loading system env...",
+            "Established secure connection to host << all systems online",
+            "             ",
+            "Fetching message...                ",
+            "",
+            `Dear user,`,
+            `It appears you are accessing this Admin Menu without the proper authorization.`,
+            "This is not allowed, your interaction with this application has been reported.",
+            "       ",
+            "Please contact a Security Chief to explain how you were able to open this application in order to resolve any issues.",
+            "  ",
+            "Kind regards",
+            "                   ",
+            "-- Message terminated...",
+            "//Terminal Closed//"
+          ];
+          break;
+      }
+      
+      let index = 0;
+      let terminal = document.getElementById("terminal");
+      let button = document.getElementById("redirectButton");
+      let speed = 20;
+      let newlinespeed = 350;
+
+      function typeLine(line, callback) {
+        let i = 0;
+        function typeCharacter() {
+          if (i < line.length) {
+            scrollToBottom();
+            terminal.innerHTML += line[i];
+            i++;
+            setTimeout(typeCharacter, Math.random() * (Math.random() * 100) + speed);
+          } else {
+            setTimeout(() => {
+              scrollToBottom();
+              terminal.innerHTML += "<br>";
+              callback();
+            }, newlinespeed);
+          }
+        }
+        typeCharacter();
+      }
+
+      function processNextLine() {
+        scrollToBottom();
+        if (index < lines.length) {
+          if (lines[index] === "Enter your name and press enter to continue operation:") {
+            terminal.innerHTML += lines[index] + "<br>";
+
+            let input = document.createElement("input");
+            input.id = "namefield";
+            input.type = "text";
+            terminal.appendChild(input);
+            input.focus();
+
+            input.addEventListener("keydown", function (event) {
+              if (event.key === "Enter") {
+                name = input.value.trim();
+                input.remove();
+                
+                if (userName.toLowerCase().includes(name.toLowerCase()) || userName.includes("N/A")) {
+                  terminal.innerHTML += name + "<br><br>";  // Show the entered name
+                  index++;
+                  processNextLine();
+                } else {
+                  terminal.innerHTML += "<br><br>Access Denied.<br>";
+                  typeLine("-- Closing Terminal Session...", () => {});
+                  terminal.style.color = "red";
+                  setTimeout(() => {
+                    google.script.run.withSuccessHandler(url => {
+                      window.top.location.href = url.toString();
+                    }).GetScriptUrl();
+                  }, 5000);
+                }
+              }
+            });
+          } else if (lines[index].includes("5-digit password:")) {
+            terminal.innerHTML += lines[index] + "<br>";
+
+            let input = document.createElement("input");
+            input.id = "passfield";
+            input.type = "text";
+            terminal.appendChild(input);
+            input.focus();
+            scrollToBottom();
+
+            input.addEventListener("keydown", function (event) {
+              if (event.key === "Enter") {
+                pass = input.value.trim();
+                input.remove();
+                
+                if (pass.length == 5) {
+                  terminal.innerHTML += pass + "<br><br>";
+                  if (pass === "69420") {
+                    lines.splice(index + 1, 0, "Am I really going to have to report your inappropriate conduct " + (userName == "N/A" ? name : userName) + "...                            ", "");
+                  }
+                  scrollToBottom();
+                  index++;
+                  processNextLine();
+                } else {
+                  terminal.innerHTML += "<br><br>Access Denied.<br>";
+                  scrollToBottom()
+                  typeLine("-- Closing Terminal Session...", () => {});
+                  scrollToBottom()
+                  terminal.style.color = "red";
+                  setTimeout(() => {
+                    window.location.href = "about:blank";
+                  }, 5000);
+                }
+              }
+            });
+          } else if (lines[index].includes("Press [redirect] to connect")) {
+            terminal.innerHTML += lines[index] + "<br>";
+            scrollToBottom();
+            button.style.display = "block";
+          } else if (lines[index].includes("Finished Loading")) {
+            speed = 20;
+            newlinespeed = 350;
+            typeLine(lines[index], () => {
+              scrollToBottom();
+              index++;
+              processNextLine();
+            });
+          } else {
+            typeLine(lines[index], () => {
+              scrollToBottom();
+              index++;
+              processNextLine();
+            });
+          }
+        } else {
+          if (type === "first") {
+            setTimeout(() => {
+              google.script.run.withSuccessHandler(url => {
+                window.top.location.href = url.toString();
+              }).GetScriptUrl();
+            }, 5000);
+          }
+        }
+      }
+
+      window.redi = function() {
+        speed = -75;
+        newlinespeed = 0;
+        scrollToBottom()
+        index++;
+        processNextLine();
+        button.style.display = "none";
+        google.script.run.withSuccessHandler(url => {
+          window.top.location.href = url.toString();
+        }).GetScriptUrl();
+      };
+
+      function scrollToBottom() {
+          document.documentElement.scrollTop = document.documentElement.scrollHeight;
+      }
+
+      function randomTerminalGlitch() {
+        if (Math.random() < 0.25) {
+          terminal.classList.add("glitch-effect");
+          terminal.classList.add("glitch-text");
+          button.classList.add("glitch-effect");
+          button.classList.add("glitch-text");
+          setTimeout(() => {
+            terminal.classList.remove("glitch-effect");
+            terminal.classList.remove("glitch-text");
+            button.classList.remove("glitch-effect");
+            button.classList.remove("glitch-text");
+          }, 500);
+        }
+        setTimeout(randomTerminalGlitch, 1000);
+      }
+      
+      processNextLine();
+      randomTerminalGlitch();
+    });
+  </script>
+</head>
+<body>
+  <p id="terminal"></p>
+  <button onclick="redi()" id="redirectButton" style="display: none;">[redirect]</button>
+  <p id="rank" style="font-size: 0px;"><?= rank; ?></p>
+  <p id="factionName" style="font-size: 0px;"><?= factionName; ?></p>
+  <p id="type" style="font-size: 0px;"><?= type; ?></p>
+  <p id="name" style="font-size: 0px;"><?= name; ?></p>
+</body>
+</html>

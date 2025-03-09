@@ -180,6 +180,7 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
  * @param {AppsScript.ScriptProperty} allowedStaff
  */
 function restoreAllDocAccess(allowedStaff) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   let allStaff = getAllEmails();
   let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
@@ -209,13 +210,14 @@ function restoreAllDocAccess(allowedStaff) {
  * @return {Array}
  */
 function processPermissions(users, authed, exemptUsers, accessType, folderName, folderId, folderData, ranks) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   var flagArray = [];
   users.forEach(user => {
     const email = user.getEmail().toLowerCase();
     if (exemptUsers.includes(email)) return "User is exempt";
 
     if (!authed.includes(email)) return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
-    const userData = getUserData(email);
+    const userData = getUserData(email.toString());
 
     if (ranks[ranks.length - 2].includes(userData.rank) || ranks[ranks.length - 1].includes(userData.rank)) return "User is exempt";
 
@@ -231,4 +233,38 @@ function processPermissions(users, authed, exemptUsers, accessType, folderName, 
 
   });
   return flagArray;
+}
+
+/**
+ * Restore the entire spreadsheet to its latest backup
+ */
+function restoreSheet() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  const wbBackup = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
+  if (!wbBackup) throw new Error("Backup Sheet was not found");
+  const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
+
+  wb.getSheets().forEach(sheet => {
+    const sheetId = sheet.getSheetId();
+    const sourceSheet = wbBackup.getSheetById(sheetId);
+    if (!sourceSheet) throw new Error("Cannot open backup sheet with ID " + sheetId);
+    let rows = sheet.getMaxRows();
+    let cols = sheet.getMaxColumns();
+
+    if (sourceSheet.getLastRow() > rows) {
+      rows = sourceSheet.getLastRow();
+      cols = sourceSheet.getLastColumn();
+    }
+
+    const formulas = sourceSheet.getRange(1, 1, rows, cols).getFormulas();
+    const values = sourceSheet.getRange(1, 1, rows, cols).getValues();
+
+    // Apply formulas where available, otherwise apply values
+    const finalData = formulas.map((row, rowIndex) =>
+      row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
+    );
+
+    sheet.getRange(1, 1, rows, cols).setValues(finalData);
+  });
 }

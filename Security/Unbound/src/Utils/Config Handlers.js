@@ -1,5 +1,5 @@
 function SubmitChange(changes) {
-  const changeArray = changes.split(",");
+  const changeArray = changes.split(/\s*,\s*/);
   PropertiesService.getScriptProperties().setProperty("lastestChangeLog", JSON.stringify({
     fields: changeArray,
     date: new Date()
@@ -19,6 +19,7 @@ function AddNewRank(inputData) {
   if (!inputData) return "No input data";
   
   let valid = false;
+  let message = "Successfully added new rank";
   let viewerFolders = [];
   let editorFolders = [];
   valid = RosterService.filterQuotes(inputData);
@@ -33,11 +34,16 @@ function AddNewRank(inputData) {
     viewerFolders.forEach(folderId => {
       try {
         DriveApp.getFolderById(folderId.toString());
+        if (!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folderId)) {
+          valid = false;
+          message = "Viewerfolder is unrelated to Security";
+        }
       } catch(e) {
         valid = false;
+        message = "ViewerFolders: Invalid Folder ID"
       }
     });
-    if (valid !== true) return "Error: Not able to open viewer folders";
+    if (valid !== true) return message;
   } else { viewerFolders = []; }
 
   if (inputData.editorFolders) {
@@ -46,11 +52,16 @@ function AddNewRank(inputData) {
     editorFolders.forEach(folderId => {
       try {
         DriveApp.getFolderById(folderId.toString());
+        if (!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folderId)) {
+          valid = false;
+          message = "Editorfolder is unrelated to Security";
+        }
       } catch(e) {
         valid = false;
+        message = "EditorFolders: Invalid Folder ID"
       }
     });
-    if (valid !== true) return "Error: Not able to open editor folders";
+    if (valid !== true) return message;
   } else { editorFolders = []; }
 
   LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
@@ -63,7 +74,7 @@ function AddNewRank(inputData) {
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 
   const lastBeforeRow = RosterService.getLastRankRow(inputData.rankBefore);
-  const s = RosterService.getCollect(2063800821);
+  const s = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   s.insertRowAfter(lastBeforeRow + 1);
   s.insertRowAfter(lastBeforeRow);
@@ -87,7 +98,7 @@ function AddNewRank(inputData) {
     `= BLACKLIST_DATE(F${insertRow}, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
   ]]);
   RosterService.sendDiscordNewRank(inputData.title);
-  return "Successfully added new rank";
+  return message;
 }
 
 /**
@@ -106,7 +117,7 @@ function RemoveRank(rank) {
 
   if (firstRankRow != startRankRow) return console.log("Cannot remove a rank with active members");
 
-  const sheet = RosterService.getCollect(2063800821);
+  const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   sheet.deleteRows(startRankRow - 1, (lastRankRow - startRankRow) + 2);
 
   console.log(LIBRARY_SETTINGS);
@@ -214,9 +225,20 @@ function RemoveRankRow(rank, num = 1) {
   RosterService.sendDiscordConfigRankRow(rank, false, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), num);
 }
 
+function ToggleTerminal(value) {
+  PropertiesService.getUserProperties().setProperty("configShowTerminal", value);
+  return PropertiesService.getUserProperties().getProperty("configShowTerminal");
+}
+
+function ReturnTerminalSetting() {
+  return PropertiesService.getUserProperties().getProperty("configShowTerminal");
+}
+
 function ToggleManualEditing(value) {
   value = value == true ? false : true;
   PropertiesService.getScriptProperties().setProperty("manualEnabled", value);
+  const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  sheet.getRange(10, 1).setValue(value);
   RosterService.sendDiscordConfig("manualEdit", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
@@ -226,19 +248,6 @@ function ReturnManualEditing() {
   console.log(manualValue);
 
   return manualValue;
-}
-
-function ToggleSheetRestore(value) {
-  PropertiesService.getScriptProperties().setProperty("restoreType", value);
-  RosterService.sendDiscordConfig("restoreType", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
-}
-
-function ReturnRestoreType() {
-  let properties = PropertiesService.getScriptProperties();
-  let restoreValue = properties.getProperty("restoreType");
-  console.log(restoreValue);
-
-  return restoreValue;
 }
 
 function ToggleBackup(value) {
@@ -257,6 +266,7 @@ function ReturnBackup() {
 function ToggleLockdown(value) {
   if (value) {
     RemoveAllDocAccess();
+    PropertiesService.getScriptProperties().setProperty("backupEnabled", false);
   } else {
     RestoreAllDocAccess();
   }
@@ -294,7 +304,7 @@ function RemoveAllDocAccess() {
   let unaffected = ["micheal.labus@gmail.com", "rykitala@gmail.com"];
   let folders = LIBRARY_SETTINGS.folders;
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const sheet = RosterService.getCollect(2063800821);
+  const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   sheet.getRange(6, 8, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;
@@ -339,7 +349,7 @@ function RestoreAllDocAccess() {
   let allStaff = RosterService.getAllEmails();
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
-  const sheet = RosterService.getCollect(2063800821);
+  const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   unaffected = unaffected.concat(allowedStaff);
 
   sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach((email, i) => {
@@ -431,4 +441,10 @@ function UpdateAccess(rankToAdd, currentRank) {
   
   Logger.log(adminRankArray);
   return JSON.stringify(adminRankArray);
+}
+
+function RestoreSheet() {
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  RosterService.restoreSheet();
+  RosterService.sendDiscordConfig("restoreSpreadSheet", false, userData);
 }

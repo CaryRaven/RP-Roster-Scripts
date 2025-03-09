@@ -30,7 +30,7 @@ function ProcessInputEdits(inputData) {
   const ranks = LIBRARY_SETTINGS.ranks;
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   const targetData = RosterService.getUserData(LIBRARY_SETTINGS, inputData.current_email);
-  const roster = RosterService.getCollect(2063800821);
+  const roster = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   if (!targetData.row) return "User not found";
   if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";

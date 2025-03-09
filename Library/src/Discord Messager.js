@@ -1,3 +1,5 @@
+// File containing all sorts of discord messages that can be sent through a webhook
+
 /**
  * Send a discord message when submitting a log, supported types:
  * Rank Change (promo, demo, passed interview, transfer, removal), Infractions, LOAs, Certificates, Mentor Logs, Blacklists/Suspensions, Blacklist & Infraction Appeals
@@ -308,7 +310,7 @@ function sendDiscordPermissionReport(flagArray) {
 /**
  * Send config messages, current supported types:
  * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet
- * @param {String} type - The config option that was changed (supported: manualEdit, backup, lockdown)
+ * @param {String} type - The config option that was changed
  * @param {Boolean|String} value - The value that the config option currently has
  * @param {Object} userData
  * @param {Number} timeSinceBackup (optional) - Extract using the GetLastBackupTime function
@@ -575,6 +577,53 @@ function sendDiscordChangeLog(notes) {
           text:
             "Logged on " +
             Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
+        },
+      },
+    ],
+  });
+
+  var params = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    payload: payload,
+    muteHttpExceptions: true,
+  };
+
+  let webhookURLs;
+  switch(LIBRARY_SETTINGS.factionName) {
+    case "Security":
+      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
+      break;
+    case "Staff":
+      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
+    default:
+      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
+  }
+
+  webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
+}
+
+function sendDiscordManualEdit(range) {
+
+  // Compose discord embed
+  let payload = JSON.stringify({
+    username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
+    embeds: [
+      {
+        title: "Unauthorized Editing",
+        color: "11600386",
+        fields: [
+          {
+            name: "Range Edited",
+            value: range,
+            inline: false,
+          },
+        ],
+        footer: {
+          text:
+            `An Unknown and unauthorized user has manually edited the ${LIBRARY_SETTINGS.factionName} Roster. \nPlease investigate this possible permission breach to prevent further harm.\nLogged on ${Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy")}`,
         },
       },
     ],

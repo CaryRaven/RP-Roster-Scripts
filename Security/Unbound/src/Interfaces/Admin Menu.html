@@ -245,9 +245,39 @@
               </div>
             </button>
           </div>
+          <table class="config-switches" style="margin-top: 30px; display: none;" id="terminalConfig">
+              <td>
+                Enabled/Disable terminal animation when opening admin menu:
+              </td>
+              <td class="config-switch">
+                <label class="switch">
+                  <input type="checkbox" id="showTerminalSlider">
+                  <span class="slider round"></span>
+                </label>
+              </td>
+            </tr>
+          </table>
         </div>
       </div>
     </div>
+    <script>
+      google.script.run.withSuccessHandler((response) => {
+        document.getElementById("showTerminalSlider").checked = (response === "true");
+        document.getElementById("terminalConfig").style.display = "block";
+        console.log(response);
+      }).ReturnTerminalSetting();
+
+      try {
+        document.getElementById('showTerminalSlider').addEventListener('change', function () {
+          google.script.run.withSuccessHandler((response) => {
+            document.getElementById("showTerminalSlider").checked = (response === "true");
+            console.log(response);
+          }).ToggleTerminal(this.checked);
+        });
+      } catch(e) {
+        console.log("Terminal failed");
+      }
+    </script>
 
     <!-- Connections -->
     <!-- <div class="main-content" id="connections" style="display: none;">
@@ -498,8 +528,8 @@
     <div class="main-content" id="search_panel" style="display: none;">
       <div class="container">
         <div class="textbox">
-          <h1>Search Panel</h1><br>
-          <p>Input a Steam ID and you will be shown all logs related to the SteamID.</p><br>
+          <h1>Search Panel [BROKEN]</h1><br>
+          <p>Input a Steam ID and you will be shown all logs related to the SteamID.<br>This feature is currently broken, stay tuned.</p><br>
           <form>
             <label for="inputField">Enter SteamID:</label><br>
             <input type="text" id="inputField" maxlength="25" required />
@@ -561,13 +591,13 @@
           });
         }
         try {
-          // google.script.run.withSuccessHandler(r => {
-          //   document.getElementById('manualEditingSlider').checked = !(r === "true");
-          // }).ReturnManualEditing();
+          google.script.run.withSuccessHandler(r => {
+            document.getElementById('manualEditingSlider').checked = !(r === "true");
+          }).ReturnManualEditing();
 
           google.script.run.withSuccessHandler(re => {
             google.script.run.withSuccessHandler(response => {
-              // document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+              try { document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`; } catch(e) {}
               document.getElementById('backupSlider').checked = (re === "true");
               document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
               document.getElementById('config-loading').innerHTML = '';
@@ -583,19 +613,15 @@
             }
           }).ReturnLockdown();
 
-          // google.script.run.withSuccessHandler(resp => {
-          //   document.getElementById('sheetRestoreSlider').checked = (resp === "true");
-          // }).ReturnRestoreType();
-
           SetRankSelects();
         } catch (e) { google.script.run.ReportError(e); }
 
-        // document.getElementById('manualEditingSlider').addEventListener('change', function () {
-        //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        //   google.script.run.withSuccessHandler(() => {
-        //     document.getElementById('config-loading').innerHTML = '';
-        //   }).ToggleManualEditing(this.checked);
-        // });
+        document.getElementById('manualEditingSlider').addEventListener('change', function () {
+          document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+          google.script.run.withSuccessHandler(() => {
+            document.getElementById('config-loading').innerHTML = '';
+          }).ToggleManualEditing(this.checked);
+        });
 
         try {
           document.getElementById('backupSlider').addEventListener('change', function () {
@@ -605,13 +631,6 @@
             }).ToggleBackup(this.checked);
           });
         } catch(e) {}
-
-        // document.getElementById('sheetRestoreSlider').addEventListener('change', function () {
-        //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        //   google.script.run.withSuccessHandler(() => {
-        //     document.getElementById('config-loading').innerHTML = '';
-        //   }).ToggleSheetRestore(this.checked);
-        // });
 
         window.LockdownInit = function (event) {
           event.preventDefault();
@@ -624,13 +643,16 @@
             google.script.run.withSuccessHandler(() => {
               document.getElementById('config-loading').innerHTML = '';
               button.disabled = false;
-                if (response === "false") {
-                  document.getElementById('lockdown-topbanner').style.display = "block";
-                  document.getElementById('lockdownIdentifier').innerText = "Disable";
-                } else {
-                  document.getElementById('lockdown-topbanner').style.display = "none";
-                  document.getElementById('lockdownIdentifier').innerText = "Enable";
-                }
+              if (response === "false") {
+                document.getElementById('lockdown-topbanner').style.display = "block";
+                document.getElementById('lockdownIdentifier').innerText = "Disable";
+              } else {
+                document.getElementById('lockdown-topbanner').style.display = "none";
+                document.getElementById('lockdownIdentifier').innerText = "Enable";
+              }
+              google.script.run.withSuccessHandler((response) => {
+                document.getElementById('backupSlider').checked = (response === "true");
+              }).ReturnBackup();
             }).withFailureHandler((error) => {
               document.getElementById('config-loading').innerHTML = '';
               google.script.run.ReportError(error);
@@ -770,69 +792,83 @@
 
         window.RestoreBackup = function (event) {
           event.preventDefault();
-          const button = document.getElementById('restoreBackupButton');
-          document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-          button.disabled = true;
+          try {
+            const button = document.getElementById('restoreBackupButton');
+            document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+            button.disabled = true;
 
-          google.script.run.withSuccessHandler(response => {
-            document.getElementById('config-loading').innerHTML = '';
-            if (response) {
-              button.classList.add("red");
-              setTimeout(() => {
-                button.classList.remove("red");
+            google.script.run.withSuccessHandler(response => {
+              document.getElementById('config-loading').innerHTML = '';
+              if (response) {
+                button.classList.add("red");
+                setTimeout(() => {
+                  button.classList.remove("red");
+                  button.disabled = false;
+                }, 2000);
+              } else {
                 button.disabled = false;
-              }, 2000);
-            } else {
+              }
+            }).withFailureHandler(error => {
+              google.script.run.ReportError(error);
+              document.getElementById('config-loading').innerHTML = '';
               button.disabled = false;
-            }
-          }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
-            document.getElementById('config-loading').innerHTML = '';
-            button.disabled = false;
-            button.classList.add("red");
-            setTimeout(() => button.classList.remove("red"), 2000);
-          }).RestoreSheet();
+              button.classList.add("red");
+              setTimeout(() => button.classList.remove("red"), 2000);
+            }).RestoreSheet();
+          } catch(e) {
+            document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+            document.getElementById('restoreBackupButton').disabled = true;
+          }
         };
 
-        // window.MakeBackup = function (event) {
-        //   event.preventDefault();
-        //   const button = document.getElementById('backupButton');
-        //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        //   button.disabled = true;
+        window.MakeBackup = function (event) {
+          event.preventDefault();
+          try {
+            const button = document.getElementById('backupButton');
+            document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+            button.disabled = true;
 
-        //   google.script.run.withSuccessHandler(response => {
-        //     document.getElementById('config-loading').innerHTML = '';
-        //     if (response) {
-        //       button.classList.add("red");
-        //       setTimeout(() => {
-        //         button.classList.remove("red");
-        //         button.disabled = false;
-        //       }, 2000);
-        //     } else {
-        //       button.disabled = false;
-        //     }
+            google.script.run.withSuccessHandler(response => {
+              document.getElementById('config-loading').innerHTML = '';
+              if (response) {
+                button.classList.add("red");
+                setTimeout(() => {
+                  button.classList.remove("red");
+                  button.disabled = false;
+                }, 2000);
+              } else {
+                button.disabled = false;
+              }
 
-        //     // Update last backup time
-        //     google.script.run.withSuccessHandler(response => {
-        //       document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
-        //     }).GetLastBackupTime();
-        //   }).withFailureHandler(error => {
-        //     google.script.run.ReportError(error);
-        //     document.getElementById('config-loading').innerHTML = '';
-        //     button.disabled = false;
-        //     button.classList.add("red");
-        //     setTimeout(() => button.classList.remove("red"), 2000);
-        //   }).BackupSheet();
-        // };
+              // Update last backup time
+              google.script.run.withSuccessHandler(response => {
+                document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+              }).GetLastBackupTime();
+            }).withFailureHandler(error => {
+              google.script.run.ReportError(error);
+              document.getElementById('config-loading').innerHTML = '';
+              button.disabled = false;
+              button.classList.add("red");
+              setTimeout(() => button.classList.remove("red"), 2000);
+            }).BackupSheet();
+          } catch(e) {
+            document.getElementById('config-loading').innerHTML = '';
+            document.getElementById('backupButton').disabled = false;
+          }
+        };
 
-        // window.RefreshBackupTime = function (event) {
-        //   event.preventDefault();
-        //   document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
-        //   google.script.run.withSuccessHandler(response => {
-        //     document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
-        //     document.getElementById('config-loading').innerHTML = '';
-        //   }).GetLastBackupTime();
-        // }
+        window.RefreshBackupTime = function (event) {
+          event.preventDefault();
+          try {
+            document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+            google.script.run.withSuccessHandler(response => {
+              document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+              document.getElementById('config-loading').innerHTML = '';
+            }).GetLastBackupTime();
+          } catch(e) { 
+            document.getElementById('config-loading').innerHTML = '';
+          }
+        }
 
         window.ResetPerms = function (event) {
           event.preventDefault();
@@ -856,10 +892,19 @@
           button.disabled = true;
           let accessRank = document.getElementById("amdin-role-select").value;
           let rank = document.getElementById("rank").innerText;
+          let ranks = document.getElementById("ranks")?.innerText;
+          ranks = ranks.split(",");
 
           if (!accessRank) {
             Shake();
             button.disabled = false;
+            return;
+          }
+
+          if ((ranks.indexOf(accessRank) >= ranks.indexOf(rank)) && !rank.includes("Blackshadow Staff")) {
+            Shake();
+            button.disabled = false;
+            console.log("You cannot manage rank access above your own rank");
             return;
           }
 
@@ -955,7 +1000,7 @@
           button.innerHTML = '<div class="loader"></div>';
 
           google.script.run.withSuccessHandler((response) => {
-            if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already")) {
+            if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already") || response.toLowerCase().includes("invalid")) {
               Shake();
               button.classList.add('red');
             } else {
@@ -1047,7 +1092,7 @@
           <br>
           <hr><br>
           <form id="config-form-adminRanks">
-            <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br><br>Current allowed ranks: <span id="allowedRanks"><?= adminRanks ?></span>
+            <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="allowedRanks"><?= adminRanks ?></span>
             </label><br>
             <select id="amdin-role-select">
             </select>
@@ -1068,9 +1113,9 @@
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:</label><br>
               <select id="new-rank-before-select" required>
               </select><br>
-              <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
+              <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, security related folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
-              <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma</span></label><br>
+              <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, security related folders ONLY</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma"><br>
               <button onclick="AddNewRank(event)" class="submitButton" id="newrank-button" type="submit">Submit New Rank</button>
             </form><br><hr><br>
@@ -1090,7 +1135,6 @@
             </form><br>
           </div><br>
           <table class="config-switches" style="margin-top: 30px;">
-            <!-- <tr> TODO: Manual Edits
               <td>
                 Enable Manual Editing of the roster:
               </td>
@@ -1103,17 +1147,6 @@
             </tr>
             <tr>
               <td>
-                Restore full sheet on manual edit (vs just the edited cells):
-              </td>
-              <td class="config-switch">
-                <label class="switch">
-                  <input type="checkbox" id="sheetRestoreSlider">
-                  <span class="slider round"></span>
-                </label>
-              </td>
-            </tr> -->
-            <tr>
-              <td>
                 Enable time-based (12h) Backups being made of the roster:
               </td>
               <td class="config-switch">
@@ -1124,7 +1157,7 @@
               </td>
             </tr>
 
-            <? if (user == "dontorro208@gmail.com") { ?> <!-- For now restricted to me -->
+            <? if (allowedStaff.includes(user)) { ?>
             <tr>
               <td>
                 Make a roster backup immediately:
@@ -1162,8 +1195,8 @@
           </table>
         </div>
         <p id="config-loading" style="margin-top: 15px;"></p>
-        <p style="font-size: 1px;" id="ranks"><?= ranks ?></p>
-        <p style="font-size: 1px;" id="rank"><?= data.rank ?></p>
+        <p style="font-size: 0px;" id="ranks"><?= ranks ?></p>
+        <p style="font-size: 0px;" id="rank"><?= data.rank ?></p>
       </div>
     </div>
     <script>
