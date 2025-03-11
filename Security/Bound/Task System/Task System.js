@@ -1,8 +1,9 @@
 function AddTask() {
-  let html = HtmlService.createHtmlOutputFromFile("Add Task");
+  const addTask = RosterService.getHtmlAddTask();
+  let html = HtmlService.createHtmlOutput(addTask);
   html.setWidth(600);
   html.setHeight(800);
-  return SpreadsheetApp.getUi().showModalDialog(html, "Task Interface");
+  return SpreadsheetApp.getUi().showModalDialog(html, "New Task");
 }
 
 /**
@@ -13,9 +14,12 @@ function SubmitTask(inputData) {
   if (!inputData) throw new Error("No inputdata found");
   if (inputData.description.length > 250) throw new Error("Too long description");
 
-  const s = getCollect(1504741049);
-  let loc = GetTaskRow(s, "Backlog");
-  let endLoc = GetLastTaskRow(s, "Backlog");
+  const valid = RosterService.filterQuotes(inputData);
+  if (valid !== true) throw new Error("No quotes allowed");
+
+  const s = RosterService.getCollect(1504741049);
+  let loc = RosterService.taskGetRow(s, "Backlog");
+  let endLoc = RosterService.getLastTaskRow(s, "Backlog");
   console.log(`End Loc: ${endLoc}\nLoc: ${loc}`);
   if (!endLoc) return;
 
@@ -94,7 +98,8 @@ function TaskManager(e) {
  * Open a modal Dialog for the task manager
  */
 function OpenFile(type, row, col, title) {
-  template = HtmlService.createTemplateFromFile("Manager");
+  const taskManager = RosterService.getHtmlTaskManager();
+  template = HtmlService.createTemplate(taskManager);
   template.row = row;
   template.col = col;
   template.title = title;
@@ -109,7 +114,7 @@ function OpenFile(type, row, col, title) {
  */
 function ChangeDeadline(inputData) {
   if (!inputData) throw new Error("Do not run this function from the editor");
-  const s = getCollect(1504741049);
+  const s = RosterService.getCollect(1504741049);
 
   const types = ["Backlog", "In Progress", "Completed"];
   if (!types.includes(s.getRange(inputData.row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
@@ -131,10 +136,10 @@ function ChangeAssignment(inputData) {
   if (!inputData) throw new Error("Do not run this function from the editor");
 
   if (!inputData.gmail.includes("@") || !inputData.gmail.includes(".")) return "Not a valid Gmail";
-  const targetData = GetUserData(inputData.gmail);
+  const targetData = RosterService.getUserData(inputData.gmail);
   if (!targetData.row) return "User not found";
 
-  const s = getCollect(1504741049);
+  const s = RosterService.getCollect(1504741049);
   let currentAssignees = s.getRange(inputData.row, 7).getValue();
   let assigned = false;
 
@@ -157,14 +162,14 @@ function ChangeAssignment(inputData) {
 
 function DeleteTask(row, clearcell = 13, endLoc = null, startLoc = null) {
   if (!row) throw new Error("Do not run this function from the editor");
-  const s = getCollect(1504741049);
+  const s = RosterService.getCollect(1504741049);
   if (s.getRange(row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
 
   const types = ["Backlog", "In Progress", "Completed"];
   if (!types.includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
   if (types[2].includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("You cannot delete completed tasks");
 
-  endLoc = endLoc ? endLoc : GetLastTaskRow(s, s.getRange(row, 2).getValue());
+  endLoc = endLoc ? endLoc : RosterService.getLastTaskRow(s, s.getRange(row, 2).getValue());
   startLoc = startLoc ? startLoc : GetFirstTaskRow(s, s.getRange(row, 2).getValue());
   let numcols;
 
@@ -198,7 +203,7 @@ function DeleteTask(row, clearcell = 13, endLoc = null, startLoc = null) {
 
 function CycleStatus(row) {
   if (!row) throw new Error("Do not run this function from the editor");
-  const s = getCollect(1504741049);
+  const s = RosterService.getCollect(1504741049);
   if (s.getRange(row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
 
   const types = ["Backlog", "In Progress", "Completed"];
@@ -217,18 +222,18 @@ function CycleStatus(row) {
 
   switch (type) {
     case "Backlog":
-      newLoc = GetTaskRow(s, "In Progress");
-      endLoc = GetLastTaskRow(s, "In Progress");
+      newLoc = RosterService.taskGetRow(s, "In Progress");
+      endLoc = RosterService.getLastTaskRow(s, "In Progress");
       type = "In Progress";
       break;
     case "In Progress":
-      newLoc = GetTaskRow(s, "Completed");
-      endLoc = GetLastTaskRow(s, "Completed");
+      newLoc = RosterService.taskGetRow(s, "Completed");
+      endLoc = RosterService.getLastTaskRow(s, "Completed");
       type = "Completed";
       break;
     case "Completed":
-      newLoc = GetTaskRow(s, "Backlog");
-      endLoc = GetLastTaskRow(s, "Backlog");
+      newLoc = RosterService.taskGetRow(s, "Backlog");
+      endLoc = RosterService.getLastTaskRow(s, "Backlog");
       type = "Backlog";
       break;
     default:
@@ -265,7 +270,7 @@ function CycleStatus(row) {
  */
 function ChangePriority(inputData) {
   if (!inputData) throw new Error("Do not run this function from the editor");
-  const s = getCollect(1504741049);
+  const s = RosterService.getCollect(1504741049);
   if (s.getRange(inputData.row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
 
   const types = ["Backlog", "In Progress", "Completed"];
@@ -283,10 +288,10 @@ function ChangePriority(inputData) {
  * @returns {void}
  */
 function HasTask(newTask = false) {
-  const sheet = getCollect(2063800821);
-  const taskSheet = getCollect(1504741049);
+  const sheet = RosterService.getCollect(2063800821);
+  const taskSheet = RosterService.getCollect(1504741049);
   const total_rows = sheet.getMaxRows();
-  const task_rows = GetLastTaskRow(taskSheet, "Backlog");
+  const task_rows = RosterService.getLastTaskRow(taskSheet, "Backlog");
   let total_assignees = [];
 
   for (let i = 6; i < total_rows; i++) {
@@ -319,11 +324,11 @@ function HasTask(newTask = false) {
  * Check if a task is overdue. All asignees will be striked.
  */
 function CheckOverdue() {
-  const taskSheet = getCollect(1504741049);
-  const sheet = getCollect(2063800821);
-  const infractionSheet = getCollect(343884184);
+  const taskSheet = RosterService.getCollect(1504741049);
+  const sheet = RosterService.getCollect(2063800821);
+  const infractionSheet = RosterService.getCollect(343884184);
   const total_rows = sheet.getMaxRows();
-  const task_rows = GetLastTaskRow(taskSheet, "Backlog");
+  const task_rows = RosterService.getLastTaskRow(taskSheet, "Backlog");
 
   for (let i = 10; i <= task_rows; i++) {
     const assignees = taskSheet.getRange(i, 7).getValue();
@@ -358,7 +363,7 @@ function CheckOverdue() {
             rank: sheet.getRange(j, 4).getValue()
           };
 
-          const insertLogRow = GetLastRow(infractionSheet);
+          const insertLogRow = RosterService.getLastRow(infractionSheet);
           infractionSheet
             .getRange(insertLogRow, 3, 1, 12)
             .setValues([
@@ -419,57 +424,9 @@ function RemoveAssignee(str, name) {
   }
 }
 
-/**
- * Get the last row where the date has not yet been logged
- * @param {Object} sheet - Sheet object (use getCollect() to extract this object using sheet ID)
- */
-function GetLastRow(sheet) {
-  for (let r = 6; r <= 1003; r++) {
-    if (sheet.getRange(r, 3).getValue() === '') {
-      return r;
-    }
-  }
-  return 7;
-}
-
- /**
-  * Get the first empty row a certain type of task
-  * @param {Object} s - Sheet object, use getCollect to extract it
-  * @param {String} type - Backlog, In Progress or Completed
-  */
-function GetTaskRow(s, type) {
-  if (!s || !type) throw new Error("Do not run this function from the editor");
-  const total_rows = s.getMaxRows();
-  let r = s.getRange(10, 2, total_rows, 1).getValues();
-
-  for (let i = 10; i <= total_rows; i++) {
-    let taskType = r[i - 10][0];
-    console.log(taskType);
-    if (s.getRange(i, 3).getValue() === "" && taskType == type) return i;
-  }
-  return undefined;
-}
-
- /**
-  * Get the last row of a certain type of task
-  * @param {Object} s - Sheet object, use getCollect to extract it
-  * @param {String} type - Backlog, In Progress or Completed
-  */
-function GetLastTaskRow(s, type) {
-  if (!s || !type) throw new Error("Do not run this function from the editor");
-  let r = s.getRange(10, 2, s.getMaxRows(), 1).getValues();
-  const total_rows = s.getMaxRows();
-
-  for (let i = 10; i <= total_rows; i++) {
-    let taskType = r[i - 10][0];
-    if (taskType !== type && s.getRange(i - 1, 2).getValue() == type) return i - 1;
-  }
-  return undefined;
-}
-
  /**
   * Get the first row of a certain type of task
-  * @param {Object} s - Sheet object, use getCollect to extract it
+  * @param {Object} s - Sheet object, use RosterService.getCollect to extract it
   * @param {String} type - Backlog, In Progress or Completed
   */
 function GetFirstTaskRow(s, type) {
@@ -482,47 +439,4 @@ function GetFirstTaskRow(s, type) {
     if (taskType === type) return i;
   }
   return undefined;
-}
-
-function GetUserData(query) {
-  if (!query) throw new Error("Do not run this function from the editor");
-  if (query == "N/A") throw new Error("You cannot target Site Management");
-  const s = getCollect(2063800821);
-  const r = s.getRange(6, 8, s.getMaxRows(), 1).getValues();
-  let data = {};
-
-  r.forEach((email, i) => {
-    email = email[0];
-    i = i + 6;
-    if (email == query) {
-      data = {
-        row: i,
-        name: s.getRange(i, 5).getValue(),
-        discordId: s.getRange(i, 7).getValue()
-      };
-    }
-  });
-
-  return data;
-}
-
-/**
- * Gets the time in ms without having to use american formatting (mm/dd/yyyy)
- * @param {String} dateString
- * @returns {Number}
- */
-function DateToMilliseconds(dateString) {
-  const parts = dateString.split("/");
-  const day = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
-  const year = parseInt(parts[2], 10);
-
-  // months start at 0
-  const date = new Date(year, month - 1, day);
-  return date.getTime();
-}
-
-function getCollect(sheet_id) {
-  const wb = SpreadsheetApp.getActiveSpreadsheet();
-  return wb.getSheets().find(sheet => sheet.getSheetId() === sheet_id);
 }

@@ -237,3 +237,76 @@ function filterQuotes(inputData) {
 
   return valid;
 }
+
+/**
+ * Use this function in order to load images into the web app
+ * @param {Stirng} id - id of the image (open in different window)
+ */
+function loadImageBytes(id){
+  var bytes = DriveApp.getFileById(id).getBlob().getBytes();
+  return Utilities.base64Encode(bytes);
+}
+
+/**
+ * Checks all current staff Folders for unwanted access & reports it
+ * @param {Array} exempt
+ */
+function permissionsGuard(exempt) {
+  let authed = getAllEmails();
+  let ranks = LIBRARY_SETTINGS.ranks;
+  let folders = LIBRARY_SETTINGS.folders;
+  exempt.push("micheal.labus@gmail.com");
+  let flagArray = [];
+
+  folders[folders.length - 1].forEach(folderId => {
+    if (!folderId) return;
+    let folder;
+
+    try {
+      folder = DriveApp.getFolderById(folderId);
+    } catch (e) {
+      return console.log(`Error found at ${folderId}`);
+    }
+
+    const folderName = folder.getName();
+    const viewers = folder.getViewers();
+    const editors = folder.getEditors();
+
+    flagArray = flagArray.concat(processPermissions(viewers, authed, exempt, "VIEW", folderName, folderId, folders, ranks));
+    flagArray = flagArray.concat(processPermissions(editors, authed, exempt, "EDIT", folderName, folderId, folders, ranks));
+
+  });
+  if (flagArray.length) sendDiscordPermissionReport(flagArray);
+}
+
+/**
+ * Time-based function (every 12h) to create a full roster backup, can be manually disabled through web app config
+ * Head Function - Not to be used in other scripts
+ */
+function backupSheet(backupEnabled, manualEnabled) {
+  if (backupEnabled == "false") return;
+  const wbBackup = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
+  const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
+  const s = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+
+  s.getRange(10, 1).setValue(manualEnabled);
+
+  wbBackup.getSheets().forEach(sheet => {
+    const sheetId = sheet.getSheetId();
+    const sourceSheet = wb.getSheetById(sheetId);
+    const rows = sourceSheet.getMaxRows();
+    const cols = sourceSheet.getMaxColumns();
+
+    const formulas = sourceSheet.getRange(1, 1, rows, cols).getFormulas();
+    const values = sourceSheet.getRange(1, 1, rows, cols).getValues();
+
+    // Apply formulas where available, if not apply values
+    const finalData = formulas.map((row, rowIndex) =>
+      row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
+    );
+
+    sheet.getRange(1, 1, rows, cols).setValues(finalData);
+    console.log(`Backed ${sheet.getName()} up`);
+  });
+  // TODO: add discord notification
+}

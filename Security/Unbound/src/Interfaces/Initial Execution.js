@@ -54,11 +54,10 @@ function doGet() {
     }
 
     if (configShowTerminal === "true" && terminalShownThisSession !== "true") {
-      const terminal = HtmlService.createTemplateFromFile("Interfaces/Utility");
-      terminal.rank = userData.rank;
-      terminal.factionName = LIBRARY_SETTINGS.factionName;
-      terminal.type = "first";
+      const terminalPage = RosterService.getHtmlTerminalAnimation();
+      const terminal = HtmlService.createTemplate(terminalPage);
       terminal.name = userData.name;
+      terminal.rank = userData.rank;
 
       // Mark that Utility has been shown for this session
       userProperty.setProperty("terminalShownThisSession", "true");
@@ -117,6 +116,10 @@ function include(filename) {
 
 function ReturnUserData(inputData, bool) {
   return RosterService.getUserData(inputData, null, bool);
+}
+
+function loadImageBytes(id) {
+  return RosterService.loadImageBytes(id);
 }
 
 function ReportError(error) {

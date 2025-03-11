@@ -380,7 +380,7 @@ function GetSpreadsheetData(inputValue) {
   const results = [];
 
   sheets.forEach(sheetInfo => {
-    const sheet = getCollect(sheetInfo.id);
+    const sheet = RosterService.getCollect(sheetInfo.id);
     const sheetName = sheet.getName();
     try {
       if (!sheet) {

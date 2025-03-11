@@ -12,7 +12,7 @@
 <body>
 
   <div class="lockdown-banner" style="display: none;" id="lockdown-topbanner">🚨 Security Documentation is currently under lockdown 🚨</div>
-  <p id="viewChange" style="font-size: 1px;"><?= viewChange ?></p>
+  <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -413,7 +413,7 @@
             console.error("Server error:", error); // Log server-side errors
             google.script.run.ReportError(error);
             document.getElementById("loading-search").innerText = "An error occured when trying to fetch the data: " + error;
-            document.getElementById("searchLoading").setAttribute("style", "display: none;")
+            document.getElementById("searchLoading").setAttribute("style", "display: none;");
           })
           .GetSpreadsheetData(inputValue);
       }
@@ -426,7 +426,7 @@
 
         if (!data || data.length === 0) {
           document.getElementById("loading-search").innerText = "No matching data was found, please try another steam ID.";
-          document.getElementById("searchLoading").setAttribute("style", "display: none;")
+          document.getElementById("searchLoading").setAttribute("style", "display: none;");
           return;
         }
 
@@ -954,11 +954,23 @@
           }).SubmitChange(changelog);
         };
 
-        let coll = document.getElementById("collapsible");
+        let coll = document.getElementById("manageRank");
 
         coll.addEventListener("click", function() {
           this.classList.toggle("active");
           var content = document.getElementById("newRankContent");
+          if (content.style.display === "block") {
+            content.style.display = "none";
+          } else {
+            content.style.display = "block";
+          }
+        });
+
+        let coll2 = document.getElementById("manageSpecialization");
+
+        coll2.addEventListener("click", function() {
+          this.classList.toggle("active");
+          var content = document.getElementById("manageSpecContent");
           if (content.style.display === "block") {
             content.style.display = "none";
           } else {
@@ -1105,7 +1117,7 @@
             <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
           </form><br>
           <? } ?>
-          <button id="collapsible" class="submitButton">Manage Ranks</button>
+          <button id="manageRank" class="submitButton">Manage Ranks</button>
           <div id="newRankContent" class="container">
             <form id="newrankForm">
               <label for="newRankTitle">Add a title to your rank:</label><br>
@@ -1133,7 +1145,12 @@
               <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button">Add</button>
               <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button">Remove</button>
             </form><br>
-          </div><br>
+          </div><br><br>
+
+          <button id="manageSpecialization" class="submitButton">Manage Specializations</button>
+          <div id="manageSpecContent" class="container">
+          </div>
+
           <table class="config-switches" style="margin-top: 30px;">
               <td>
                 Enable Manual Editing of the roster:
@@ -1202,6 +1219,10 @@
     <script>
       // Needs to be below config loading element so the <p> is loaded
       document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      document.getElementById("newRankContent").classList.add("collapseContent");
+      document.getElementById("manageRank").classList.add("collapsible");
+      document.getElementById("manageSpecContent").classList.add("collapseContent");
+      document.getElementById("manageSpecialization").classList.add("collapsible")
     </script>
 
     <!-- Form Section (both Logger and Edit Form)
