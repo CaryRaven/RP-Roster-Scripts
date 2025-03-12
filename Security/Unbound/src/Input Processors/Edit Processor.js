@@ -9,14 +9,14 @@ function ProcessInputEdits(inputData) {
     case 'Edit steamID':
       if (inputData.steamid != '' && inputData.current_email != '') valid = true;
       break;
-    case 'Edit dicsordID':
+    case 'Edit discordID':
       if (inputData.discordid != '' && inputData.current_email != '') valid = true;
       break;
     case 'Edit Email':
       if (inputData.email != '' && inputData.current_email != '') valid = true;
       break;
     case 'Edit Specialization':
-      if (inputData.current_email != '' && inputData.specialization != '') valid = true;
+      if (inputData.current_email != '') valid = true;
       break;
     case 'Edit Note':
       if (inputData.notes != '' && inputData.current_email != '') valid = true;
@@ -29,7 +29,7 @@ function ProcessInputEdits(inputData) {
 
   const ranks = LIBRARY_SETTINGS.ranks;
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const targetData = RosterService.getUserData(LIBRARY_SETTINGS, inputData.current_email);
+  const targetData = RosterService.getUserData(inputData.current_email);
   const roster = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   if (!targetData.row) return "User not found";
@@ -55,7 +55,17 @@ function ProcessInputEdits(inputData) {
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.email).setValue(inputData.email);
       break;
     case "Edit Specialization":
-      roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.specialization).setValue(inputData.specialization);
+      let found = false;
+      LIBRARY_SETTINGS.specializations.forEach(spec => {
+        if (spec.title == inputData.specialization) {
+          const r = roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.specialization);
+          r.setValue(spec.title);
+          r.clearNote();
+          r.setNote(spec.desc);
+          found = true;
+        }
+      });
+      if (!found) return "Specialization not found";
       break;
     case "Edit Note":
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.notes).setValue(inputData.notes);

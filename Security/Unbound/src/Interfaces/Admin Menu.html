@@ -11,7 +11,7 @@
 
 <body>
 
-  <div class="lockdown-banner" style="display: none;" id="lockdown-topbanner">🚨 Security Documentation is currently under lockdown 🚨</div>
+  <div class="lockdown-banner" style="display: none;" id="lockdown-topbanner">🚨 <?= factionName ?> Documentation is currently under lockdown 🚨</div>
   <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
 
   <script>
@@ -27,6 +27,23 @@
         document.body.classList.add('shake');
         setTimeout(() => document.body.classList.remove('shake'), 200);
       };
+
+      window.UpdateSpecSelects = function() {
+        google.script.run.withSuccessHandler(specs => {
+          document.getElementById("specfield").innerHTML = "";
+          document.getElementById("removeSpec").innerHTML = "";
+          specs = JSON.parse(specs);
+          specs.forEach(spec => {
+            const specOption = document.createElement("option");
+            specOption.innerText = spec.title;
+            document.getElementById("specfield").appendChild(specOption);
+
+            const specOptionConfig = document.createElement("option");
+            specOptionConfig.innerText = spec.title;
+            document.getElementById("removeSpec").appendChild(specOptionConfig);
+          });
+        }).ReturnSpecs();
+      }
     });
   </script>
   <div class="loader" id="changeLoader"></div>
@@ -83,7 +100,7 @@
         document.getElementById('usermanual').setAttribute('style', 'display: none;');
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { google.script.run.ReportError(e); }
+        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
       }
 
       function ShowManual() {
@@ -92,7 +109,7 @@
         document.getElementById('usermanual').setAttribute('style', 'display: block;');
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { google.script.run.ReportError(e); }
+        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
       }
 
       function ShowConnections() {
@@ -101,7 +118,7 @@
         document.getElementById('usermanual').setAttribute('style', 'display: none;');
         // document.getElementById('connections').setAttribute('style', 'display: block;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { google.script.run.ReportError(e); }
+        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
       }
 
       function ShowSearch() {
@@ -111,7 +128,7 @@
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: block;');
         document.getElementById("searchLoading").setAttribute("style", "display: none;");
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) { google.script.run.ReportError(e); }
+        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
       }
 
       function ShowConfig() {
@@ -204,13 +221,13 @@
       <div class="container">
         <div class="textbox">
           <h1>Admin Menu</h1><br>
-          <h3>This menu is only to be accessed by individuals authorized to edit the Security Roster.<br>
+          <h3>This menu is only to be accessed by individuals authorized to edit the <?= factionName ?> Roster.<br>
             If you are here unauthorized, no function will work.
           </h3><br>
           <hr><br>
-          <p>If you would be confused about what to do, don't be afraid to consult the Security Leadership Handbook or ask
+          <p>If you would be confused about what to do, don't be afraid to consult the <?= factionName ?> Leadership Handbook or ask
             your superior for help.<br>
-            This page is where all Security roster edits are made, our systems do everything automatically so do not worry
+            This page is where all <?= factionName ?> roster edits are made, our systems do everything automatically so do not worry
             about handling permissions or such.<br>
             If you would want manual changes to be made, please consult the owner of the roster.</p><br><br>
           <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the Admin Menu
@@ -234,7 +251,7 @@
               <div class="button-text-align">
                 <h3> <i class="bx bx-edit"></i> Modify Personnel Info</h3> <br>
                 <hr> <br>
-                <p>Select this option if you would like to modify specific information about a Security member. <br><br>
+                <p>Select this option if you would like to modify specific information about a <?= factionName ?> member. <br><br>
                   This can include things like: <br><br>
                   Name <br>
                   Steam ID <br>
@@ -300,7 +317,7 @@
             of detail of this manual, in which case they can provide you with more information.</p><br>
           <hr><br>
           <p>
-            <strong>Before we begin I must emphasize: NEVER edit the Security roster directly unless you know very well what you're doing. The whole reason why this
+            <strong>Before we begin I must emphasize: NEVER edit the <?= factionName ?> roster directly unless you know very well what you're doing. The whole reason why this
               admin menu was made is so you don't have to make direct edits to the spreadsheet itself. Why you might ask?
               This is because the Admin Menu performs a lot of operations behind the scenes, such as managing document access.
               If you add a staff member manually you will also have to manually give them permissions to all the folders.
@@ -309,7 +326,7 @@
           </p><br>
           <div class="box-container" id="manual-box">
             <div class="dashboard-manual">
-              <p class="left-text">The main reason why you would access the Admin Menu is, of course, to manage the Security
+              <p class="left-text">The main reason why you would access the Admin Menu is, of course, to manage the <?= factionName ?>
                 Roster. In order to do this, you must access the "dashboard" using the sidebar to your right. There you
                 can
                 choose between submitting a log or modifying personnel info. </p><br>
@@ -411,7 +428,7 @@
           .withSuccessHandler(DisplayData)
           .withFailureHandler(error => {
             console.error("Server error:", error); // Log server-side errors
-            google.script.run.ReportError(error);
+            
             document.getElementById("loading-search").innerText = "An error occured when trying to fetch the data: " + error;
             document.getElementById("searchLoading").setAttribute("style", "display: none;");
           })
@@ -590,6 +607,7 @@
             }
           });
         }
+
         try {
           google.script.run.withSuccessHandler(r => {
             document.getElementById('manualEditingSlider').checked = !(r === "true");
@@ -613,14 +631,25 @@
             }
           }).ReturnLockdown();
 
+          google.script.run.withSuccessHandler(r => {
+            document.getElementById('pingSlider').checked = (r === "true");
+          }).ReturnPings();
+
           SetRankSelects();
-        } catch (e) { google.script.run.ReportError(e); }
+        } catch (e) {  }
 
         document.getElementById('manualEditingSlider').addEventListener('change', function () {
           document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
           google.script.run.withSuccessHandler(() => {
             document.getElementById('config-loading').innerHTML = '';
           }).ToggleManualEditing(this.checked);
+        });
+
+        document.getElementById('pingSlider').addEventListener('change', function () {
+          document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+          google.script.run.withSuccessHandler(() => {
+            document.getElementById('config-loading').innerHTML = '';
+          }).TogglePings(this.checked);
         });
 
         try {
@@ -655,13 +684,13 @@
               }).ReturnBackup();
             }).withFailureHandler((error) => {
               document.getElementById('config-loading').innerHTML = '';
-              google.script.run.ReportError(error);
+              
               button.disabled = false;
             }).ToggleLockdown(response === "true" ? false : true);
 
           }).withFailureHandler((error) => {
             document.getElementById('config-loading').innerHTML = '';
-            google.script.run.ReportError(error);
+            
             button.disabled = false;
           }).ReturnLockdown();
         };
@@ -701,7 +730,7 @@
               rankElement.disabled = false;
             }, 3000);
           }).withFailureHandler((error) => {
-            google.script.run.ReportError(error);
+            
             Shake();
             configLoading.innerHTML = '';
             configLoading.innerText = "Something went wrong while adding a rank slot";
@@ -773,7 +802,7 @@
               }, 3000);
             }
           }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
+            
             Shake();
             configLoading.innerHTML = '';
             configLoading.innerText = "Something went wrong while adding a rank slot";
@@ -809,7 +838,7 @@
                 button.disabled = false;
               }
             }).withFailureHandler(error => {
-              google.script.run.ReportError(error);
+              
               document.getElementById('config-loading').innerHTML = '';
               button.disabled = false;
               button.classList.add("red");
@@ -845,7 +874,7 @@
                 document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
               }).GetLastBackupTime();
             }).withFailureHandler(error => {
-              google.script.run.ReportError(error);
+              
               document.getElementById('config-loading').innerHTML = '';
               button.disabled = false;
               button.classList.add("red");
@@ -880,7 +909,7 @@
             button.disabled = false;
             document.getElementById('config-loading').innerHTML = '';
           }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
+            
             button.disabled = false;
             document.getElementById('config-loading').innerHTML = '';
           }).ResetPermissions();
@@ -922,7 +951,7 @@
               InsertRanks(updatedarray);
             }
           }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
+            
             button.disabled = false;
           }).UpdateAccess(accessRank, rank);
         };
@@ -1036,7 +1065,7 @@
             }).GetRanks();
 
           }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
+            
 
             // Manipulating button text to give info to user.
             button.innerHTML = "";
@@ -1085,7 +1114,7 @@
                 SetRankSelects();
               }).GetRanks();
             }).withFailureHandler(error => {
-              google.script.run.ReportError(error);
+              
               button.disabled = false;
               button.innerText = "Delete";
               document.getElementById('config-loading').innerHTML = "";
@@ -1093,16 +1122,90 @@
           }
         };
 
+        window.AddNewSpec = function(event) {
+          event.preventDefault();
+          const title = document.getElementById("specTitle").value;
+          const desc = document.getElementById("specDesc").value;
+          const button = document.getElementById("spec-button");
+
+          if (!title || !desc) return Shake();
+          if (title.length > 20 || desc.length > 250) return Shake();
+
+          button.disabled = true;
+          button.innerHTML = '<div class="loader"></div>';
+
+          google.script.run.withSuccessHandler(response => {
+            button.innerHTML = "";
+            if (response.includes("not")) {
+              Shake();
+              button.classList.add('red');
+            } else {
+              button.classList.add('green');
+              document.getElementById("spec-form").reset();
+            }
+
+            button.innerText = response;
+            setTimeout(() => {
+              button.innerText = "Submit New Specialization";
+              button.disabled = false;
+              button.classList.remove('red');
+              button.classList.remove('green');
+            }, 3000);
+
+            UpdateSpecSelects();
+          }).withFailureHandler(error => {
+            
+            button.innerHTML = "";
+            button.innerText = "Something went wrong";
+            setTimeout(() => {
+              button.innerText = "Submit New Specialization";
+              button.disabled = false;
+            }, 3000);
+          }).AddSpec(title, desc);
+        };
+
+        window.RemoveExistingSpec = function(event) {
+          event.preventDefault();
+          const title = document.getElementById("removeSpec").value;
+          const button = document.getElementById("removespec-button");
+
+          if (!title) return Shake();
+
+          button.disabled = true;
+
+          google.script.run.withSuccessHandler(response => {
+            if (response.includes("not")) {
+              Shake();
+              button.classList.add('red');
+            } else {
+              button.classList.add('green');
+              document.getElementById("removespec-form").reset();
+            }
+
+            setTimeout(() => {
+              button.disabled = false;
+              button.classList.remove('red');
+              button.classList.remove('green');
+            }, 1000);
+
+            UpdateSpecSelects();
+          }).withFailureHandler(error => {
+            console.log(error);
+            button.disabled = false;
+          }).RemoveSpec(title);
+        }
+
       });
     </script>
     <div class="main-content" id="config" style="display: none;">
       <div class="container">
         <div class="textbox" id="config-textbox" style="display: none;">
           <h1>Config Panel</h1><br>
-          <p>Configure all sorts of aspects of the Security Roster here!<br>When changing something in this menu, wait for
+          <p>Configure all sorts of aspects of the <?= factionName ?> Roster here!<br>When changing something in this menu, wait for
             the loading animation at the bottom of the page to stop before performing another operation.</p>
           <br>
           <hr><br>
+
           <form id="config-form-adminRanks">
             <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="allowedRanks"><?= adminRanks ?></span>
             </label><br>
@@ -1110,6 +1213,7 @@
             </select>
             <button id="AdminRankButton" onclick="SaveAdminRanks(event)" type="submit" class="submitButton-mini">Add/Remove</button>
           </form><br>
+
           <? if (allowedStaff.includes(user)) { ?>
           <form id="changelog-form">
             <label for="changes"><strong>Add the change notes, seperated by a comma:</strong></label><br>
@@ -1117,6 +1221,7 @@
             <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
           </form><br>
           <? } ?>
+
           <button id="manageRank" class="submitButton">Manage Ranks</button>
           <div id="newRankContent" class="container">
             <form id="newrankForm">
@@ -1125,18 +1230,20 @@
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:</label><br>
               <select id="new-rank-before-select" required>
               </select><br>
-              <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, security related folders ONLY</span></label><br>
+              <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
-              <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, security related folders ONLY</span></label><br>
+              <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma"><br>
               <button onclick="AddNewRank(event)" class="submitButton" id="newrank-button" type="submit">Submit New Rank</button>
             </form><br><hr><br>
+
             <form id="config-form-removeRank">
               <label for="remove-rank-select"><strong>Select a rank to delete from the roster:</strong></label><br>
               <select id="remove-rank-select" style="width: 50%;">
               </select>
               <button onclick="RemoveRank(event)" class="submitButton-mini" id="removeRank-button">Delete</button>
             </form><br><hr><br>
+
             <form id="config-form-rankRow">
               <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
               <select id="new-rank-select" style="width: 42%;">
@@ -1149,6 +1256,19 @@
 
           <button id="manageSpecialization" class="submitButton">Manage Specializations</button>
           <div id="manageSpecContent" class="container">
+            <form id="spec-form">
+              <label for="specTitle">Give your specialization a name:</label><br>
+              <input type="text" id="specTitle" placeholder="Add a name to your specialization" maxlength="20" required><br>
+              <label for="specDesc">Give your specialization a description:</label><br>
+              <input type="text" id="specDesc" placeholder="Add a description to your specialization" maxlength="250" required>
+              <button onclick="AddNewSpec(event)" class="submitButton" id="spec-button" type="submit">Submit New Specialization</button>
+            </form><br><hr><br>
+            <form id="removespec-form">
+              <label for="removeSpec">Select a specialization to remove:</label><br>
+              <select id="removeSpec" style="width: 50%">
+              </select>
+              <button onclick="RemoveExistingSpec(event)" class="submitButton-mini" id="removespec-button" type="submit">Remove</button>
+            </form>
           </div>
 
           <table class="config-switches" style="margin-top: 30px;">
@@ -1169,6 +1289,17 @@
               <td class="config-switch">
                 <label class="switch">
                   <input type="checkbox" id="backupSlider">
+                  <span class="slider round"></span>
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Allow discord pings:<br><span style="font-weight: 200; font-size: 12px;">Enable/Disable people being pinged for things like promotions etc...</span>
+              </td>
+              <td class="config-switch">
+                <label class="switch">
+                  <input type="checkbox" id="pingSlider">
                   <span class="slider round"></span>
                 </label>
               </td>
@@ -1195,7 +1326,7 @@
             
             <tr>
               <td>
-                Reset all Security Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>
+                Reset all <?= factionName ?> Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>
               </td>
               <td class="config-switch">
                 <button class="submitButton-mini-mini" id="resetButton" onclick="ResetPerms(event)">Reset</button>
@@ -1203,7 +1334,7 @@
             </tr>
             <tr>
               <td>
-                <span id="lockdownIdentifier"></span> a full Lockdown of all Security Documentation:
+                <span id="lockdownIdentifier"></span> a full Lockdown of all <?= factionName ?> Documentation:
               </td>
               <td class="config-switch">
                 <button class="submitButton-mini-mini" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
@@ -1494,7 +1625,7 @@
             console.timeEnd("Log Submission Runtime");
 
           }).withFailureHandler(error => {
-            google.script.run.ReportError(error);
+            
 
             // Manipulating button text to give info to user.
             button.innerHTML = "";
@@ -1692,14 +1823,14 @@
               button.disabled = true;
 
               const editdata = {
-                type: document.getElementById('infoTypeList').value,
-                current_email: document.getElementById('curremailfield').value,
-                name: document.getElementById('newnamefield').value,
-                steamid: document.getElementById('newsteamidfield').value,
-                discordid: document.getElementById('newsdiscidfield').value,
-                email: document.getElementById('newemailfield').value,
-                specialization: document.getElementById('specfield').value,
-                notes: document.getElementById('newnotesfield').value
+                type: document.getElementById('infoTypeList')?.value || '',
+                current_email: document.getElementById('curremailfield')?.value || '',
+                name: document.getElementById('newnamefield')?.value || '',
+                steamid: document.getElementById('newsteamidfield')?.value || '',
+                discordid: document.getElementById('newsdiscidfield')?.value || '',
+                email: document.getElementById('newemailfield')?.value || '',
+                specialization: document.getElementById('specfield')?.value || '',
+                notes: document.getElementById('newnotesfield')?.value || ''
               };
 
               let validEdit = false;
@@ -1717,7 +1848,7 @@
                   if (editdata.email != '' && editdata.current_email != '') { validEdit = true; }
                   break;
                 case 'Edit Specialization':
-                  if (editdata.current_email != '' && editdata.specialization != '') { validEdit = true; }
+                  if (editdata.current_email != '') { validEdit = true; }
                   break;
                 case 'Edit Note':
                   if (editdata.notes != '' && editdata.current_email != '') { validEdit = true; }
@@ -1768,7 +1899,7 @@
                   }, 4000);
                   console.timeEnd("Edit Submission Runtime");
                 }).withFailureHandler(error => {
-                  google.script.run.ReportError(error);
+                  //
 
                   // Manipulating button text to give info to user.
                   button.innerHTML = "";
@@ -1789,6 +1920,8 @@
             }
 
             document.addEventListener("DOMContentLoaded", function () {
+
+              UpdateSpecSelects();
 
               document.getElementById('curremailfield').addEventListener('change', () => {
                 const emailField = document.getElementById('curremailfield');
@@ -1825,7 +1958,7 @@
                     button.innerHTML = '';
                     button.innerText = "Submit";
                   } catch (e) {
-                    google.script.run.ReportError(e);
+                    
                     emailField.disabled = false;
                     button.disabled = false;
                     elements.forEach(elementId => document.getElementById(elementId).disabled = false);
@@ -1833,7 +1966,7 @@
                     button.innerText = "Submit";
                   }
                 }).withFailureHandler(error => {
-                  google.script.run.ReportError(error);
+                  
                   
                   emailField.disabled = false;
                   button.disabled = false;
@@ -1860,7 +1993,6 @@
                 <option value="Edit discordID">Edit Discord ID</option>
                 <option value="Edit Email">Edit Email Address</option>
                 <option value="Edit Specialization">Edit Specialization</option>
-                <option value="Edit Staff Group">Edit Staff Group</option>
                 <option value="Edit Note">Edit Notes</option>
               </select>
               <hr>
@@ -1875,7 +2007,9 @@
                 maxlength="25" required />
               <input type="email" placeholder="Enter new Email Address" id="newemailfield" style="display: none;"
                 maxlength="70" required />
-              <input type="text" placeholder="Enter new Specialization" id="specfield" style="display: none;" maxlength="40" required>
+              <select id="specfield" style="display: none;">
+                <option value=""></option>
+              </select>
               <input type="text" placeholder="Enter new Extra Notes" id="newnotesfield" style="display: none;"
                 maxlength="125" required />
               <button onclick="SubmitEdit(event)" type="submit" class="submitButton" id="editSubmitButton">Submit</button>

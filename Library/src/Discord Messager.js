@@ -22,6 +22,7 @@ function sendDiscordLog(inputData, targetData, userData) {
   let embedColor = '';
   let field1Name = '';
   let info = '';
+  let content = '';
   let reason = inputData.reason;
   let footerMessage = '';
   // let folderChanges = accessFolders.map(folder => ` ${folder.folderName} - ${folder.permission} access /`);
@@ -41,6 +42,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           field1Name = 'Please congratulate 🥁...'; // drumrolls
           info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscord ID: ${targetData.discordId}\nGmail Address: ${inputData.email}`;
           footerMessage = `Congratulations - ${LIBRARY_SETTINGS.factionName} Command.`;
+          if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case 'Demotion':
           embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Demotion ❌`;
@@ -48,6 +50,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           field1Name = 'General Information';
           info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDemoted from: ${targetData.rank}\nNew Rank: ${targetData.newRank}`;
           footerMessage = `This may be appealed to ${appealTo}.`;
+          if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case 'Passed Interview':
           embedTitle = `👔 New ${LIBRARY_SETTINGS.ranks[0]} 👔`;
@@ -55,6 +58,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           field1Name = 'Please Congratulate 🥁...'; // more drumrolls
           info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}`;
           footerMessage = 'Congratulations on passing your interview!';
+          if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case "Removal":
           embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Removal  ❌`;
@@ -62,6 +66,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           field1Name = 'General Information';
           info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nRemoved from: ${targetData.rank}`;
           footerMessage = `This may be appealed to ${appealTo}.`;
+          if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
       }
       break;
@@ -71,6 +76,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       field1Name = 'Infraction Information';
       info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nRank: ${targetData.rank}`;
       footerMessage = `This may be appealed to ${appealTo}.`;
+      if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
     case 'Blacklist':
       embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} ${inputData.blacklist_type} Issued ❌`;
@@ -107,6 +113,7 @@ function sendDiscordLog(inputData, targetData, userData) {
   // Compose discord embed
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
+    content: content,
     embeds: [{
       title: embedTitle,
       color: embedColor,

@@ -258,9 +258,17 @@ function ToggleBackup(value) {
 function ReturnBackup() {
   let properties = PropertiesService.getScriptProperties();
   let backupValue = properties.getProperty("backupEnabled");
-  console.log(backupValue);
-
   return backupValue;
+}
+
+function TogglePings(value) {
+  LIBRARY_SETTINGS.pings = Boolean(value);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+}
+
+function ReturnPings() {
+  return LIBRARY_SETTINGS.pings.toString();
 }
 
 function ToggleLockdown(value) {
@@ -277,8 +285,6 @@ function ToggleLockdown(value) {
 function ReturnLockdown() {
   let properties = PropertiesService.getScriptProperties();
   let lockdownValue = properties.getProperty("lockdownEnabled");
-  console.log(lockdownValue);
-
   return lockdownValue;
 }
 
@@ -371,7 +377,7 @@ function GetSpreadsheetData(inputValue) {
   if (!inputValue) return;
   // Always Checks Column 8 => might make this configurable in the future
   const sheets = [
-    { id: 789793193, label: "Rank Change" },
+    { id: LIBRARY_SETTINGS.rankchangeId, label: "Rank Change" },
     { id: 343884184, label: "Infraction" },
     { id: 977408594, label: "LOA Log" },
     { id: 1787594911, label: "Suspension / Blacklist Log" },
@@ -447,4 +453,50 @@ function RestoreSheet() {
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   RosterService.restoreSheet();
   RosterService.sendDiscordConfig("restoreSpreadSheet", false, userData);
+}
+
+/**
+ * Add a new specialization to the list
+ * @param {String} title
+ * @param {String} desc
+ * @returns {String}
+ */
+function AddSpec(title, desc) {
+  if (!title || !desc) return "Do not try to overcome validation";
+  if (title.length > 20 || desc.length > 250) return "Do not try to overcome validation";
+
+  let taken = true;
+  LIBRARY_SETTINGS.specializations.forEach(spec => {
+    if (spec.title.includes(title)) taken = false;
+  })
+  
+  if (taken !== true) return "Cannot have duplicate specializations";
+
+  LIBRARY_SETTINGS.specializations.push({
+    title: title,
+    desc: desc
+  });
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+  return "Specialization Added";
+}
+
+/**
+ * @param {String} title
+ */
+function RemoveSpec(title) {
+  if (!title) return "No title provided";
+
+  let found = false;
+  LIBRARY_SETTINGS.specializations.forEach((spec, i) => {
+    if (spec.title === title) {
+      LIBRARY_SETTINGS.specializations.splice(i, 1);
+      found = true;
+    }
+  });
+  if (!found) return "Specialization not found";
+
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+  return "Specialization Removed";
 }

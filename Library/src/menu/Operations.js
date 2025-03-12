@@ -163,16 +163,13 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
     const r = roster.getRange(rowToSearch, col);
     if (!r.getFormula()) {
       dataCols.push(col);
-      return r.getValue();
+      return {val: r.getValue(), note: r.getNote()};
     }
     return null;
   }).filter(data => data != null);
 
-  console.log(cols);
-  console.log(dataCols);
-
-  dataCols.forEach(col => roster.getRange(rowToSearch, col).clearContent());
-  if (destinationRow || destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i]));
+  dataCols.forEach(col => roster.getRange(rowToSearch, col).clearContent().clearNote());
+  if (destinationRow || destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i].val).setNote(moveData[i].note));
 }
 
 /**

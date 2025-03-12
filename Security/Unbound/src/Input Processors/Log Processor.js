@@ -85,7 +85,7 @@ function ProcessLog(inputData) {
         case "Rank Change":
             let rowDestination;
             let currentRankIndex = ranks.indexOf(targetData.rank);
-            sheet = RosterService.getCollect(789793193);
+            sheet = RosterService.getCollect(LIBRARY_SETTINGS.rankchangeId);
             const roster = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
             insertLogRow = RosterService.getLastRow(sheet);
             const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
@@ -190,7 +190,7 @@ function ProcessLog(inputData) {
 
             if (inputData.blacklist_type === "Blacklist") {
                 if (targetData.row) {
-                    sheet = RosterService.getCollect(789793193);
+                    sheet = RosterService.getCollect(LIBRARY_SETTINGS.rankchangeId);
                     RosterService.moveMember(targetData.row);
                     inputData.rankchangetype = "Blacklisted";
                     insertLogRow = RosterService.getLastRow(sheet);

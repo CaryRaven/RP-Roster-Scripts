@@ -51,5 +51,7 @@ class SettingsTemplate {
     this.lastRankChange = 0;
     this.leaderPing = '';
     this.backupsbeetId = '';
+    this.specializations = [];
+    this.pings = true;
   }
 }

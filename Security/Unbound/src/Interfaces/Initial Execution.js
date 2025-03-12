@@ -3,7 +3,7 @@ let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getPro
 RosterService.init(LIBRARY_SETTINGS);
 
 function T() {
-  
+  console.log(LIBRARY_SETTINGS);
 }
 
 /**
@@ -75,6 +75,7 @@ function doGet() {
     template.ranks = LIBRARY_SETTINGS.ranks;
     template.adminRanks = LIBRARY_SETTINGS.adminRanks;
     template.allowedStaff = allowedStaff;
+    template.factionName = LIBRARY_SETTINGS.factionName;
 
     const latestChangelog = JSON.parse(PropertiesService.getScriptProperties().getProperty("lastestChangeLog"));
     let changeDate = latestChangelog.date;
@@ -126,6 +127,10 @@ function ReportError(error) {
   RosterService.sendDiscordError(error);
 }
 
+function ReturnSpecs() {
+  return JSON.stringify(LIBRARY_SETTINGS.specializations);
+}
+
 function Set() {
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
     dataCols: {
@@ -169,6 +174,8 @@ function Set() {
         "1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-"
       ]
     ],
-    ranks: ["Captain","Captain Major","Security Chief","Site Management"]
+    ranks: ["Captain","Captain Major","Security Chief","Site Management"],
+    specializations: [{title: "", desc: ""}],
+    pings: true
   }));
 }
