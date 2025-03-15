@@ -24,6 +24,7 @@ function init(InputSettings) {
 class SettingsTemplate {
   constructor() {
     this.dataCols = {
+      firstCol: 0,
       rank: 0,
       name: 0,
       steamId: 0,
@@ -53,5 +54,6 @@ class SettingsTemplate {
     this.backupsbeetId = '';
     this.specializations = [];
     this.pings = true;
+    this.newRowData = [];
   }
 }

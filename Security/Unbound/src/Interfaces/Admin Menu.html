@@ -344,8 +344,7 @@
           <p>If you would be confused about what to do, don't be afraid to consult the <?= factionName ?> Leadership Handbook or ask
             your superior for help.<br>
             This page is where all <?= factionName ?> roster edits are made, our systems do everything automatically so do not worry
-            about handling permissions or such.<br>
-            If you would want manual changes to be made, please consult the owner of the roster.</p><br><br>
+            about handling permissions or such.</p><br><br>
           <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the Admin Menu
           </p>
           <div class="box-container">
@@ -1169,7 +1168,7 @@
             document.getElementById('config-loading').innerHTML = '<div class="loader" style="width: 10px; height: 10px;"></div>';
 
             google.script.run.withSuccessHandler(response => {
-              if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already")) {
+              if (response.toLowerCase().includes("not") || response.toLowerCase().includes("invalid")) {
                 Shake();
                 button.classList.add('red');
               } else {

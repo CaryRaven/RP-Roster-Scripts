@@ -70,6 +70,78 @@ function docAccessHandler(folder, emailToRemove) {
   }
 }
 
+function removeAllDocAccess(allowedStaff) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  let unaffected = ["micheal.labus@gmail.com", "rykitala@gmail.com"];
+  let folders = LIBRARY_SETTINGS.folders;
+  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+
+  sheet.getRange(6, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
+    if (!email[0] || !email[0].includes("@")) return;
+    i = i + 6;
+    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== "Security Chief" 
+    && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== "Site Management") return;
+    
+    unaffected.push(email[0].toLowerCase());
+  });
+
+  unaffected = unaffected.concat(allowedStaff);
+
+  folders[folders.length - 1].forEach(folderID => {
+    try {
+      let folder = DriveApp.getFolderById(folderID);
+      if (!folder) return;
+      const editors = folder.getEditors();
+      const viewers = folder.getViewers();
+
+      editors.forEach(editor => {
+        const editorEmail = editor.getEmail();
+        if (unaffected.includes(editorEmail)) return;
+        folder.removeEditor(editorEmail);
+        Logger.log(`Removed editor access from ${editorEmail} in ${folder.getName()}`);
+      });
+
+      viewers.forEach(viewer => {
+        const viewerEmail = viewer.getEmail();
+        if (unaffected.includes(viewerEmail)) return;
+        folder.removeViewer(viewerEmail);
+        Logger.log(`Removed viewer access from ${viewerEmail} in ${folder.getName()}`);
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  });
+}
+
+/**
+ * @param {String} rankToAdd
+ * @param {String} currentRank
+ */
+function updateAccess(rankToAdd, currentRank) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!rankToAdd || typeof rankToAdd !== "string") throw new Error("No valid rankToAdd");
+  if (!currentRank || typeof currentRank !== "string") throw new Error("No valid currentRank");
+
+  if (LIBRARY_SETTINGS.ranks.indexOf(rankToAdd) >= LIBRARY_SETTINGS.ranks.indexOf(currentRank) && currentRank !== "Blackshadow Staff") return "";
+
+  // Get array of current allowed ranks
+  const adminRankArray = LIBRARY_SETTINGS.adminRanks;
+
+  if (adminRankArray.indexOf(rankToAdd) >= 0) {
+    // If rank is already in array => remove them
+    adminRankArray.splice(adminRankArray.indexOf(rankToAdd), 1);
+  } else {
+    // If not => add them
+    adminRankArray.push(rankToAdd);
+  }
+
+  LIBRARY_SETTINGS.adminRanks = adminRankArray;
+  
+  Logger.log(adminRankArray);
+  return [JSON.stringify(adminRankArray), LIBRARY_SETTINGS];
+}
+
 /**
 * Protect cells when logged so data cannot be griefed
 * @param {String} type - Single character: N (normal), A (Appealable) or S (Single)
@@ -185,7 +257,7 @@ function restoreAllDocAccess(allowedStaff) {
 
   sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;
-    i = i + LIBRARY_SETTINGS.firstMemberRow;
+    i = i + 6;
     if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2] 
       && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) return;
     unaffected.push(email[0].toLowerCase());
@@ -264,4 +336,278 @@ function restoreSheet() {
 
     sheet.getRange(1, 1, rows, cols).setValues(finalData);
   });
+}
+
+/**
+ * Manage (add/edit) ranks on the roster
+ * @param {Object} inputData - data input by the user
+ * @param {Array[Array]} borderPairs - Cell pairs to draw borders between
+ * @param {Object} userData
+ * @returns {Array|String}
+ */
+function manageRank(inputData, borderPairs, userData) {
+  if (!inputData || typeof inputData !== "object") throw new Error("Invalid input data");
+  if (!borderPairs || typeof borderPairs !== "object") throw new Error("Invalid border pairs");
+  if (!userData || typeof userData !== "object") throw new Error("Invalid User Data");
+  if (!isInit) throw new Error("Library is not yet initialized");
+  
+  let valid = false;
+  let message = inputData.editRank === "" ? `Successfully added ${inputData.title}`: `Successfully edited ${inputData.editRank}`;
+  let viewerFolders = [];
+  let editorFolders = [];
+  valid = filterQuotes(inputData);
+
+  if (valid !== true) return "Invalid data";
+  if (LIBRARY_SETTINGS.ranks.indexOf(inputData.title) >= 0 && inputData.editRank === "") return "Rank Already exists";
+
+  // Add new row to settings (backend)
+  if (inputData.viewerFolders) {
+    inputData.viewerFolders = inputData.viewerFolders.replace(/\s+/g, '');
+    viewerFolders = inputData.viewerFolders.split(",");
+    viewerFolders.forEach(folderId => {
+      try {
+        DriveApp.getFolderById(folderId.toString());
+        if (!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folderId)) {
+          valid = false;
+          message = "Viewerfolder is unrelated to Security";
+        }
+      } catch(e) {
+        valid = false;
+        message = "ViewerFolders: Invalid Folder ID"
+      }
+    });
+    if (valid !== true) return message;
+  } else { viewerFolders = []; }
+
+  if (inputData.editorFolders) {
+    inputData.editorFolders = inputData.editorFolders.replace(/\s+/g, '');
+    editorFolders = inputData.editorFolders.split(",");
+    editorFolders.forEach(folderId => {
+      try {
+        DriveApp.getFolderById(folderId.toString());
+        if (!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folderId)) {
+          valid = false;
+          message = "Editorfolder is unrelated to Security";
+        }
+      } catch(e) {
+        valid = false;
+        message = "EditorFolders: Invalid Folder ID"
+      }
+    });
+    if (valid !== true) return message;
+  } else { editorFolders = []; }
+
+  // If Editing => check if hierarchy changed => remove previous rank location
+  let rownum = 0;
+  const hierarchyChange = (LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank) + 1 !== LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore) && inputData.editRank != "");
+
+  if (hierarchyChange) {
+    rownum = getLastRankRow(inputData.editRank) - getStartRankRow(inputData.editRank);
+    valid = removeRank(inputData.editRank, false);
+    if (!Array.isArray(valid)) return "Cannot move a rank with active members";
+  }
+
+  const s = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+
+  // title changed without hierarchy change?
+  if (!hierarchyChange && inputData.title !== inputData.editRank && inputData.editRank !== "") {
+    const firstRankRow = getStartRankRow(inputData.editRank)
+    s.getRange(firstRankRow, 3).setValue(inputData.title);
+    const lastRankRow = getLastRankRow(inputData.editRank);
+
+    for (let i = firstRankRow; i <= lastRankRow; i++) {
+      s.getRange(i, 4).setValue(inputData.title);
+    }
+  }
+
+  // Insert into roster if new rank or hierarchy change
+  if (hierarchyChange || inputData.editRank === "") {
+    const lastBeforeRow = getLastRankRow(inputData.rankBefore);
+
+    s.insertRowAfter(lastBeforeRow + 1);
+    s.insertRowAfter(lastBeforeRow);
+    s.moveRows(s.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
+    const insertRow = lastBeforeRow + 2;
+
+    borderPairs.forEach(cellpair => {
+      let numcols = (cellpair[1] - cellpair[0]) + 1;
+      s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+      s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+    });
+
+
+    const insertData = LIBRARY_SETTINGS.newRowData.map(col => 
+      col.map(value => {
+        if (typeof value === "string") {
+          return value.replace(/\/row\//g, insertRow).replace(/\/title\//g, inputData.title);
+        }
+        return value;
+      })
+    );
+
+    s.getRange(insertRow, 3, 1, 15).setValues(insertData);
+  }
+
+  if (hierarchyChange) addRankRow(inputData.title, userData, rownum, false);
+
+  // Prepare settings
+  if (hierarchyChange || inputData.editRank === "") {
+    LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
+      "viewerAccess": viewerFolders,
+      "editorAccess": editorFolders
+    });
+
+    LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.title);
+  } else {
+    LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, {
+      "viewerAccess": viewerFolders,
+      "editorAccess": editorFolders
+    });
+    
+    if (!hierarchyChange && inputData.title !== inputData.editRank && inputData.editRank !== "") {
+      LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title);
+    }
+  }
+
+  if (inputData.editRank == "") {
+    sendDiscordNewRank(inputData.title);
+  } else {
+    userData.title = inputData.title;
+    userData.editRank = inputData.editRank;
+    userData.rankBefore = inputData.rankBefore;
+    userData.viewerAccess = viewerFolders;
+    userData.editorAccess = editorFolders;
+    
+    sendDiscordConfig("rankEdit", false, userData);
+  }
+  return [message, LIBRARY_SETTINGS];
+}
+
+/**
+ * Add num amount of extra slots to the rank passed in as arg
+ * @param {String} rank - Name of the rank to add a slot to
+ * @param {Object} userData
+ * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 15], [17, 17]]
+ * @param {Number} num (optional) - default: 1
+ * @param {Boolean} discordnotif (optional) - Send a discord notification or not, default: true
+ * @returns {Void|String}
+ */
+function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = [[5, 8], [10, 15], [17, 17]]) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!rank) return "no";
+
+  for (let i = 1; i <= num; i++) {
+    const rowData = getFirstRankRow(rank);
+    const lastRankRow = getLastRankRow(rank);
+    let specialRow = false;
+
+    // Determine if you're inserting a row at the bottom (different borders & clamp)
+    if (rowData[0] >= Number(lastRankRow)) {
+      specialRow = true;
+    } else if (rowData[0] == 0) {
+      rowData[0] = lastRankRow;
+      specialRow = true;
+    }
+    const insertRow = rowData[0] + 1;
+    const sheet = rowData[1];
+
+    // Insert Row & Data
+    const insertData = LIBRARY_SETTINGS.newRowData.map(col => 
+      col.map(value => {
+        if (typeof value === "string") {
+          return value.replace(/\/row\//g, insertRow).replace(/\/title\//g, rank);
+        }
+        return value;
+      })
+    );
+
+    sheet.insertRowAfter(rowData[0]);
+    sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
+
+    if (specialRow) {
+      borderPairs.forEach(cellpair => {
+        let numcols = (cellpair[1] - cellpair[0]) + 1;
+        sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+        sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      });
+      const startMergedRange = getStartRankRow(rank);
+      sheet.getRange(startMergedRange, LIBRARY_SETTINGS.dataCols.firstCol, ((insertRow - startMergedRange) + 1), 1).merge();
+    } else {
+      borderPairs.forEach(cellpair => {
+        let numcols = (cellpair[1] - cellpair[0]) + 1;
+        sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, true, null, true, null, null,"black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+        sheet.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, null, true, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      });
+    }
+  }
+
+  if (discordnotif) sendDiscordConfigRankRow(rank, true, userData, num);
+}
+
+/**
+ * Remove an entire rank
+ * @param {String} rank
+ * @returns {String|Array}
+ */
+function removeRank(rank, discordnotif = true) {
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
+  if (!rank || rankIndex < 0) return "Invalid rank";
+
+  let firstRankRow = getFirstRankRow(rank);
+  firstRankRow = firstRankRow[0];
+  const startRankRow = getStartRankRow(rank);
+  const lastRankRow = getLastRankRow(rank);
+
+  if (firstRankRow != startRankRow) return "Cannot remove a rank with active members";
+
+  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  sheet.deleteRows(startRankRow - 1, (lastRankRow - startRankRow) + 2);
+
+  LIBRARY_SETTINGS.ranks.splice(rankIndex, 1);
+  LIBRARY_SETTINGS.folders.splice(rankIndex, 1);
+
+  if (discordnotif) sendDiscordNewRank(rank, false);
+  return [`Success`, LIBRARY_SETTINGS];
+}
+
+/**
+ * Remove a slot from the rank (name) passed in as arg
+ * @param {String} rank - Name of rank to remove a slot from
+ * @param {Object} userData
+ * @param {Number} num (optional) - default: 1
+ * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 15], [17, 17]]
+ * @returns {Void|String}
+ */
+function removeRankRow(rank, userData, num = 1, borderPairs = [[5, 8], [10, 15], [17, 17]]) {
+  for (let i = 1; i <= num; i++) {
+    const rowData = getFirstRankRow(rank);
+    const lastRankRow = getLastRankRow(rank);
+    let specialRow = false;
+
+    if (rowData[0] == 0) return "no";
+
+    // Determine if you're inserting a row at the bottom (different borders & clamp)
+    if ((rowData[0] + 1) >= Number(lastRankRow)) {
+      rowData[0] = rowData[0] - 1;
+      specialRow = true;
+    } else if (rowData[0] == 0) {
+      rowData[0] = lastRankRow;
+      specialRow = true;
+    }
+    const removeRow = rowData[0] + 1;
+    const sheet = rowData[1];
+    sheet.deleteRow(removeRow);
+
+    if (specialRow) {
+      borderPairs.forEach(cellpair => {
+        let numcols = (cellpair[1] - cellpair[0]) + 1;
+        sheet.getRange(removeRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+      });
+    }
+
+    const startRow = getStartRankRow(rank);
+    sheet.getRange(startRow, 3).setValue(rank);
+  }
+
+  sendDiscordConfigRankRow(rank, false, userData, num);
 }

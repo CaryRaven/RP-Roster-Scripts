@@ -121,7 +121,7 @@ function getFirstRankRow(rank, branch = 0) {
   branch = branch == 4 ? 0 : branch;
   if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
 
-  const sheet = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
   const total_rows = sheet.getMaxRows();
 
   for (let i = 1; i <= total_rows; i++) {
@@ -252,6 +252,8 @@ function loadImageBytes(id){
  * @param {Array} exempt
  */
 function permissionsGuard(exempt) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   let authed = getAllEmails();
   let ranks = LIBRARY_SETTINGS.ranks;
   let folders = LIBRARY_SETTINGS.folders;
@@ -284,7 +286,9 @@ function permissionsGuard(exempt) {
  * Head Function - Not to be used in other scripts
  */
 function backupSheet(backupEnabled, manualEnabled) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   if (backupEnabled == "false") return;
+
   const wbBackup = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
   const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
   const s = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
@@ -309,4 +313,30 @@ function backupSheet(backupEnabled, manualEnabled) {
     console.log(`Backed ${sheet.getName()} up`);
   });
   // TODO: add discord notification
+}
+
+function getSizeInBytes(obj) {
+  return encodeURIComponent(JSON.stringify(obj)).replace(/%[0-9A-F]{2}/g, "X").length;
+}
+
+/**
+ * @param {String} title
+ * @returns {JSON.Array}
+ */
+function getRankContent(title) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!title || typeof title !== "string") throw new Error("Invalid title");
+
+  let returnArray = [];
+  LIBRARY_SETTINGS.ranks.forEach((rank, i) => {
+    if (rank === title) {
+      returnArray = [
+        rank,
+        LIBRARY_SETTINGS.ranks[i + 1],
+        LIBRARY_SETTINGS.folders[i].viewerAccess,
+        LIBRARY_SETTINGS.folders[i].editorAccess
+      ];
+    }
+  });
+  return JSON.stringify(returnArray);
 }
