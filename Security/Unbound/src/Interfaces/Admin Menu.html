@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Google Apps Script Web App</title>
+  <title>Main Web App: Security Admin Menu</title>
   <base target="_top">
   <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
@@ -16,6 +16,7 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+
       window.CloseChangelog =  function(event) {
         try { event.preventDefault(); } catch(e) { }
         document.getElementById("update-popup").setAttribute("style", "display: none;");
@@ -28,11 +29,15 @@
         setTimeout(() => document.body.classList.remove('shake'), 200);
       };
 
-      window.UpdateSpecSelects = function() {
+      window.SetSpecSelects = function() {
         google.script.run.withSuccessHandler(specs => {
           document.getElementById("specfield").innerHTML = "";
           document.getElementById("removeSpec").innerHTML = "";
+          const editSpec = document.getElementById("editSpecSelect").value;
+
+          if (editSpec == "") document.getElementById("editSpecSelect").innerHTML = "";
           specs = JSON.parse(specs);
+
           specs.forEach(spec => {
             const specOption = document.createElement("option");
             specOption.innerText = spec.title;
@@ -41,9 +46,93 @@
             const specOptionConfig = document.createElement("option");
             specOptionConfig.innerText = spec.title;
             document.getElementById("removeSpec").appendChild(specOptionConfig);
+
+            if (editSpec == "") {  
+              const specOptionConfig2 = document.createElement("option");
+              specOptionConfig2.innerText = spec.title;
+              document.getElementById("editSpecSelect").appendChild(specOptionConfig2);
+            }
           });
         }).ReturnSpecs();
-      }
+      };
+
+      window.SetRankSelects = function() {
+        let initRanks = document.getElementById("ranks")?.innerText;
+        let rankSelect = document.getElementById("amdin-role-select");
+        let rankRowSelect = document.getElementById("new-rank-select");
+        let addRankSelect = document.getElementById("new-rank-before-select");
+        let removeRankSelect = document.getElementById("remove-rank-select");
+        const editRankSelect = document.getElementById("editRankSelect");
+
+        if (initRanks) {
+          initRanks = initRanks.split(",");
+        } else {
+          initRanks = [];
+        }
+
+        rankSelect.innerHTML = '<option value=""></option>';
+        rankRowSelect.innerHTML = '<option value=""></option>';
+        removeRankSelect.innerHTML = '<option value=""></option>';
+
+        if (editRankSelect.value === "" && addRankSelect.value === "") {
+          addRankSelect.innerHTML = '<option value=""></option>';
+          editRankSelect.innerHTML = '<option value=""></option>';
+        }
+
+        initRanks.forEach(rankName => {
+          const rankOption = document.createElement("option");
+          rankOption.value = rankName;
+          rankOption.innerText = rankName;
+          rankSelect.appendChild(rankOption);
+
+          if (!rankName.includes("Site") && !rankName.includes("Chief")) {
+            const rankRowOption = document.createElement("option");
+            rankRowOption.value = rankName;
+            rankRowOption.innerText = rankName;
+            rankRowSelect.appendChild(rankRowOption);
+
+            if (editRankSelect.value == "" && addRankSelect.value === "") {
+              const addRankOption = document.createElement("option");
+              addRankOption.value = rankName;
+              addRankOption.innerText = rankName;
+              addRankSelect.appendChild(addRankOption);
+
+              const editRankOption = document.createElement("option");
+              editRankOption.value = rankName;
+              editRankOption.innerText = rankName;
+              editRankSelect.appendChild(editRankOption);
+            }
+
+            const removeRankOption = document.createElement("option");
+            removeRankOption.value = rankName;
+            removeRankOption.innerText = rankName;
+            removeRankSelect.appendChild(removeRankOption);
+          }
+        });
+      };
+
+      window.SetSliders = function() {
+        google.script.run.withSuccessHandler(r => {
+          document.getElementById('manualEditingSlider').checked = !(r === "true");
+        }).ReturnManualEditing();
+
+        google.script.run.withSuccessHandler(re => {
+            document.getElementById('backupSlider').checked = (re === "true");
+        }).ReturnBackup();
+
+        google.script.run.withSuccessHandler(res => {
+          if (res === "true") {
+            document.getElementById('lockdown-topbanner').style.display = "block";
+            document.getElementById('lockdownIdentifier').innerText = "Disable";
+          } else {
+            document.getElementById('lockdownIdentifier').innerText = "Enable";
+          }
+        }).ReturnLockdown();
+
+        google.script.run.withSuccessHandler(r => {
+          document.getElementById('pingSlider').checked = (r === "true");
+        }).ReturnPings();
+      };
     });
   </script>
   <div class="loader" id="changeLoader"></div>
@@ -93,14 +182,21 @@
     <!-- Sidebar NAVIGATION - Permanently displayed -->
     <script>
       // Panel Visibility Toggles => Operated by sidebar
-
+      let configupdate;
       function ShowDash() {
         document.getElementById('dashboard').setAttribute('style', 'display: block;');
         document.getElementById('data-forms').setAttribute('style', 'display: none;');
         document.getElementById('usermanual').setAttribute('style', 'display: none;');
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
+        try {
+          document.getElementById('config').setAttribute('style', 'display: none;'); 
+          clearInterval(configupdate);
+          SetRankSelects();
+          setInterval(() => {
+            SetRankSelects();
+          }, 10000);
+        } catch (e) {  }
       }
 
       function ShowManual() {
@@ -109,7 +205,10 @@
         document.getElementById('usermanual').setAttribute('style', 'display: block;');
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
+        try { 
+          document.getElementById('config').setAttribute('style', 'display: none;'); 
+          clearInterval(configupdate); 
+        } catch (e) {  }
       }
 
       function ShowConnections() {
@@ -118,7 +217,10 @@
         document.getElementById('usermanual').setAttribute('style', 'display: none;');
         // document.getElementById('connections').setAttribute('style', 'display: block;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
+       try { 
+          document.getElementById('config').setAttribute('style', 'display: none;'); 
+          clearInterval(configupdate); 
+        } catch (e) {  }
       }
 
       function ShowSearch() {
@@ -128,7 +230,10 @@
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: block;');
         document.getElementById("searchLoading").setAttribute("style", "display: none;");
-        try { document.getElementById('config').setAttribute('style', 'display: none;'); } catch (e) {  }
+        try { 
+          document.getElementById('config').setAttribute('style', 'display: none;'); 
+          clearInterval(configupdate); 
+        } catch (e) {  }
       }
 
       function ShowConfig() {
@@ -138,6 +243,17 @@
         // document.getElementById('connections').setAttribute('style', 'display: none;');
         document.getElementById('search_panel').setAttribute('style', 'display: none;');
         document.getElementById('config').setAttribute('style', 'display: block;');
+        try { clearInterval(configupdate); } catch(e) { }
+
+        // Making sure the config is synced every 10 seconds
+        SetSpecSelects();
+        SetRankSelects();
+        SetSliders();
+        configupdate = setInterval(() => {
+          SetSpecSelects();
+          SetRankSelects();
+          SetSliders();
+        }, 10000);
       }
     </script>
     <div class="sidebar">
@@ -545,8 +661,8 @@
     <div class="main-content" id="search_panel" style="display: none;">
       <div class="container">
         <div class="textbox">
-          <h1>Search Panel [BROKEN]</h1><br>
-          <p>Input a Steam ID and you will be shown all logs related to the SteamID.<br>This feature is currently broken, stay tuned.</p><br>
+          <h1>Search Panel</h1><br>
+          <p>Input a Steam ID and you will be shown all logs related to the SteamID.</p><br>
           <form>
             <label for="inputField">Enter SteamID:</label><br>
             <input type="text" id="inputField" maxlength="25" required />
@@ -564,77 +680,18 @@
     <!-- Config Panel -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        
-        window.SetRankSelects = function() {
-          let initRanks = document.getElementById("ranks")?.innerText;
-          let rankSelect = document.getElementById("amdin-role-select");
-          let rankRowSelect = document.getElementById("new-rank-select");
-          let addRankSelect = document.getElementById("new-rank-before-select");
-          let removeRankSelect = document.getElementById("remove-rank-select");
-
-          if (initRanks) {
-            initRanks = initRanks.split(",");
-          } else {
-            initRanks = [];
-          }
-
-          rankSelect.innerHTML = '<option value=""></option>';
-          rankRowSelect.innerHTML = '<option value=""></option>';
-          addRankSelect.innerHTML = '<option value=""></option>';
-          removeRankSelect.innerHTML = '<option value=""></option>';
-
-          initRanks.forEach(rankName => {
-            const rankOption = document.createElement("option");
-            rankOption.value = rankName;
-            rankOption.innerText = rankName;
-            rankSelect.appendChild(rankOption);
-
-            if (!rankName.includes("Site") && !rankName.includes("Chief")) {
-              const rankRowOption = document.createElement("option");
-              rankRowOption.value = rankName;
-              rankRowOption.innerText = rankName;
-              rankRowSelect.appendChild(rankRowOption);
-
-              const addRankOption = document.createElement("option");
-              addRankOption.value = rankName;
-              addRankOption.innerText = rankName;
-              addRankSelect.appendChild(addRankOption);
-
-              const removeRankOption = document.createElement("option");
-              removeRankOption.value = rankName;
-              removeRankOption.innerText = rankName;
-              removeRankSelect.appendChild(removeRankOption);
-            }
-          });
-        }
 
         try {
-          google.script.run.withSuccessHandler(r => {
-            document.getElementById('manualEditingSlider').checked = !(r === "true");
-          }).ReturnManualEditing();
-
-          google.script.run.withSuccessHandler(re => {
-            google.script.run.withSuccessHandler(response => {
-              try { document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`; } catch(e) {}
-              document.getElementById('backupSlider').checked = (re === "true");
+          google.script.run.withSuccessHandler(response => {
+            try { document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`; } catch(e) {}
+            // Make sure everything has the time to load
+            setTimeout(() => {
               document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
               document.getElementById('config-loading').innerHTML = '';
-            }).GetLastBackupTime();
-          }).ReturnBackup();
+            }, 1000);
+          }).GetLastBackupTime();
 
-          google.script.run.withSuccessHandler(res => {
-            if (res === "true") {
-              document.getElementById('lockdown-topbanner').style.display = "block";
-              document.getElementById('lockdownIdentifier').innerText = "Disable";
-            } else {
-              document.getElementById('lockdownIdentifier').innerText = "Enable";
-            }
-          }).ReturnLockdown();
-
-          google.script.run.withSuccessHandler(r => {
-            document.getElementById('pingSlider').checked = (r === "true");
-          }).ReturnPings();
-
+          SetSliders();
           SetRankSelects();
         } catch (e) {  }
 
@@ -1010,25 +1067,41 @@
         window.AddNewRank = function(event) {
           event.preventDefault();
           let button = document.getElementById("newrank-button");
+          const hierarchySelect = document.getElementById("new-rank-before-select");
+
           let data = {
             title: document.getElementById("newRankTitle").value,
-            rankBefore: document.getElementById("new-rank-before-select").value,
+            rankBefore: hierarchySelect.value,
             viewerFolders: document.getElementById("newRankViewFolders").value,
-            editorFolders: document.getElementById("newRankEditFolders").value
+            editorFolders: document.getElementById("newRankEditFolders").value,
+            editRank: document.getElementById("editRankSelect").value
           }
 
           if (!data.title || !data.rankBefore) return Shake();
 
+          if (hierarchySelect.value == document.getElementById("editRankSelect").value) {
+            hierarchySelect.value = "";
+            button.disabled = true;
+            Shake();
+            button.classList.add("red");
+            button.innerText = "Cannot place a rank before itself"; //
+            return setTimeout(() => {
+              button.innerText = "Edit Existing Rank";
+              button.classList.remove("red");
+              button.disabled = false;
+            }, 3000);
+          }
+
           let valid = true;
           Object.values(data).forEach(value => {
-            if (value && (value.includes('"') || value.includes("'") || value.includes("`"))) {
+            if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
               valid = false;
             }
           });
 
           if (!valid) {
             Shake();
-            button.innerText = "No quotes allowed in input values";
+            button.innerText = "No special characters allowed in input values";
             button.disabled = true;
             setTimeout(() => {
               button.innerText = "Submit New Rank";
@@ -1041,7 +1114,12 @@
           button.innerHTML = '<div class="loader"></div>';
 
           google.script.run.withSuccessHandler((response) => {
-            if (response.toLowerCase().includes("not") || response.toLowerCase().includes("already") || response.toLowerCase().includes("invalid")) {
+            if (
+              response.toLowerCase().includes("not") 
+              || response.toLowerCase().includes("already") 
+              || response.toLowerCase().includes("invalid")
+              || response.toLowerCase().includes("unrelated")
+            ) {
               Shake();
               button.classList.add('red');
             } else {
@@ -1126,6 +1204,7 @@
           event.preventDefault();
           const title = document.getElementById("specTitle").value;
           const desc = document.getElementById("specDesc").value;
+          const editExisting = document.getElementById("editSpecSelect").value;
           const button = document.getElementById("spec-button");
 
           if (!title || !desc) return Shake();
@@ -1136,7 +1215,7 @@
 
           google.script.run.withSuccessHandler(response => {
             button.innerHTML = "";
-            if (response.includes("not")) {
+            if (response.toLowerCase().includes("not")) {
               Shake();
               button.classList.add('red');
             } else {
@@ -1146,22 +1225,22 @@
 
             button.innerText = response;
             setTimeout(() => {
-              button.innerText = "Submit New Specialization";
+              button.innerText = `${editExisting == "" ? "Submit New" : "Edit Existing"} Specialization`;
               button.disabled = false;
               button.classList.remove('red');
               button.classList.remove('green');
             }, 3000);
 
-            UpdateSpecSelects();
+            SetSpecSelects();
           }).withFailureHandler(error => {
             
             button.innerHTML = "";
             button.innerText = "Something went wrong";
             setTimeout(() => {
-              button.innerText = "Submit New Specialization";
+              button.innerText = `${editExisting == "" ? "Submit New" : "Edit Existing"} Specialization`;
               button.disabled = false;
             }, 3000);
-          }).AddSpec(title, desc);
+          }).AddSpec(title, desc, editExisting);
         };
 
         window.RemoveExistingSpec = function(event) {
@@ -1188,12 +1267,120 @@
               button.classList.remove('green');
             }, 1000);
 
-            UpdateSpecSelects();
+            SetSpecSelects();
           }).withFailureHandler(error => {
             console.log(error);
             button.disabled = false;
           }).RemoveSpec(title);
-        }
+        };
+
+        window.FillSpec = function(event) {
+          event.preventDefault();
+          const select = document.getElementById("editSpecSelect");
+          const titleField = document.getElementById("specTitle");
+          const descField = document.getElementById("specDesc");
+          const button = document.getElementById("spec-button");
+
+          if (select.value == "") {
+            titleField.value = "";
+            descField.value = "";
+            button.disabled = false;
+            select.disabled = false;
+            return button.innerText = "Submit New Specialization";
+          }
+
+          button.disabled = true;
+          select.disabled = true;
+          button.innerHTML = '<div class="loader"></div>';
+
+          google.script.run.withSuccessHandler(content => {
+            content = JSON.parse(content);
+            if (content.length !== 2) {
+              button.innerText = "Rank not found";
+              button.classList.add("red");
+              setTimeout(() => {
+                button.disabled = false;
+                select.disabled = false;
+                button.innerText = "Edit Existing Specialization";
+                return;
+              }, 3000); 
+            }
+
+            titleField.value = content[0];
+            descField.value = content[1];
+
+            button.disabled = false;
+            select.disabled = false;
+            button.innerHTML = '';
+            button.innerText = "Edit Existing Specialization";
+          }).withFailureHandler(() => {
+            button.innerHTML = "";
+            button.innerText = "Something went wrong";
+            setTimeout(() => {
+              button.innerText = "Submit New Specialization";
+              button.disabled = false;
+              select.disabled = false;
+            }, 3000);
+          }).GetSpecContent(select.value);
+        };
+
+        window.FillRank = function(event) {
+          event.preventDefault();
+
+          const select = document.getElementById("editRankSelect");
+          const titleInput = document.getElementById("newRankTitle");
+          const hierarchySelect = document.getElementById("new-rank-before-select");
+          const viewFoldersInput = document.getElementById("newRankViewFolders");
+          const editFoldersInput = document.getElementById("newRankEditFolders");
+          const button = document.getElementById("newrank-button");
+          const form = document.getElementById("newrankForm");
+
+          if (select.value == "") {
+            form.reset();
+            button.disabled = false;
+            return button.innerText = "Submit New Rank";
+          }
+
+          button.disabled = true;
+          select.disabled = true;
+          button.innerHTML = '<div class="loader"></div>';
+
+          google.script.run.withSuccessHandler(content => {
+            content = JSON.parse(content);
+            if (content.length !== 4) {
+              button.innerText = "Rank not found";
+              button.classList.add("red");
+              setTimeout(() => {
+                form.reset();
+                button.disabled = false;
+                select.disabled = false;
+                button.innerText = "Edit Existing Rank";
+                return;
+              }, 3000); 
+            }
+
+            titleInput.value = content[0];
+            hierarchySelect.value = content[1];
+            viewFoldersInput.value = content[2];
+            editFoldersInput.value = content[3];
+
+            button.disabled = false;
+            select.disabled = false;
+            button.innerHTML = "";
+            button.innerText = "Edit Existing Rank";
+          }).withFailureHandler(error => {
+            button.innerText = "something went wrong";
+            button.classList.add("red");
+            setTimeout(() => {
+              form.reset();
+              button.disabled = false;
+              select.dsiabled = false;
+              button.classList.remove("red");
+              select.value = "";
+              button.innerText = "Submit New Rank";
+            }, 3000);
+          }).GetRankContent(select.value);
+        };
 
       });
     </script>
@@ -1225,6 +1412,9 @@
           <button id="manageRank" class="submitButton">Manage Ranks</button>
           <div id="newRankContent" class="container">
             <form id="newrankForm">
+              <label for="editRankSelect">Select if you want to edit an exsiting rank:</label><br>
+              <select id="editRankSelect" onchange="FillRank(event)">
+              </select><br>
               <label for="newRankTitle">Add a title to your rank:</label><br>
               <input id="newRankTitle" type="text" placeholder="Add rank Title" required><br>
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:</label><br>
@@ -1257,6 +1447,9 @@
           <button id="manageSpecialization" class="submitButton">Manage Specializations</button>
           <div id="manageSpecContent" class="container">
             <form id="spec-form">
+              <label for="editSpecSelect">Select if you want to edit an existing specialization:</label><br>
+              <select id="editSpecSelect" onchange="FillSpec(event)">
+              </select><br>
               <label for="specTitle">Give your specialization a name:</label><br>
               <input type="text" id="specTitle" placeholder="Add a name to your specialization" maxlength="20" required><br>
               <label for="specDesc">Give your specialization a description:</label><br>
@@ -1574,22 +1767,20 @@
             break;
         }
 
-        if (
-          dataToSubmit.name.includes('"') || dataToSubmit.name.includes("'") || dataToSubmit.name.includes("`")
-          || dataToSubmit.steamid.includes('"') || dataToSubmit.steamid.includes("'") || dataToSubmit.steamid.includes("`")
-          || dataToSubmit.discordid.includes('"') || dataToSubmit.discordid.includes("'") || dataToSubmit.discordid.includes("`")
-          || dataToSubmit.email.includes('"') || dataToSubmit.email.includes("'") || dataToSubmit.email.includes("`")
-          || dataToSubmit.reason.includes('"') || dataToSubmit.reason.includes("'") || dataToSubmit.reason.includes("`")
-          || dataToSubmit.log_id.includes('"') || dataToSubmit.log_id.includes("'") || dataToSubmit.log_id.includes("`")
-        ) {
+        Object.values(dataToSubmit).forEach(value => {
+          if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+            valid = false;
+          }
+        });
+
+        if (!valid) {
           Shake();
-          button.innerText = "No quotes of any kind allowed in inputs";
-          console.log("You did not fill out all questions correctly -- Submission failed");
+          button.innerText = "No special characters allowed in input values";
+          button.disabled = true;
           setTimeout(() => {
-            button.innerText = "Submit";
+            button.innerText = "Submit New Rank";
             button.disabled = false;
-          }, 3000);
-          console.timeEnd("Log Submission Runtime");
+          }, 2000);
           return;
         }
 
@@ -1855,24 +2046,22 @@
                   break;
               }
 
-              if (editdata.current_email.includes('"') || editdata.current_email.includes("'") || editdata.current_email.includes("`")
-                || editdata.name.includes('"') || editdata.name.includes("'") || editdata.name.includes("`")
-                || editdata.discordid.includes('"') || editdata.discordid.includes("'") || editdata.discordid.includes("`")
-                || editdata.email.includes('"') || editdata.email.includes("'") || editdata.email.includes("`")
-                || editdata.notes.includes('"') || editdata.notes.includes("'") || editdata.notes.includes("`")
-                || editdata.steamid.includes('"') || editdata.steamid.includes("'") || editdata.steamid.includes("`")
-                || editdata.specialization.includes('"') || editdata.specialization.includes("'") || editdata.specialization.includes("`")
-              ) {
-                Shake();
-                button.innerText = "No quotes of any kind allowed in inputs";
-                console.log("You did not fill out all questions correctly -- Submission failed");
-                setTimeout(() => {
-                  button.innerText = "Submit";
-                  button.disabled = false;
-                }, 3000);
-                console.timeEnd("Log Submission Runtime");
-                return;
+              Object.values(editdata).forEach(value => {
+              if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+                valid = false;
               }
+            });
+
+            if (!valid) {
+              Shake();
+              button.innerText = "No special characters allowed in input values";
+              button.disabled = true;
+              setTimeout(() => {
+                button.innerText = "Submit New Rank";
+                button.disabled = false;
+              }, 2000);
+              return;
+            }
 
               if (validEdit == true) {
                 button.innerText = "";
@@ -1921,7 +2110,7 @@
 
             document.addEventListener("DOMContentLoaded", function () {
 
-              UpdateSpecSelects();
+              SetSpecSelects();
 
               document.getElementById('curremailfield').addEventListener('change', () => {
                 const emailField = document.getElementById('curremailfield');
@@ -1974,6 +2163,16 @@
                   button.innerHTML = '';
                   button.innerText = "Submit";
                 }).ReturnUserData(emailField.value, true);
+              });
+
+              let specInterval;
+              document.getElementById("infoTypeList").addEventListener("change", () => {
+                if (document.getElementById("infoTypeList").value === "Edit Specialization") {
+                  SetSpecSelects();
+                  specInterval = setInterval(() => { SetSpecSelects() }, 10000);
+                } else {
+                  try { clearInterval(specInterval) } catch(e) { }
+                }
               });
             });
           </script>

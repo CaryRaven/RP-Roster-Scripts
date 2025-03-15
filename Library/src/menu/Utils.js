@@ -232,7 +232,7 @@ function filterQuotes(inputData) {
   let valid = true;
 
   values.forEach(value => {
-    if (value.includes('"') || value.includes("'") || value.includes("`")) valid = false;
+    if (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{")) valid = false;
   })
 
   return valid;

@@ -316,7 +316,7 @@ function sendDiscordPermissionReport(flagArray) {
 
 /**
  * Send config messages, current supported types:
- * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet
+ * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet, rankEdit
  * @param {String} type - The config option that was changed
  * @param {Boolean|String} value - The value that the config option currently has
  * @param {Object} userData
@@ -340,7 +340,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
   }
 
-  userData = `Name: ${userData.name}\nSteamID: ${userData.steamId}\nDiscordID: ${userData.discordId}`;
+  let userInfo = `Name: ${userData.name}\nSteamID: ${userData.steamId}\nDiscordID: ${userData.discordId}`;
   let embedTitle;
   let embedColor;
   let info;
@@ -403,6 +403,22 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       info = `The roster has been fully restored to its latest backup, which was made ${timeSinceBackup} minutes ago.`;
       footerMessage = "";
       break;
+    case "rankEdit":
+      embedTitle = `[🛠️] 🟩 ${userData.editRank} Edited 🟩`;
+      embedColor = "1143627";
+
+      userData.viewerAccess = userData.viewerAccess.map(id => {
+        const f = DriveApp.getFolderById(id);
+        return `"${f.getName()}" `;
+      });
+      userData.editorAccess = userData.editorAccess.map(id => {
+        const f = DriveApp.getFolderById(id);
+        return `"${f.getName()}" `;
+      });
+
+      info = `Title: ${userData.title}\nHierarchy Position: before ${userData.rankBefore}\nViewer Access to: ${userData.viewerAccess}\nEditor Access to: ${userData.editorAccess}`;
+      footerMessage = "Not all change info listen above is necessarily new";
+      break;
     default:
       throw new Error("This type is not supported");
   }
@@ -422,7 +438,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
           },
           {
             name: "Edited by",
-            value: userData,
+            value: userInfo,
             inline: false,
           },
         ],
@@ -563,7 +579,7 @@ function sendDiscordNewRank(rank, added = true) {
  * @param {Object} notes - information about the changelog
  * @returns {Void}
  */
-function sendDiscordChangeLog(notes) {
+function sendDiscordChangeLog(notes, url = '') {
   notes = notes.map(note => `- ${note}`).join('\n');
 
    let payload = JSON.stringify({
@@ -576,7 +592,7 @@ function sendDiscordChangeLog(notes) {
         fields: [
           {
             name: "Change Notes",
-            value: notes,
+            value: `${notes}\n${url}`,
             inline: false,
           },
         ],

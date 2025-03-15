@@ -456,6 +456,7 @@ function getHtmlTaskManager() {
 
 /**
  * Get the html page for creating a new task
+ * NO PARAMETERS
  * @returns {String}
  */
 function getHtmlAddTask() {
@@ -734,6 +735,11 @@ function getHtmlAddTask() {
 </html>`
 }
 
+/**
+ * Gets the futuristic into animation
+ * Required Params = name, rank
+ * @returns {String}
+ */
 function getHtmlTerminalAnimation() {
   return `
 <!DOCTYPE html>

@@ -4,7 +4,7 @@ function SubmitChange(changes) {
     fields: changeArray,
     date: new Date()
   }));
-  RosterService.sendDiscordChangeLog(changeArray);
+  RosterService.sendDiscordChangeLog(changeArray, ScriptApp.getService().getUrl().toString());
 }
 
 function GetChangeNotes() {
@@ -19,13 +19,13 @@ function AddNewRank(inputData) {
   if (!inputData) return "No input data";
   
   let valid = false;
-  let message = "Successfully added new rank";
+  let message = inputData.editRank === "" ? `Successfully added ${inputData.title}`: `Successfully edited ${inputData.editRank}`;
   let viewerFolders = [];
   let editorFolders = [];
   valid = RosterService.filterQuotes(inputData);
 
   if (valid !== true) return "Invalid data";
-  if (LIBRARY_SETTINGS.ranks.indexOf(inputData.title) >= 0) return "Rank Already exists";
+  if (LIBRARY_SETTINGS.ranks.indexOf(inputData.title) >= 0 && inputData.editRank === "") return "Rank Already exists";
 
   // Add new row to settings (backend)
   if (inputData.viewerFolders) {
@@ -64,40 +64,93 @@ function AddNewRank(inputData) {
     if (valid !== true) return message;
   } else { editorFolders = []; }
 
-  LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
-    "viewerAccess": viewerFolders,
-    "editorAccess": editorFolders
-  });
+  // If Editing => check if hierarchy changed => remove previous rank location
+  let rownum = 0;
+  const hierarchyChange = (LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank) + 1 !== LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore) && inputData.editRank != "");
 
-  LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.title);
+  if (hierarchyChange) {
+    rownum = RosterService.getLastRankRow(inputData.editRank) - RosterService.getStartRankRow(inputData.editRank);
+    valid = RemoveRank(inputData.editRank, false);
+    if (valid !== "Success") return "Cannot move a rank with active members";
+  }
 
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
-
-  const lastBeforeRow = RosterService.getLastRankRow(inputData.rankBefore);
   const s = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
-  s.insertRowAfter(lastBeforeRow + 1);
-  s.insertRowAfter(lastBeforeRow);
-  s.moveRows(s.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
-  const insertRow = lastBeforeRow + 2;
+  // title changed without hierarchy change?
+  if (!hierarchyChange && inputData.title !== inputData.editRank && inputData.editRank !== "") {
+    const firstRankRow = RosterService.getStartRankRow(inputData.editRank)
+    s.getRange(firstRankRow, 3).setValue(inputData.title);
+    const lastRankRow = RosterService.getLastRankRow(inputData.editRank);
 
-  [[3, 3], [5, 8], [10, 15], [17, 17]].forEach(cellpair => {
-    let numcols = (cellpair[1] - cellpair[0]) + 1;
-    s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
-    s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
-  });
+    for (let i = firstRankRow; i <= lastRankRow; i++) {
+      s.getRange(i, 4).setValue(inputData.title);
+    }
+  }
 
-  s.getRange(insertRow, 3, 1, 15).setValues([[
-    inputData.title, inputData.title, "", "", "", "", "", 
-    `= INFRACTIONS(F${insertRow}, Infractions!E:E, Infractions!C:C, Infractions!H:H, Infractions!I:I)`,
-    `= STATUS(F${insertRow}, G${insertRow}, E${insertRow}, H${insertRow}, 'LOA Logs'!E:E, N${insertRow}, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P${insertRow})`,
-    "",
-    `= LAST_RANKCHANGE(F${insertRow}, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
-    `= LOA_DATE(F${insertRow}, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
-    false,
-    `= BLACKLIST_DATE(F${insertRow}, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
-  ]]);
-  RosterService.sendDiscordNewRank(inputData.title);
+  // Insert into roster if new rank or hierarchy change
+  if (hierarchyChange || inputData.editRank === "") {
+    const lastBeforeRow = RosterService.getLastRankRow(inputData.rankBefore);
+
+    s.insertRowAfter(lastBeforeRow + 1);
+    s.insertRowAfter(lastBeforeRow);
+    s.moveRows(s.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
+    const insertRow = lastBeforeRow + 2;
+
+    [[3, 3], [5, 8], [10, 15], [17, 17]].forEach(cellpair => {
+      let numcols = (cellpair[1] - cellpair[0]) + 1;
+      s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+      s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+    });
+
+    s.getRange(insertRow, 3, 1, 15).setValues([[
+      inputData.title, inputData.title, "", "", "", "", "", 
+      `= INFRACTIONS(F${insertRow}, Infractions!E:E, Infractions!C:C, Infractions!H:H, Infractions!I:I)`,
+      `= STATUS(F${insertRow}, G${insertRow}, E${insertRow}, H${insertRow}, 'LOA Logs'!E:E, N${insertRow}, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P${insertRow})`,
+      "",
+      `= LAST_RANKCHANGE(F${insertRow}, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
+      `= LOA_DATE(F${insertRow}, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
+      false,
+      `= BLACKLIST_DATE(F${insertRow}, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
+    ]]);
+  }
+
+  if (hierarchyChange) AddRankRow(inputData.title, rownum, false);
+
+  // Prepare settings
+  if (hierarchyChange || inputData.editRank === "") {
+    LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
+      "viewerAccess": viewerFolders,
+      "editorAccess": editorFolders
+    });
+
+    LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.title);
+  } else {
+    LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, {
+      "viewerAccess": viewerFolders,
+      "editorAccess": editorFolders
+    });
+    
+    if (!hierarchyChange && inputData.title !== inputData.editRank && inputData.editRank !== "") {
+      LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title);
+    }
+  }
+
+  // Update settings
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+
+  if (inputData.editRank == "") {
+    RosterService.sendDiscordNewRank(inputData.title);
+  } else {
+    let userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+    userData.title = inputData.title;
+    userData.editRank = inputData.editRank;
+    userData.rankBefore = inputData.rankBefore;
+    userData.viewerAccess = viewerFolders;
+    userData.editorAccess = editorFolders;
+    
+    RosterService.sendDiscordConfig("rankEdit", false, userData);
+  }
   return message;
 }
 
@@ -106,7 +159,7 @@ function AddNewRank(inputData) {
  * @param {String} rank
  * @returns {String}
  */
-function RemoveRank(rank) {
+function RemoveRank(rank, discordnotif = true) {
   const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   if (!rank || rankIndex < 0) return console.log("Invalid rank");
 
@@ -124,7 +177,8 @@ function RemoveRank(rank) {
   LIBRARY_SETTINGS.ranks.splice(rankIndex, 1);
   LIBRARY_SETTINGS.folders.splice(rankIndex, 1);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
-  RosterService.sendDiscordNewRank(rank, false);
+
+  if (discordnotif) RosterService.sendDiscordNewRank(rank, false);
   return `Success`;
 }
 
@@ -134,7 +188,7 @@ function RemoveRank(rank) {
  * @param {Number} num (optional)
  * @returns {Void|String}
  */
-function AddRankRow(rank, num = 1) {
+function AddRankRow(rank, num = 1, discordnotif = true) {
   if (!rank) return "no";
 
   for (let i = 1; i <= num; i++) {
@@ -182,7 +236,7 @@ function AddRankRow(rank, num = 1) {
     }
   }
 
-  RosterService.sendDiscordConfigRankRow(rank, true, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), num);
+  if (discordnotif) RosterService.sendDiscordConfigRankRow(rank, true, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), num);
 }
 
 /**
@@ -282,6 +336,9 @@ function ToggleLockdown(value) {
   RosterService.sendDiscordConfig("lockdown", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
+/**
+ * @returns {String}
+ */
 function ReturnLockdown() {
   let properties = PropertiesService.getScriptProperties();
   let lockdownValue = properties.getProperty("lockdownEnabled");
@@ -296,6 +353,9 @@ function ResetPermissions() {
   PermissionsGuard();
 }
 
+/**
+ * @returns {Number}
+ */
 function GetLastBackupTime() {
   const backupTime = JSON.parse(PropertiesService.getScriptProperties().getProperty("backupTime"));
   const backupDate = backupTime ? new Date(backupTime) : new Date();
@@ -373,6 +433,9 @@ function RestoreAllDocAccess() {
   });
 }
 
+/**
+ * @param {String} inputValue - SteamID that was input into the search bar
+ */
 function GetSpreadsheetData(inputValue) {
   if (!inputValue) return;
   // Always Checks Column 8 => might make this configurable in the future
@@ -426,6 +489,10 @@ function GetSpreadsheetData(inputValue) {
   return JSON.stringify(results);
 }
 
+/**
+ * @param {String} rankToAdd
+ * @param {String} currentRank
+ */
 function UpdateAccess(rankToAdd, currentRank) {
   if (rankToAdd === "") return;
   if (LIBRARY_SETTINGS.ranks.indexOf(rankToAdd) >= LIBRARY_SETTINGS.ranks.indexOf(currentRank) && currentRank !== "Blackshadow Staff") return;
@@ -456,12 +523,13 @@ function RestoreSheet() {
 }
 
 /**
- * Add a new specialization to the list
+ * Add a new specialization to the list / edit existing one
  * @param {String} title
- * @param {String} desc
+ * @param {String} desc - description
+ * @param {String} edit - title of specialization to edit
  * @returns {String}
  */
-function AddSpec(title, desc) {
+function AddSpec(title, desc, edit) {
   if (!title || !desc) return "Do not try to overcome validation";
   if (title.length > 20 || desc.length > 250) return "Do not try to overcome validation";
 
@@ -470,15 +538,31 @@ function AddSpec(title, desc) {
     if (spec.title.includes(title)) taken = false;
   })
   
-  if (taken !== true) return "Cannot have duplicate specializations";
+  if (taken !== true && edit === "") return "Cannot have duplicate specializations";
 
-  LIBRARY_SETTINGS.specializations.push({
-    title: title,
-    desc: desc
-  });
+  // Meaning we're adding a new one
+  if (edit === "") {
+    LIBRARY_SETTINGS.specializations.push({
+      title: title,
+      desc: desc
+    });
+  } else {
+    let found = false;
+    let nothingChanged = false;
+    LIBRARY_SETTINGS.specializations.forEach((spec, i) => {
+      if (spec.title === edit) {
+        if (spec.title === title && spec.desc === desc) return nothingChanged = true;
+        LIBRARY_SETTINGS.specializations.splice(i, 1, { title: title, desc: desc });
+        found = true;
+      }
+    });
+    if (nothingChanged) return "Nothing was edited"
+    if (!found) return "Specialization not found";
+  }
+
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
   RosterService.init(LIBRARY_SETTINGS);
-  return "Specialization Added";
+  return `${edit === "" ? "Specialization Added" : "Specialization Edited"}`;
 }
 
 /**
@@ -499,4 +583,36 @@ function RemoveSpec(title) {
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
   RosterService.init(LIBRARY_SETTINGS);
   return "Specialization Removed";
+}
+
+/**
+ * @param {String} title
+ * @returns {JSON.string}
+ */
+function GetSpecContent(title) {
+  let returnArray = [];
+  LIBRARY_SETTINGS.specializations.forEach(spec => {
+    if (spec.title === title) {
+      returnArray = [spec.title, spec.desc];
+    }
+  });
+  return JSON.stringify(returnArray);
+}
+
+/**
+ * @param {String} title
+ */
+function GetRankContent(title) {
+  let returnArray = [];
+  LIBRARY_SETTINGS.ranks.forEach((rank, i) => {
+    if (rank === title) {
+      returnArray = [
+        rank,
+        LIBRARY_SETTINGS.ranks[i + 1],
+        LIBRARY_SETTINGS.folders[i].viewerAccess,
+        LIBRARY_SETTINGS.folders[i].editorAccess
+      ];
+    }
+  });
+  return JSON.stringify(returnArray);
 }

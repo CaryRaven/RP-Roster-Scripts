@@ -6,6 +6,7 @@
     * {
       font-size: 24px;
     }
+    
     body {
       font-family: monospace;
       background-color: black;
@@ -23,6 +24,7 @@
       font-family: monospace;
       outline: none;
     }
+
     @keyframes glitch {
       0% { transform: translate(0, 0); filter: hue-rotate(0deg); }
       20% { transform: translate(-2px, 2px); filter: hue-rotate(20deg); }
@@ -31,9 +33,11 @@
       80% { transform: translate(1px, -1px); filter: hue-rotate(-10deg); }
       100% { transform: translate(0, 0); filter: hue-rotate(0deg); }
     }
+
     .glitch-effect {
       animation: glitch 0.1s infinite;
     }
+
     .glitch-text {
       display: inline-block;
       position: relative;
