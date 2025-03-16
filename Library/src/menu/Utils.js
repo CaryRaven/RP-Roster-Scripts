@@ -232,7 +232,12 @@ function filterQuotes(inputData) {
   let valid = true;
 
   values.forEach(value => {
-    if (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{")) valid = false;
+    try {
+      if (!value) return;
+      if (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{")) valid = false;
+    } catch(e) {
+      Logger.log(value + " could not be evaluated");
+    }
   })
 
   return valid;
@@ -339,4 +344,61 @@ function getRankContent(title) {
     }
   });
   return JSON.stringify(returnArray);
+}
+
+/**
+ * @param {String} inputValue - SteamID that was input into the search bar
+ * @returns {JSON.Array}
+ */
+function getSpreadsheetData(inputValue) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!inputValue || typeof inputValue !== "string") throw new Error("Invalid title");
+
+  // Always Checks Column 8 => might make this configurable in the future
+  const sheets = [
+    { id: LIBRARY_SETTINGS.rankchangeId, label: "Rank Change" },
+    { id: LIBRARY_SETTINGS.infractionId, label: "Infraction" },
+    { id: LIBRARY_SETTINGS.loaId, label: "LOA Log" },
+    { id: LIBRARY_SETTINGS.blId, label: "Suspension / Blacklist Log" },
+  ];
+
+  const results = [];
+
+  sheets.forEach(sheetInfo => {
+    const sheet = getCollect(sheetInfo.id);
+    const sheetName = sheet.getName();
+    try {
+      if (!sheet) {
+        Logger.log(`Sheet not found: ${sheetName}`);
+        return;
+      }
+
+      // Get headers & data
+      const headersRaw = sheet.getRange(6, 3, 1, sheet.getMaxColumns()).getValues();
+      const headers = headersRaw[0].filter(Boolean);
+      const data = sheet.getRange(7, 3, sheet.getLastRow() - 6, 11).getValues();
+
+      const matchingData = data
+        .filter(row => {
+          // filter empty logs
+          if (!row || row.length < 8 || !row[2]) return false;
+          const cellValue = row[2].toString().trim().toLowerCase();
+          const normalizedInput = inputValue.trim().toLowerCase();
+          return cellValue === normalizedInput;
+        })
+        .map(row => {
+          // compose object
+          const rowObject = { sheetLabel: sheetInfo.label };
+          headers.forEach((header, index) => {
+            rowObject[header] = row[index] !== undefined ? row[index] : null;
+          });
+          return rowObject;
+        });
+      results.push(...matchingData);
+    } catch (error) {
+      Logger.log(`Error processing sheet ${sheetName}: ${error.message}`);
+    }
+  });
+
+  return JSON.stringify(results);
 }

@@ -316,7 +316,7 @@ function sendDiscordPermissionReport(flagArray) {
 
 /**
  * Send config messages, current supported types:
- * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet, rankEdit
+ * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet, rankEdit, folderEdit, cooldownChange
  * @param {String} type - The config option that was changed
  * @param {Boolean|String} value - The value that the config option currently has
  * @param {Object} userData
@@ -418,6 +418,18 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
 
       info = `Title: ${userData.title}\nHierarchy Position: before ${userData.rankBefore}\nViewer Access to: ${userData.viewerAccess}\nEditor Access to: ${userData.editorAccess}`;
       footerMessage = "Not all change info listen above is necessarily new";
+      break;
+    case "folderEdit":
+      embedTitle = value === true ? `[🛠️] 🟩 ${userData.title} Added to Folder List 🟩` : `[🛠️] ⚠️ ${userData.title} Removed from Folder List ⚠️`;
+      embedColor = value === true ? "1143627" : "16497668";
+      info = value === true ? `${userData.title} is now recognized by the Admin Menu and its functions. It can be added to ranks in the config menu.` : `${userData.title} is no longer recognized by the Admin Menu and its functions. No operations (such as permission checks) will go through this folder.`;
+      footerMessage = "";
+      break;
+    case "cooldownChange":
+      embedTitle = value === true ? `[🛠️] LOA Cooldown Changed to ${userData.days} Days` : `[🛠️] LOA Cooldown Changed to ${userData.days} Days`;
+      embedColor = "1143627";
+      info = value === true ? `Everybody will now have to wait a minimum of ${userData.days} days between LOAs.` : `Everybody will now have to wait a minimum of ${userData.days} days between promotions.`;
+      footerMessage = "";
       break;
     default:
       throw new Error("This type is not supported");

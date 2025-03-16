@@ -70,68 +70,68 @@
           initRanks = [];
         }
 
-        rankSelect.innerHTML = '<option value=""></option>';
-        rankRowSelect.innerHTML = '<option value=""></option>';
-        removeRankSelect.innerHTML = '<option value=""></option>';
-
-        if (editRankSelect.value === "" && addRankSelect.value === "") {
-          addRankSelect.innerHTML = '<option value=""></option>';
-          editRankSelect.innerHTML = '<option value=""></option>';
-        }
+        if (rankSelect.value === "") rankSelect.innerHTML = '<option value=""></option>';
+        if (rankRowSelect.value === "") rankRowSelect.innerHTML = '<option value=""></option>';
+        if (removeRankSelect.value === "") removeRankSelect.innerHTML = '<option value=""></option>';
+        if (addRankSelect.value === "") addRankSelect.innerHTML = '<option value=""></option>';
+        if (editRankSelect.value === "") editRankSelect.innerHTML = '<option value=""></option>';
 
         initRanks.forEach(rankName => {
-          const rankOption = document.createElement("option");
-          rankOption.value = rankName;
-          rankOption.innerText = rankName;
-          rankSelect.appendChild(rankOption);
 
           if (!rankName.includes("Site") && !rankName.includes("Chief")) {
-            const rankRowOption = document.createElement("option");
-            rankRowOption.value = rankName;
-            rankRowOption.innerText = rankName;
-            rankRowSelect.appendChild(rankRowOption);
 
-            if (editRankSelect.value == "" && addRankSelect.value === "") {
+            if (rankSelect.value === "") {
+              const rankOption = document.createElement("option");
+              rankOption.value = rankName;
+              rankOption.innerText = rankName;
+              rankSelect.appendChild(rankOption); 
+            }
+
+            if (rankRowSelect.value === "") {
+              const rankRowOption = document.createElement("option");
+              rankRowOption.value = rankName;
+              rankRowOption.innerText = rankName;
+              rankRowSelect.appendChild(rankRowOption);
+            }
+
+            if (addRankSelect.value === "") {
               const addRankOption = document.createElement("option");
               addRankOption.value = rankName;
               addRankOption.innerText = rankName;
               addRankSelect.appendChild(addRankOption);
+            }
 
+            if (editRankSelect.value == "") {
               const editRankOption = document.createElement("option");
               editRankOption.value = rankName;
               editRankOption.innerText = rankName;
               editRankSelect.appendChild(editRankOption);
             }
 
-            const removeRankOption = document.createElement("option");
-            removeRankOption.value = rankName;
-            removeRankOption.innerText = rankName;
-            removeRankSelect.appendChild(removeRankOption);
+            if (removeRankSelect.value === "") {
+              const removeRankOption = document.createElement("option");
+              removeRankOption.value = rankName;
+              removeRankOption.innerText = rankName;
+              removeRankSelect.appendChild(removeRankOption);
+            }
           }
         });
       };
 
       window.SetSliders = function() {
         google.script.run.withSuccessHandler(r => {
-          document.getElementById('manualEditingSlider').checked = !(r === "true");
-        }).ReturnManualEditing();
-
-        google.script.run.withSuccessHandler(re => {
-            document.getElementById('backupSlider').checked = (re === "true");
-        }).ReturnBackup();
-
-        google.script.run.withSuccessHandler(res => {
-          if (res === "true") {
+          r = JSON.parse(r);
+          document.getElementById('manualEditingSlider').checked = !(r[0] === "true");
+          document.getElementById('pingSlider').checked = (r[1] === "true");
+          document.getElementById('backupSlider').checked = (r[2] === "true");
+          if (r[3] === "true") {
             document.getElementById('lockdown-topbanner').style.display = "block";
             document.getElementById('lockdownIdentifier').innerText = "Disable";
           } else {
+            document.getElementById('lockdown-topbanner').style.display = "none";
             document.getElementById('lockdownIdentifier').innerText = "Enable";
           }
-        }).ReturnLockdown();
-
-        google.script.run.withSuccessHandler(r => {
-          document.getElementById('pingSlider').checked = (r === "true");
-        }).ReturnPings();
+        }).ReturnSliders();
       };
     });
   </script>
@@ -546,8 +546,7 @@
             
             document.getElementById("loading-search").innerText = "An error occured when trying to fetch the data: " + error;
             document.getElementById("searchLoading").setAttribute("style", "display: none;");
-          })
-          .GetSpreadsheetData(inputValue);
+          }).GetSpreadsheetData(inputValue);
       }
 
       function DisplayData(data) {
@@ -723,32 +722,16 @@
           const button = document.getElementById('lockdownButton');
           button.disabled = true;
 
-          google.script.run.withSuccessHandler(response => {
-
-            google.script.run.withSuccessHandler(() => {
-              document.getElementById('config-loading').innerHTML = '';
-              button.disabled = false;
-              if (response === "false") {
-                document.getElementById('lockdown-topbanner').style.display = "block";
-                document.getElementById('lockdownIdentifier').innerText = "Disable";
-              } else {
-                document.getElementById('lockdown-topbanner').style.display = "none";
-                document.getElementById('lockdownIdentifier').innerText = "Enable";
-              }
-              google.script.run.withSuccessHandler((response) => {
-                document.getElementById('backupSlider').checked = (response === "true");
-              }).ReturnBackup();
-            }).withFailureHandler((error) => {
-              document.getElementById('config-loading').innerHTML = '';
-              
-              button.disabled = false;
-            }).ToggleLockdown(response === "true" ? false : true);
-
+          google.script.run.withSuccessHandler((re) => {
+            document.getElementById('config-loading').innerHTML = '';
+            button.disabled = false;
+            console.log(re);
+            SetSliders();
           }).withFailureHandler((error) => {
             document.getElementById('config-loading').innerHTML = '';
             
             button.disabled = false;
-          }).ReturnLockdown();
+          }).ToggleLockdown();
         };
 
         window.AddRankRow = function (event) {
@@ -1039,6 +1022,8 @@
           }).SubmitChange(changelog);
         };
 
+        // *********** DROPDOWN HANDLERS ************
+
         let coll = document.getElementById("manageRank");
 
         coll.addEventListener("click", function() {
@@ -1062,6 +1047,42 @@
             content.style.display = "block";
           }
         });
+
+        let coll3 = document.getElementById("manageCooldown");
+
+        coll3.addEventListener("click", function() {
+          this.classList.toggle("active");
+          var content = document.getElementById("manageCooldownContent");
+          if (content.style.display === "block") {
+            content.style.display = "none";
+          } else {
+            content.style.display = "block";
+          }
+          google.script.run.withSuccessHandler(r => {
+            r = JSON.parse(r);
+            document.getElementById("loaCooldown").value = r[0];
+            document.getElementById("promoCooldown").value = r[1];
+          }).ReturnCooldown();
+        });
+
+        let coll4 = document.getElementById("manageThreshold");
+
+        coll4.addEventListener("click", function() {
+          this.classList.toggle("active");
+          var content = document.getElementById("manageThresholdContent");
+          if (content.style.display === "block") {
+            content.style.display = "none";
+          } else {
+            content.style.display = "block";
+          }
+          google.script.run.withSuccessHandler(r => {
+            r = JSON.parse(r);
+            document.getElementById("threshold").value = r[0];
+            document.getElementById("thresholdActionSelect").value = r[1];
+          }).ReturnThreshold();
+        });
+
+        // **********************************************
 
         window.AddNewRank = function(event) {
           event.preventDefault();
@@ -1170,13 +1191,15 @@
             google.script.run.withSuccessHandler(response => {
               if (response.toLowerCase().includes("not") || response.toLowerCase().includes("invalid")) {
                 Shake();
+                response.toLowerCase().includes("not") ? button.innerText = "Population" : button.innerText = "Invalid";
+                console.log(response);
                 button.classList.add('red');
               } else {
                 button.classList.add('green');
+                button.innerText = "Success";
                 document.getElementById("newrankForm").reset();
               }
 
-              button.innerText = response;
               setTimeout(() => {
                 button.innerText = "Delete";
                 document.getElementById('config-loading').innerHTML = "";
@@ -1381,6 +1404,168 @@
           }).GetRankContent(select.value);
         };
 
+        window.ManageAllFolders = function(event) {
+          event.preventDefault();
+          let id = document.getElementById("newFolderId").value;
+          const button = document.getElementById("newfolder-button");
+          id = id.replace(/\s+/g, "");
+          if (!id) return Shake();
+
+          button.disabled = true;
+
+          google.script.run.withSuccessHandler(response => {
+            console.log(response);
+            if (response.toLowerCase().includes("no") || response.toLowerCase().includes("invalid")) {
+              button.classList.add("red");
+              Shake();
+              return setTimeout(() => {
+                button.disabled = false;
+                button.classList.remove("red");
+              }, 3000);
+            } else {
+              button.classList.add("green");
+              response.includes("removed") ? button.innerText = "Removed" : button.innerText = "Added";
+              return setTimeout(() => {
+                button.disabled = false;
+                button.classList.remove("green");
+                button.innerText = "Manage";
+                document.getElementById("config-new-folder").reset();
+              }, 3000);
+            }
+          }).withFailureHandler(error => {
+            console.log(error);
+            button.classList.add("red");
+            Shake();
+            return setTimeout(() => {
+              button.disabled = false;
+              button.classList.remove("red");
+            }, 3000);
+          }).AddFolder(id);
+        }
+
+        window.ChangeLOACooldown = function(event) {
+          event.preventDefault();
+          const days = document.getElementById("loaCooldown").value;
+          const button = document.getElementById("loaCooldown-button");
+          if (Number(days) > 60 || Number(days) < 0 || !days) return Shake();
+
+          button.disabled = true;
+
+          google.script.run.withSuccessHandler(response => {
+            if (!response) {
+              button.classList.add("green");
+              button.innerText = "Edited";
+              setTimeout(() => {
+                button.classList.remove("green");
+                button.innerText = "Change";
+                button.disabled = false;
+              }, 3000);
+            } else {
+              button.classList.add("red");
+              button.innerText = "Invalid";
+              setTimeout(() => {
+                button.classList.remove("red");
+                button.innerText = "Change";
+                button.disabled = false;
+              }, 3000);
+            }
+          }).withFailureHandler(() => {
+            button.classList.add("red");
+            button.innerText = "Error";
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.innerText = "Change";
+              button.disabled = false;
+            }, 3000);
+          }).ChangeLOACooldown(days);
+        };
+
+        window.ChangePromoCooldown = function(event) {
+          event.preventDefault();
+          const days = document.getElementById("promoCooldown").value;
+          const button = document.getElementById("promoCooldown-button");
+          if (Number(days) > 60 || Number(days) < 0 || !days) return Shake();
+
+          button.disabled = true;
+
+          google.script.run.withSuccessHandler(response => {
+            if (!response) {
+              button.classList.add("green");
+              button.innerText = "Edited";
+              setTimeout(() => {
+                button.classList.remove("green");
+                button.innerText = "Change";
+                button.disabled = false;
+              }, 3000);
+            } else {
+              button.classList.add("red");
+              button.innerText = "Invalid";
+              setTimeout(() => {
+                button.classList.remove("red");
+                button.innerText = "Change";
+                button.disabled = false;
+              }, 3000);
+            }
+          }).withFailureHandler(() => {
+            button.classList.add("red");
+            button.innerText = "Error";
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.innerText = "Change";
+              button.disabled = false;
+            }, 3000);
+          }).ChangePromoCooldown(days);
+        };
+
+        // TODO
+        window.ManageThreshold = function(event) {
+          event.preventDefault();
+          const infractions = document.getElementById("threshold");
+          const action = document.getElementById("thresholdActionSelect");
+          const button = document.getElementById("threshold-button");
+          if (Number(infractions.value) > 10 || Number(infractions.value) < 1 || !infractions.value) return Shake();
+          if (!action.value) return Shake();
+
+          button.disabled = true;
+          infractions.disabled = true;
+          action.disabled = true;
+          button.innerHTML = '<div class="loader"></div>';
+
+          google.script.run.withSuccessHandler(response => {
+            button.innerHTML = "";
+            button.innerText = response;
+            if (!response.includes("not")) {
+              button.classList.add("green");
+              setTimeout(() => {
+                button.classList.remove("green");
+                button.innerText = "Submit";
+                button.disabled = false;
+                infractions.disabled = false;
+                action.disabled = false;
+              }, 3000);
+            } else {
+              button.classList.add("red");
+              setTimeout(() => {
+                button.classList.remove("red");
+                button.innerText = "Submit";
+                button.disabled = false;
+                infractions.disabled = false;
+                action.disabled = false;
+              }, 3000);
+            }
+          }).withFailureHandler(() => {
+            button.classList.add("red");
+            button.innerText = "Something went wrong";
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.innerText = "Submit";
+              button.disabled = false;
+              infractions.disabled = false;
+              action.disabled = false;
+            }, 3000);
+          }).ManageThreshold(infractions.value, action.value);
+        };
+
       });
     </script>
     <div class="main-content" id="config" style="display: none;">
@@ -1435,11 +1620,17 @@
 
             <form id="config-form-rankRow">
               <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
-              <select id="new-rank-select" style="width: 42%;">
+              <select id="new-rank-select" style="width: 38%;">
               </select>
               <input type="number" id="rankRowAmount" style="width: 8%;" placeholder="#">
-              <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button">Add</button>
-              <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button">Remove</button>
+              <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button" style="width: 7%;">Add</button>
+              <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button" style="width: 7%;">Remove</button>
+            </form><br><hr><br>
+
+            <form id="config-new-folder">
+              <label for="newFolderId">Enter the ID of the folder you want to add/remove<br><span style="font-size: 13px; font-weight: 100;">If your folder is already added, it will be removed instead.</span></label><br>
+              <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folderID">
+              <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button>
             </form><br>
           </div><br><br>
 
@@ -1461,6 +1652,36 @@
               </select>
               <button onclick="RemoveExistingSpec(event)" class="submitButton-mini" id="removespec-button" type="submit">Remove</button>
             </form>
+          </div><br><br>
+
+          <button id="manageCooldown" class="submitButton">Manage Cooldowns</button>
+          <div id="manageCooldownContent" class="container">
+            <form id="loa-cooldown-form">
+              <label for="loaCooldown">Add the cooldown between LOAs in days:<br><span style="font-size: 13px; font-weight: 100;">minimum: 0, maximum: 60</span></label><br>
+              <input type="number" id="loaCooldown" placeholder="Enter cooldown in days">
+              <button onclick="ChangeLOACooldown(event)" class="submitButton-mini" id="loaCooldown-button" type="submit">Change</button>
+            </form><br><hr><br>
+            <form id="promo-cooldown-form">
+              <label for="promoCooldown">Add the cooldown between Promotions in days:<br><span style="font-size: 13px; font-weight: 100;">minimum: 0, maximum: 60</span></label><br>
+              <input type="number" id="promoCooldown" placeholder="Enter cooldown in days">
+              <button onclick="ChangePromoCooldown(event)" class="submitButton-mini" id="promoCooldown-button" type="submit">Change</button>
+            </form>
+          </div><br><br>
+
+          <button id="manageThreshold" class="submitButton">Manage Infraction Threshold</button>
+          <div id="manageThresholdContent" class="container">
+            <form id="threshold-form">
+              <label for="threshold">Enter Required Amount of Infractions<br><span style="font-size: 13px; font-weight: 100;">The amount of infractions a person should have in order to reach the threshold</span></label><br>
+              <input type="number" id="threshold" placeholder="Enter required amount of infractions"><br>
+              <label for="thresholdActionSelect">Which action should be performed if threshold is reached:</label><br>
+              <select id="thresholdActionSelect">
+                <option value=""></option>
+                <option value="Demotion">Demotion</option>
+                <option value="Removal">Removal</option>
+                <option value="Suspension">Suspension</option>
+              </select><br>
+              <button onclick="ManageThreshold(event)" class="submitButton" id="threshold-button" type="submit">Submit</button>
+            </form><br>
           </div>
 
           <table class="config-switches" style="margin-top: 30px;">
@@ -1542,10 +1763,16 @@
     <script>
       // Needs to be below config loading element so the <p> is loaded
       document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+
+      // Collapsible Configs
       document.getElementById("newRankContent").classList.add("collapseContent");
       document.getElementById("manageRank").classList.add("collapsible");
       document.getElementById("manageSpecContent").classList.add("collapseContent");
-      document.getElementById("manageSpecialization").classList.add("collapsible")
+      document.getElementById("manageSpecialization").classList.add("collapsible");
+      document.getElementById("manageCooldown").classList.add("collapsible");
+      document.getElementById("manageCooldownContent").classList.add("collapseContent");
+      document.getElementById("manageThreshold").classList.add("collapsible");
+      document.getElementById("manageThresholdContent").classList.add("collapseContent");
     </script>
 
     <!-- Form Section (both Logger and Edit Form)
@@ -1700,6 +1927,34 @@
         }
       }
 
+      function ResetUI(button, response) {
+        button.innerHTML = "";
+        button.innerText = response;
+        setTimeout(() => {
+          button.innerText = "Submit";
+          button.disabled = false;
+          button.classList.remove('red');
+          button.classList.remove('green');
+          HideCheck();
+          console.log("Log sucessfully submitted");
+        }, 4000);
+        document.getElementById('rctypefield').value = "";
+        document.getElementById('bltypelist').value = "";
+      }
+
+      function UIEnd(button, response) {
+        if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
+          Shake();
+          button.classList.add('red');
+          ResetUI(button, response[0]);
+        } else if (!response.includes('something')) {
+          document.getElementById('dataform').reset();
+          HideCheck();
+          button.classList.add('green');
+          ResetUI(button, response[0]);
+        }
+      }
+
       // SUBMITING FORMS
       function SubmitLog(event) {
         event.preventDefault();
@@ -1767,6 +2022,7 @@
         }
 
         Object.values(dataToSubmit).forEach(value => {
+          if (!value) return;
           if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
             valid = false;
           }
@@ -1788,30 +2044,34 @@
           button.innerText = "";
           button.innerHTML = '<div class="loader"></div>';
           google.script.run.withSuccessHandler(response => {
-
-            HideCheck();
-            console.log("Log sucessfully submitted");
-
-            if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
-              Shake();
-              button.classList.add('red');
-            } else if (!response.includes('something')) {
-              document.getElementById('dataform').reset();
-              HideCheck();
-              button.classList.add('green');
+            try {
+              response = JSON.parse(response);
+              console.log(response);
+              if (Number(response[1]) >= Number(response[2]) && dataToSubmit.type == "Infraction Log") {
+                const proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
+                if (proceed == true) {
+                  google.script.run.withSuccessHandler(() => {
+                    ResetUI(button, response[0]);
+                  }).ProcessLog(dataToSubmit, true);
+                } else {
+                  UIEnd(button, response)
+                }
+              } else {
+                UIEnd(button, response);
+              }
+            } catch(e) {
+               if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
+                Shake();
+                button.classList.add('red');
+                ResetUI(button, response);
+              } else if (!response.includes('something')) {
+                document.getElementById('dataform').reset();
+                HideCheck();
+                button.classList.add('green');
+                ResetUI(button, response);
+              }
             }
 
-            // Manipulating button text to give info to user.
-            button.innerHTML = "";
-            button.innerText = response;
-            setTimeout(() => {
-              button.innerText = "Submit";
-              button.disabled = false;
-              button.classList.remove('red');
-              button.classList.remove('green');
-            }, 4000);
-            document.getElementById('rctypefield').value = "";
-            document.getElementById('bltypelist').value = "";
             console.timeEnd("Log Submission Runtime");
 
           }).withFailureHandler(error => {
@@ -2047,11 +2307,11 @@
 
               Object.values(editdata).forEach(value => {
               if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
-                valid = false;
+                validEdit = false;
               }
             });
 
-            if (!valid) {
+            if (!validEdit) {
               Shake();
               button.innerText = "No special characters allowed in input values";
               button.disabled = true;

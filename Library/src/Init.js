@@ -49,6 +49,13 @@ class SettingsTemplate {
     this.ranks = [];
     this.adminRanks = [];
     this.rankchangeId = 0;
+    this.infractionId = 0;
+    this.loaId = 0;
+    this.blId = 0;
+    this.loaCooldown = 0;
+    this.promoCooldown = 0;
+    this.threshold = 0;
+    this.thresholdAction = "";
     this.lastRankChange = 0;
     this.leaderPing = '';
     this.backupsbeetId = '';

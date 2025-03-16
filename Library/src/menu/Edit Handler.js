@@ -1,5 +1,17 @@
-function ProcessInputEdits(inputData) {
-  if (!inputData) throw new Error("Do not run this function from the editor");
+/**
+ * Process all submitted edits, currently supports:
+ * Edit Name, Edit steamID, Edit discordID, Edit Email, Edit Specialization, Edit Note
+ * 
+ * @param {Object} inputData
+ * @param {PropertyService.ScriptProperty} allowedStaff
+ * @param {PropertyService.ScriptProperty} lockdown
+ * @returns {String}
+ */
+function processEdit(inputData, allowedStaff, lockdown) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!inputData || typeof inputData !== "object") throw new Error("Do not run this function from the editor");
+  if (!allowedStaff) throw new Error("No allowed staff list provided");
+  if (!lockdown) throw new Error("No valid lockdown time provided");
 
   let valid = false;
   switch (inputData.type) {
@@ -23,14 +35,13 @@ function ProcessInputEdits(inputData) {
       break;
   }
 
-  valid = RosterService.filterQuotes(inputData);
+  valid = filterQuotes(inputData);
 
   if (valid !== true) return "Do not attempt to avoid answer validation";
 
   const ranks = LIBRARY_SETTINGS.ranks;
-  const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const targetData = RosterService.getUserData(inputData.current_email);
-  const roster = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  const targetData = getUserData(inputData.current_email);
+  const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   if (!targetData.row) return "User not found";
   if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
@@ -47,10 +58,9 @@ function ProcessInputEdits(inputData) {
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordid);
       break;
     case "Edit Email":
-      const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
       if (lockdown === "false") {
-        RosterService.removeDocAccess(inputData.current_email);
-        RosterService.addDocAccess(ranks.indexOf(targetData.rank), inputData.email);
+        removeDocAccess(inputData.current_email);
+        addDocAccess(ranks.indexOf(targetData.rank), inputData.email);
       }
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.email).setValue(inputData.email);
       break;

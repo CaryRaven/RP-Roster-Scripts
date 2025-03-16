@@ -1,3 +1,16 @@
+function ProcessLog(inputData, threshold = false) {
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
+  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+  return RosterService.processLog(inputData, userData, allowedStaff, lockdown, threshold);
+}
+
+function ProcessInputEdits(inputData) {
+  const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
+  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+  return RosterService.processEdit(inputData, allowedStaff, lockdown);
+}
+
 function SubmitChange(changes) {
   // Remove spaces before & after comma
   const changeArray = changes.split(/\s*,\s*/);
@@ -83,12 +96,21 @@ function ToggleManualEditing(value) {
   RosterService.sendDiscordConfig("manualEdit", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
-function ReturnManualEditing() {
+function ReturnSliders() {
   let properties = PropertiesService.getScriptProperties();
   let manualValue = properties.getProperty("manualEnabled");
-  console.log(manualValue);
+  let backupValue = properties.getProperty("backupEnabled");
+  let lockdownValue = properties.getProperty("lockdownEnabled");
 
-  return manualValue;
+  return JSON.stringify([manualValue, LIBRARY_SETTINGS.pings.toString(), backupValue, lockdownValue]);
+}
+
+function ReturnCooldown() {
+  return JSON.stringify([LIBRARY_SETTINGS.loaCooldown, LIBRARY_SETTINGS.promoCooldown]);
+}
+
+function ReturnThreshold() {
+  return JSON.stringify([LIBRARY_SETTINGS.threshold, LIBRARY_SETTINGS.thresholdAction]);
 }
 
 function ToggleBackup(value) {
@@ -108,11 +130,9 @@ function TogglePings(value) {
   RosterService.init(LIBRARY_SETTINGS);
 }
 
-function ReturnPings() {
-  return LIBRARY_SETTINGS.pings.toString();
-}
-
-function ToggleLockdown(value) {
+function ToggleLockdown() {
+  let value = ReturnLockdown();
+  value = value === "true" ? false : true;
   if (value) {
     RemoveAllDocAccess();
     PropertiesService.getScriptProperties().setProperty("backupEnabled", false);
@@ -121,6 +141,7 @@ function ToggleLockdown(value) {
   }
   PropertiesService.getScriptProperties().setProperty("lockdownEnabled", value);
   RosterService.sendDiscordConfig("lockdown", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
+  return value;
 }
 
 /**
@@ -161,56 +182,7 @@ function RemoveAllDocAccess() {
  * @param {String} inputValue - SteamID that was input into the search bar
  */
 function GetSpreadsheetData(inputValue) {
-  if (!inputValue) return;
-  // Always Checks Column 8 => might make this configurable in the future
-  const sheets = [
-    { id: LIBRARY_SETTINGS.rankchangeId, label: "Rank Change" },
-    { id: 343884184, label: "Infraction" },
-    { id: 977408594, label: "LOA Log" },
-    { id: 1787594911, label: "Suspension / Blacklist Log" },
-  ];
-
-  const results = [];
-
-  sheets.forEach(sheetInfo => {
-    const sheet = RosterService.getCollect(sheetInfo.id);
-    const sheetName = sheet.getName();
-    try {
-      if (!sheet) {
-        Logger.log(`Sheet not found: ${sheetName}`);
-        return;
-      }
-
-      // Get headers & data
-      const headersRaw = sheet.getRange(6, 3, 1, sheet.getMaxColumns()).getValues();
-      const headers = headersRaw[0].filter(Boolean);
-      const data = sheet.getRange(7, 3, sheet.getLastRow() - 6, 11).getValues();
-
-      const matchingData = data
-        .filter(row => {
-          // filter empty logs
-          if (!row || row.length < 8 || !row[2]) return false;
-          const cellValue = row[2].toString().trim().toLowerCase();
-          const normalizedInput = inputValue.trim().toLowerCase();
-          return cellValue === normalizedInput;
-        })
-        .map(row => {
-          // compose object
-          const rowObject = { sheetLabel: sheetInfo.label };
-          headers.forEach((header, index) => {
-            rowObject[header] = row[index] !== undefined ? row[index] : null;
-          });
-          return rowObject;
-        });
-      results.push(...matchingData);
-    } catch (error) {
-      RosterService.sendDiscordError(error);
-      Logger.log(`Error processing sheet ${sheetName}: ${error.message}`);
-    }
-  });
-
-  Logger.log(`Combined Results: ${JSON.stringify(results)}`);
-  return JSON.stringify(results);
+  return RosterService.getSpreadsheetData(inputValue);
 }
 
 /**
@@ -288,4 +260,84 @@ function GetSpecContent(title) {
  */
 function GetRankContent(title) {
   return RosterService.getRankContent(title);
+}
+
+/**
+ * Add a folder to the total collection (folders[folders.length - 1]) so they can be used to validate access
+ * A folder that isn't added to this list, is ignored by PermissionsGuard etc...
+ */
+function AddFolder(id) {
+  if (!id) throw new Error("No ID provided");
+  let valid = RosterService.filterQuotes(id);
+  if (!valid) return "No quotes allowed";
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+
+  try {
+    const folder = DriveApp.getFolderById(id.toString());
+    let message;
+
+    if (LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id) >= 0) {
+      LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].splice(LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id), 1);
+      message = `${folder.getName()} removed from list`;
+      userData.title = folder.getName();
+      RosterService.sendDiscordConfig("folderEdit", false, userData);
+    } else {
+      LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].push(id.toString());
+      message = `${folder.getName()} added to list`;
+      userData.title = folder.getName();
+      RosterService.sendDiscordConfig("folderEdit", true, userData);
+    }
+    PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+    RosterService.init(LIBRARY_SETTINGS);
+    return message;
+  } catch(e) {
+    return "Invalid Folder ID";
+  }
+}
+
+/**
+ * @param {String|Number} days - cooldown in days
+ */
+function ChangeLOACooldown(days) {
+  days = Number(days);
+  if (!days || days > 60 || days < 0) return "no";
+
+  LIBRARY_SETTINGS.loaCooldown = days;
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  userData.days = days;
+  RosterService.sendDiscordConfig("cooldownChange", true, userData);
+  return;
+}
+
+/**
+ * @param {String|Number} days - cooldown in days
+ */
+function ChangePromoCooldown(days) {
+  days = Number(days);
+  if (!days || days > 60 || days < 0) return "no";
+
+  LIBRARY_SETTINGS.promoCooldown = days;
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  userData.days = days;
+  RosterService.sendDiscordConfig("cooldownChange", false, userData);
+  return;
+}
+
+function ManageThreshold(threshold, action) {
+  threshold = Number(threshold);
+  if (Number(threshold) > 10 || Number(threshold) < 1 || !threshold) return "No valid threshold provided";
+  if (!action) return "No action provided";
+
+  LIBRARY_SETTINGS.threshold = threshold;
+  LIBRARY_SETTINGS.thresholdAction = action.toString();
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+
+  return "Infraction Threshold Edited";
 }
