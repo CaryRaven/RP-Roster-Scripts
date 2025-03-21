@@ -339,7 +339,8 @@ function getRankContent(title) {
         rank,
         LIBRARY_SETTINGS.ranks[i + 1],
         LIBRARY_SETTINGS.folders[i].viewerAccess,
-        LIBRARY_SETTINGS.folders[i].editorAccess
+        LIBRARY_SETTINGS.folders[i].editorAccess,
+        LIBRARY_SETTINGS.interviewRequired[i].toString()
       ];
     }
   });

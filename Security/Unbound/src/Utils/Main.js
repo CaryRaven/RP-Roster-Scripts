@@ -8,7 +8,8 @@ function ProcessLog(inputData, threshold = false) {
 function ProcessInputEdits(inputData) {
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
-  return RosterService.processEdit(inputData, allowedStaff, lockdown);
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  return RosterService.processEdit(inputData, allowedStaff, lockdown, userData);
 }
 
 function SubmitChange(changes) {

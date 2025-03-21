@@ -1,44 +1,30 @@
+// TODO: Add promo reqs. See native formula: https://stackoverflow.com/questions/73399460/google-sheets-check-all-true-per-row-in-boolean-2d-array-with-arrayformula
+
 const LIBRARY_SETTINGS = JSON.parse(PropertiesService.getDocumentProperties().getProperty("settings"));
 RosterService.init(LIBRARY_SETTINGS);
 
+function F() {
+  throw new Error("Do not run this function from the editor");
+  const data = {};
+  PropertiesService.getDocumentProperties().setProperty("settings", JSON.stringify(data));
+}
+
 function ManualEdit(e) {
+  if (!e) throw new Error("Do not run this function from the editor");
   const sheet = e.source.getActiveSheet();
   const sheetID = sheet.getSheetId();
-  if (sheetID === 1504741049) return;
+  if (sheetID === 1504741049 || sheetID === 171954164 || sheetID === 746891100) return;
   
   const s = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   const manualEnabled = s.getRange(10, 1).getValue();
-  if (manualEnabled.toLowerCase() == "false") return;
+  console.log(manualEnabled);
+  if (manualEnabled == false) return;
 
-  // let range = e.range;
   const backupSpreadsheet = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
   const backupSheet = backupSpreadsheet.getSheetById(sheetID);
 
   if (!backupSheet) return;
 
   RosterService.restoreSheet();
-
-  // if (restoreType === "true") {
-
-  //   RosterService.restoreSheet();
-
-  // } else {
-    
-  //   const mergedRanges = sheet.getRange(range.getA1Notation()).getMergedRanges();
-  //   if (mergedRanges.length > 0) {
-  //     range = mergedRanges[0];
-  //   }
-
-  //   const backupRange = backupSheet.getRange(range.getA1Notation());
-  //   const formulas = backupRange.getFormulas();
-  //   const values = backupRange.getValues();
-
-  //   const finalData = formulas.map((row, rowIndex) =>
-  //     row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
-  //   );
-
-  //   range.setValues(finalData);
-  // }
-  
   RosterService.sendDiscordManualEdit(sheet.getName());
 }

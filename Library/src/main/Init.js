@@ -17,6 +17,7 @@ function init(InputSettings) {
     if (!libraryKeys.includes(settingKeys[i])) throw new Error("Incorrect settings configuration for " + settingKeys[i]);
     if (typeof InputSettings[settingKeys[i]] != typeof settings[settingKeys[i]]) throw new Error("Incorrect setting type for " + settingKeys[i]);
   }
+  
   LIBRARY_SETTINGS = InputSettings;
   isInit = true;
 }
@@ -47,6 +48,7 @@ class SettingsTemplate {
     this.factionName = "";
     this.folders = [];
     this.ranks = [];
+    this.interviewRequired = [];
     this.adminRanks = [];
     this.rankchangeId = 0;
     this.infractionId = 0;
@@ -59,6 +61,8 @@ class SettingsTemplate {
     this.lastRankChange = 0;
     this.leaderPing = '';
     this.backupsbeetId = '';
+    this.interviewFolderId = "";
+    this.closedInterviewFolderId = "";
     this.specializations = [];
     this.pings = true;
     this.newRowData = [];

@@ -1,9 +1,14 @@
 function AddTask() {
-  const addTask = RosterService.getHtmlAddTask();
-  let html = HtmlService.createHtmlOutput(addTask);
-  html.setWidth(600);
-  html.setHeight(800);
-  return SpreadsheetApp.getUi().showModalDialog(html, "New Task");
+  try {
+    DriveApp.getFolderById("1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-");
+    const addTask = RosterService.getHtmlAddTask();
+    let html = HtmlService.createHtmlOutput(addTask);
+    html.setWidth(600);
+    html.setHeight(800);
+    return SpreadsheetApp.getUi().showModalDialog(html, "New Task");
+  } catch(e) {
+    return SpreadsheetApp.getUi().alert("Only Security Chiefs+ are allowed to perform this action.");
+  }
 }
 
 /**

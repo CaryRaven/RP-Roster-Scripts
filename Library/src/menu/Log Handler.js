@@ -95,7 +95,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     targetData = getUserData(inputData.email);
     ranks = LIBRARY_SETTINGS.ranks;
 
-    if (!targetData.row) return "User not found";
+    if (!targetData.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
     if (inputData.blacklist_appealable == 'Yes') { appealable_bool = true; } else { appealable_bool = false; }
 
     // New Member/BL => data was manually inputted
@@ -129,15 +129,33 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
       switch (inputData.rankchangetype) {
         case "Promotion":
+          // Basic Checks
           if (targetData.status == "LOA") return "You cannot promote members who are on LOA";
           if (Number(targetData.infractions) !== 0) return "You cannot promote members with an active infraction";
           if (targetData.status == "Suspended") return "You cannot promote suspended members";
           const promotionDestination = ranks[currentRankIndex + 1];
           if (!promotionDestination || currentRankIndex === ranks.length - 3) return "This user cannot be promoted any further";
 
+          // Check cooldown
           const lastRankChange = dateToMilliseconds(roster.getRange(targetData.row, LIBRARY_SETTINGS.lastRankChange).getDisplayValue());
           const timeDiff = new Date().valueOf() - lastRankChange;
           if (timeDiff <= (LIBRARY_SETTINGS.promoCooldown * 86400000)) return `You must wait ${LIBRARY_SETTINGS.promoCooldown} days between Promotions`;
+
+          // Check if the person has an open interview
+          if (LIBRARY_SETTINGS.interviewRequired[currentRankIndex + 1].toString() !== "false") {
+            const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
+            let hasInterview = false;
+            while (files.hasNext()) {
+              const file = files.next();
+              const fileName = file.getName();
+              if (fileName.includes(targetData.name) && fileName.includes("[PASSED]") && fileName.includes(promotionDestination)) {
+                hasInterview = true;
+                file.setOwner("dontorro208@gmail.com");
+                file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+              }
+            }
+            if (hasInterview !== true) return `Could not find an interview under the name: "${targetData.name}"\nMake sure they have passed a ${promotionDestination} interview first.`;
+          }
 
           rowDestination = getFirstRankRow(promotionDestination);
           if (rowDestination[0] == 0) return `${promotionDestination} has reached capacity`;
@@ -183,6 +201,33 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           const newStaffDestination = ranks[0];
           rowDestination = getFirstRankRow(newStaffDestination);
           if (rowDestination[0] === 0) return `${newStaffDestination} has reached capacity`;
+
+          // Check if the person has an open interview
+          if (LIBRARY_SETTINGS.interviewRequired[0].toString() !== "false") {
+            const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
+            let hasInterview = false;
+            while (files.hasNext()) {
+              const file = files.next();
+              if (file.getName().includes(targetData.name) && file.getName().includes("[PASSED]")) {
+                hasInterview = true;
+                file.setOwner("dontorro208@gmail.com");
+                file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+
+                // Don't want to set perms as this would cause trouble upon removal/demotion (these docs wouldn't be updated => perms leak)
+                // DriveApp.getFileById(file.getId()).getEditors().forEach(editor => {
+                //   editor = editor.getEmail();
+                //   file.removeEditor(editor);
+                // });
+
+                // DriveApp.getFileById(file.getId()).getViewers().forEach(viewer => {
+                //   viewer = viewer.getEmail();
+                //   file.removeViewer(viewer);
+                // });
+              }
+            }
+            if (hasInterview !== true) return `Could not find an interview under the name: "${targetData.name}"\nMake sure they have passed a ${LIBRARY_SETTINGS.ranks[0]} interview first.`;
+          }
+
           targetData["newRank"] = newStaffDestination;
 
           roster.getRange(rowDestination[0], LIBRARY_SETTINGS.dataCols.name, 1, 4).setValues([[targetData.name, targetData.steamId, targetData.discordId, inputData.email]]);
@@ -203,6 +248,9 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
         if (targetData.status == "Suspended") return "You cannot strike suspended members, consider a removal/blacklist";
         sheet = getCollect(LIBRARY_SETTINGS.infractionId);
         insertLogRow = getLastRow(sheet);
+        
+        // few random checks
+        if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
 
         sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 12).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.infraction_type, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
         protectRange("A", sheet, 9, insertLogRow);
@@ -214,6 +262,9 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       if (timeDiff < 0) return "This user is already on LOA, you cannot log another one";
       if (timeDiff <= (LIBRARY_SETTINGS.loaCooldown * 86400000)) return `You must wait ${LIBRARY_SETTINGS.loaCooldown} days between LOAs`;
 
+      // few random checks
+      if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
+
       sheet = getCollect(LIBRARY_SETTINGS.loaId);
       insertLogRow = getLastRow(sheet);
 
@@ -223,6 +274,9 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     case "Blacklist":
       sheet = getCollect(LIBRARY_SETTINGS.blId);
       insertLogRow = getLastRow(sheet);
+
+      // few random checks
+      if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
 
       sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
       protectRange("A", sheet, 10, insertLogRow);
@@ -249,6 +303,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           // Check if log is not appealed yet
           if (sheet.getRange(Number(inputData.log_id), 10).getValue() == false) {
             sheet.getRange(Number(inputData.log_id), 10).setValue(true);
+            sheet.getRange(Number(inputData.log_id), 11).setValue(`[APPEALED ${inputData.reason}`);
             protectRange("S", sheet, 10, Number(inputData.log_id));
 
             targetData["name"] = sheet.getRange(Number(inputData.log_id), 4).getValue();
@@ -271,6 +326,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
         // Check if log is not appealed yet
         if (sheet.getRange(Number(inputData.log_id), 9).getValue() == false) {
           sheet.getRange(Number(inputData.log_id), 9).setValue(true);
+          sheet.getRange(Number(inputData.log_id), 10).setValue(`[APPEALED] ${inputData.reason}`);
           protectRange("S", sheet, 9, Number(inputData.log_id));
 
           targetData.name = sheet.getRange(Number(inputData.log_id), 4).getValue();

@@ -5,9 +5,10 @@
  * @param {Object} inputData
  * @param {PropertyService.ScriptProperty} allowedStaff
  * @param {PropertyService.ScriptProperty} lockdown
+ * @param {PropertyService.UserProperty} userData (optional: only for Specialization)
  * @returns {String}
  */
-function processEdit(inputData, allowedStaff, lockdown) {
+function processEdit(inputData, allowedStaff, lockdown, userData = {}) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData || typeof inputData !== "object") throw new Error("Do not run this function from the editor");
   if (!allowedStaff) throw new Error("No allowed staff list provided");
@@ -73,6 +74,11 @@ function processEdit(inputData, allowedStaff, lockdown) {
           r.clearNote();
           r.setNote(spec.desc);
           found = true;
+
+          inputData.title = spec.title;
+          inputData.desc = spec.desc;
+          inputData.type = "Edit Specialization";
+          sendDiscordLog(inputData, targetData, userData);
         }
       });
       if (!found) return "Specialization not found";

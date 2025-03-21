@@ -183,6 +183,7 @@ function ReturnSpecs() {
  * |-> Cannot use library without a full & complete settings obj
  */
 function Set() {
+  throw new Error("Do not run this function from the editor");
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
     dataCols: {
       firstCol: 3,
@@ -207,6 +208,8 @@ function Set() {
     lastRankChange: 13,
     spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
     backupsbeetId: "1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64",
+    interviewFolderId: "17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB",
+    closedInterviewFolderId: "1Nr4xPCEfMMtynlzJqenrjt7itkCSBfYq",
     rankchangeId: 789793193,
     infractionId: 343884184,
     loaId: 977408594,
@@ -230,10 +233,12 @@ function Set() {
       [
         "1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE",
         "13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A",
-        "1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-"
+        "1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-",
+        "17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB"
       ]
     ],
     ranks: ["Captain","Captain Major","Security Chief","Site Management"],
+    interviewRequired: [true, false, false, false],
     specializations: [{title: "", desc: ""}, {title: "Security Liaison", desc: "In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs"}],
     pings: true,
     newRowData: [[ // TODO: Add a way to dynamically edit this?

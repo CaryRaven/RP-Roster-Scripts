@@ -31,23 +31,26 @@
 
       window.SetSpecSelects = function() {
         google.script.run.withSuccessHandler(specs => {
-          document.getElementById("specfield").innerHTML = "";
+          const specField = document.getElementById("specfield").value;
           document.getElementById("removeSpec").innerHTML = "";
           const editSpec = document.getElementById("editSpecSelect").value;
 
-          if (editSpec == "") document.getElementById("editSpecSelect").innerHTML = "";
+          if (editSpec === "") document.getElementById("editSpecSelect").innerHTML = "";
+          if (specField === "") document.getElementById("specfield").innerHTML = "";
           specs = JSON.parse(specs);
 
           specs.forEach(spec => {
-            const specOption = document.createElement("option");
-            specOption.innerText = spec.title;
-            document.getElementById("specfield").appendChild(specOption);
+            if (specField === "") {
+              const specOption = document.createElement("option");
+              specOption.innerText = spec.title;
+              document.getElementById("specfield").appendChild(specOption);
+            }
 
             const specOptionConfig = document.createElement("option");
             specOptionConfig.innerText = spec.title;
             document.getElementById("removeSpec").appendChild(specOptionConfig);
 
-            if (editSpec == "") {  
+            if (editSpec === "") {  
               const specOptionConfig2 = document.createElement("option");
               specOptionConfig2.innerText = spec.title;
               document.getElementById("editSpecSelect").appendChild(specOptionConfig2);
@@ -56,7 +59,7 @@
         }).ReturnSpecs();
       };
 
-      window.SetRankSelects = function() {
+      window.SetRankSelects = function(forced = false) {
         let initRanks = document.getElementById("ranks")?.innerText;
         let rankSelect = document.getElementById("amdin-role-select");
         let rankRowSelect = document.getElementById("new-rank-select");
@@ -70,45 +73,45 @@
           initRanks = [];
         }
 
-        if (rankSelect.value === "") rankSelect.innerHTML = '<option value=""></option>';
-        if (rankRowSelect.value === "") rankRowSelect.innerHTML = '<option value=""></option>';
-        if (removeRankSelect.value === "") removeRankSelect.innerHTML = '<option value=""></option>';
-        if (addRankSelect.value === "") addRankSelect.innerHTML = '<option value=""></option>';
-        if (editRankSelect.value === "") editRankSelect.innerHTML = '<option value=""></option>';
+        if (rankSelect.value === "" || forced === true) rankSelect.innerHTML = '<option value=""></option>';
+        if (rankRowSelect.value === "" || forced === true) rankRowSelect.innerHTML = '<option value=""></option>';
+        if (removeRankSelect.value === "" || forced === true) removeRankSelect.innerHTML = '<option value=""></option>';
+        if (addRankSelect.value === "" || forced === true) addRankSelect.innerHTML = '<option value=""></option>';
+        if (editRankSelect.value === "" || forced === true) editRankSelect.innerHTML = '<option value=""></option>';
 
         initRanks.forEach(rankName => {
 
           if (!rankName.includes("Site") && !rankName.includes("Chief")) {
 
-            if (rankSelect.value === "") {
+            if (rankSelect.value === "" || forced === true) {
               const rankOption = document.createElement("option");
               rankOption.value = rankName;
               rankOption.innerText = rankName;
               rankSelect.appendChild(rankOption); 
             }
 
-            if (rankRowSelect.value === "") {
+            if (rankRowSelect.value === "" || forced === true) {
               const rankRowOption = document.createElement("option");
               rankRowOption.value = rankName;
               rankRowOption.innerText = rankName;
               rankRowSelect.appendChild(rankRowOption);
             }
 
-            if (addRankSelect.value === "") {
+            if (addRankSelect.value === "" || forced === true) {
               const addRankOption = document.createElement("option");
               addRankOption.value = rankName;
               addRankOption.innerText = rankName;
               addRankSelect.appendChild(addRankOption);
             }
 
-            if (editRankSelect.value == "") {
+            if (editRankSelect.value == "" || forced === true) {
               const editRankOption = document.createElement("option");
               editRankOption.value = rankName;
               editRankOption.innerText = rankName;
               editRankSelect.appendChild(editRankOption);
             }
 
-            if (removeRankSelect.value === "") {
+            if (removeRankSelect.value === "" || forced === true) {
               const removeRankOption = document.createElement("option");
               removeRankOption.value = rankName;
               removeRankOption.innerText = rankName;
@@ -192,7 +195,7 @@
         try {
           document.getElementById('config').setAttribute('style', 'display: none;'); 
           clearInterval(configupdate);
-          SetRankSelects();
+          SetRankSelects(true);
           setInterval(() => {
             SetRankSelects();
           }, 10000);
@@ -247,7 +250,7 @@
 
         // Making sure the config is synced every 10 seconds
         SetSpecSelects();
-        SetRankSelects();
+        SetRankSelects(true);
         SetSliders();
         configupdate = setInterval(() => {
           SetSpecSelects();
@@ -690,7 +693,7 @@
           }).GetLastBackupTime();
 
           SetSliders();
-          SetRankSelects();
+          SetRankSelects(true);
         } catch (e) {  }
 
         document.getElementById('manualEditingSlider').addEventListener('change', function () {
@@ -1094,12 +1097,13 @@
             rankBefore: hierarchySelect.value,
             viewerFolders: document.getElementById("newRankViewFolders").value,
             editorFolders: document.getElementById("newRankEditFolders").value,
-            editRank: document.getElementById("editRankSelect").value
+            editRank: document.getElementById("editRankSelect").value,
+            interviewRequired: document.getElementById("interviewNeeded").checked
           }
 
-          if (!data.title || !data.rankBefore) return Shake();
+          if (!data.title) return Shake();
 
-          if (hierarchySelect.value == document.getElementById("editRankSelect").value) {
+          if (hierarchySelect.value == data.editRank && data.editRank !== "") {
             hierarchySelect.value = "";
             button.disabled = true;
             Shake();
@@ -1114,7 +1118,7 @@
 
           let valid = true;
           Object.values(data).forEach(value => {
-            if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+            if (typeof value === "string" && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
               valid = false;
             }
           });
@@ -1159,7 +1163,7 @@
             google.script.run.withSuccessHandler(ranks => {
               ranks = JSON.parse(ranks);
               document.getElementById("ranks").innerText = ranks;
-              SetRankSelects();
+              SetRankSelects(true);
             }).GetRanks();
 
           }).withFailureHandler(error => {
@@ -1211,7 +1215,7 @@
               google.script.run.withSuccessHandler(ranks => {
                 ranks = JSON.parse(ranks);
                 document.getElementById("ranks").innerText = ranks;
-                SetRankSelects();
+                SetRankSelects(true);
               }).GetRanks();
             }).withFailureHandler(error => {
               
@@ -1354,6 +1358,7 @@
           const hierarchySelect = document.getElementById("new-rank-before-select");
           const viewFoldersInput = document.getElementById("newRankViewFolders");
           const editFoldersInput = document.getElementById("newRankEditFolders");
+          const hasInterviewSlider = document.getElementById("interviewNeeded");
           const button = document.getElementById("newrank-button");
           const form = document.getElementById("newrankForm");
 
@@ -1369,15 +1374,15 @@
 
           google.script.run.withSuccessHandler(content => {
             content = JSON.parse(content);
-            if (content.length !== 4) {
+            if (content.length !== 5) {
               button.innerText = "Rank not found";
               button.classList.add("red");
-              setTimeout(() => {
+              return setTimeout(() => {
                 form.reset();
+                button.classList.remove("red");
                 button.disabled = false;
                 select.disabled = false;
                 button.innerText = "Edit Existing Rank";
-                return;
               }, 3000); 
             }
 
@@ -1385,6 +1390,7 @@
             hierarchySelect.value = content[1];
             viewFoldersInput.value = content[2];
             editFoldersInput.value = content[3];
+            hasInterviewSlider.checked = (content[4] === "true");
 
             button.disabled = false;
             select.disabled = false;
@@ -1601,13 +1607,26 @@
               </select><br>
               <label for="newRankTitle">Add a title to your rank:</label><br>
               <input id="newRankTitle" type="text" placeholder="Add rank Title" required><br>
-              <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:</label><br>
-              <select id="new-rank-before-select" required>
+              <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:<br><span style="font-size: 13px; font-weight: 100;">Optional, default: at the top of the hierarchy (below the Chiefs)</span></label><br>
+              <select id="new-rank-before-select">
               </select><br>
               <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
               <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
-              <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma"><br>
+              <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma">
+              <table class="config-switches">
+                <tr>
+                  <td>
+                    Does this rank require an interview:
+                  </td>
+                  <td class="config-switch">
+                    <label class="switch">
+                      <input type="checkbox" id="interviewNeeded">
+                      <span class="slider round"></span>
+                    </label>
+                  </td>
+                </tr>
+              </table><br>
               <button onclick="AddNewRank(event)" class="submitButton" id="newrank-button" type="submit">Submit New Rank</button>
             </form><br><hr><br>
 
@@ -1685,6 +1704,7 @@
           </div>
 
           <table class="config-switches" style="margin-top: 30px;">
+            <tr>
               <td>
                 Enable Manual Editing of the roster:
               </td>
@@ -2428,7 +2448,7 @@
               document.getElementById("infoTypeList").addEventListener("change", () => {
                 if (document.getElementById("infoTypeList").value === "Edit Specialization") {
                   SetSpecSelects();
-                  specInterval = setInterval(() => { SetSpecSelects() }, 10000);
+                  specInterval = setInterval(() => { SetSpecSelects(); }, 15000);
                 } else {
                   try { clearInterval(specInterval) } catch(e) { }
                 }

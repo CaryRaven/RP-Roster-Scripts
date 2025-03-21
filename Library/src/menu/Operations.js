@@ -97,7 +97,7 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
   }).filter(data => data != null);
 
   dataCols.forEach(col => roster.getRange(rowToSearch, col).clearContent().clearNote());
-  if (destinationRow || destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i].val).setNote(moveData[i].note));
+  if (destinationRow && destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i].val).setNote(moveData[i].note));
 }
 
 /**
@@ -190,7 +190,7 @@ function manageRank(inputData, borderPairs, userData) {
   if (valid !== true) return "Invalid data";
   if (LIBRARY_SETTINGS.ranks.indexOf(inputData.title) >= 0 && inputData.editRank === "") return "Rank Already exists";
 
-  // Add new row to settings (backend)
+  // Get viewer folders from a string to an array
   if (inputData.viewerFolders) {
     inputData.viewerFolders = inputData.viewerFolders.replace(/\s+/g, '');
     viewerFolders = inputData.viewerFolders.split(",");
@@ -209,6 +209,7 @@ function manageRank(inputData, borderPairs, userData) {
     if (valid !== true) return message;
   } else { viewerFolders = []; }
 
+  // Get editor folders from a string to an array
   if (inputData.editorFolders) {
     inputData.editorFolders = inputData.editorFolders.replace(/\s+/g, '');
     editorFolders = inputData.editorFolders.split(",");
@@ -227,10 +228,18 @@ function manageRank(inputData, borderPairs, userData) {
     if (valid !== true) return message;
   } else { editorFolders = []; }
 
+  // if no rankBefore => add it at the top (before Sr CL4)
+  let rankBeforeChief;
+  if (!inputData.rankBefore) {
+    inputData.rankBefore = LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2];
+    rankBeforeChief = LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1];
+  }
+
   // If Editing => check if hierarchy changed => remove previous rank location
-  let rownum = 0;
   const hierarchyChange = (LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank) + 1 !== LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore) && inputData.editRank != "");
 
+  // Check if rank still has active members
+  let rownum = 0;
   if (hierarchyChange) {
     rownum = getLastRankRow(inputData.editRank) - getStartRankRow(inputData.editRank);
     valid = removeRank(inputData.editRank, false);
@@ -252,20 +261,24 @@ function manageRank(inputData, borderPairs, userData) {
 
   // Insert into roster if new rank or hierarchy change
   if (hierarchyChange || inputData.editRank === "") {
-    const lastBeforeRow = getLastRankRow(inputData.rankBefore);
-
+    const lastBeforeRow = rankBeforeChief ? getLastRankRow(rankBeforeChief) : getLastRankRow(inputData.rankBefore);
+    
+    /* Insert new rank / move rank
+      |-> move rank is more of a "remove & re-add" rather than just moving it 
+    */
     s.insertRowAfter(lastBeforeRow + 1);
     s.insertRowAfter(lastBeforeRow);
     s.moveRows(s.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
     const insertRow = lastBeforeRow + 2;
 
+    // Set styling on borders (purely aesthetic)
     borderPairs.forEach(cellpair => {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       s.getRange(insertRow, cellpair[0], 1, numcols).setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
     });
 
-
+    // Map formulas into usable format (replace /row/ & /title/)
     const insertData = LIBRARY_SETTINGS.newRowData.map(col => 
       col.map(value => {
         if (typeof value === "string") {
@@ -275,6 +288,7 @@ function manageRank(inputData, borderPairs, userData) {
       })
     );
 
+    // insert formulas
     s.getRange(insertRow, 3, 1, 15).setValues(insertData);
   }
 
@@ -282,23 +296,29 @@ function manageRank(inputData, borderPairs, userData) {
 
   // Prepare settings
   if (hierarchyChange || inputData.editRank === "") {
+    // Settings if hierarchy changed => remove & add new
     LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
       "viewerAccess": viewerFolders,
       "editorAccess": editorFolders
     });
 
-    LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.title);
+    LIBRARY_SETTINGS.interviewRequired.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.interviewRequired);
+    LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.title); // Always change last
   } else {
+    // Settings if no hierarchy change => replace existing
     LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, {
       "viewerAccess": viewerFolders,
       "editorAccess": editorFolders
     });
+
+    LIBRARY_SETTINGS.interviewRequired.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.interviewRequired);
     
     if (!hierarchyChange && inputData.title !== inputData.editRank && inputData.editRank !== "") {
-      LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title);
+      LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title); // Always change last
     }
   }
 
+  // Send discord message
   if (inputData.editRank == "") {
     sendDiscordNewRank(inputData.title);
   } else {
@@ -307,9 +327,11 @@ function manageRank(inputData, borderPairs, userData) {
     userData.rankBefore = inputData.rankBefore;
     userData.viewerAccess = viewerFolders;
     userData.editorAccess = editorFolders;
+    userData.interviewRequired = inputData.interviewRequired;
     
     sendDiscordConfig("rankEdit", false, userData);
   }
+
   return [message, LIBRARY_SETTINGS];
 }
 
@@ -393,8 +415,10 @@ function removeRank(rank, discordnotif = true) {
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   sheet.deleteRows(startRankRow - 1, (lastRankRow - startRankRow) + 2);
 
+  // Remove rank in settings
   LIBRARY_SETTINGS.ranks.splice(rankIndex, 1);
   LIBRARY_SETTINGS.folders.splice(rankIndex, 1);
+  LIBRARY_SETTINGS.interviewRequired.splice(rankIndex, 1);
 
   if (discordnotif) sendDiscordNewRank(rank, false);
   return [`Success`, LIBRARY_SETTINGS];

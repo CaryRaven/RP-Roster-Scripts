@@ -2,8 +2,8 @@
 
 /**
  * Send a discord message when submitting a log, supported types:
- * Rank Change (promo, demo, passed interview, transfer, removal), Infractions, LOAs, Certificates, Mentor Logs, Blacklists/Suspensions, Blacklist & Infraction Appeals
- * 
+ * Rank Change (promo, demo, passed interview, transfer, removal), Infractions, LOAs, Certificates, Mentor Logs, Blacklists/Suspensions, Blacklist & Infraction Appeals,
+ * Edit Specialization
  * @param {Object} inputData - Data object contains values inputted by the user
  * @param {Object} targetData - Object containing data about the target of the log
  * @param {Object} userData - Object containing data about the user of the Admin Menu (stored in a property)
@@ -22,6 +22,7 @@ function sendDiscordLog(inputData, targetData, userData) {
   let embedColor = '';
   let field1Name = '';
   let info = '';
+  let inline2 = true;
   let content = '';
   let reason = inputData.reason;
   let footerMessage = '';
@@ -37,7 +38,7 @@ function sendDiscordLog(inputData, targetData, userData) {
     case "Rank Change":
       switch (inputData.rankchangetype) {
         case 'Promotion':
-          embedTitle = `✅ New ${targetData.newRank} ✅`;
+          embedTitle = `👔 New ${targetData.newRank} 👔`;
           embedColor = '1143627';
           field1Name = 'Please congratulate 🥁...'; // drumrolls
           info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscord ID: ${targetData.discordId}\nGmail Address: ${inputData.email}`;
@@ -57,7 +58,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           embedColor = '39423';
           field1Name = 'Please Congratulate 🥁...'; // more drumrolls
           info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}`;
-          footerMessage = 'Congratulations on passing your interview!';
+          footerMessage = 'Congratulations, welcome to the team!';
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case "Removal":
@@ -108,6 +109,14 @@ function sendDiscordLog(inputData, targetData, userData) {
       info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscordID: ${targetData.discordId}\nAppealed Log ID: ${inputData.log_id}`;
       footerMessage = `This ${LIBRARY_SETTINGS.factionName} blacklist/suspension is no longer of effect.`;
       break;
+    case 'Edit Specialization':
+      embedTitle = `👔 ${targetData.name} Assigned as ${inputData.title} 👔`;
+      embedColor = '1143627';
+      field1Name = "Role Description";
+      info = inputData.desc;
+      footerMessage = 'Congratulations!';
+      inline2 = false;
+      break;
   }
 
   // Compose discord embed
@@ -126,17 +135,19 @@ function sendDiscordLog(inputData, targetData, userData) {
         {
           name: 'Issued by',
           value: supervisorInfo,
-          inline: true
+          inline: inline2
         },
         {
           name: 'Why?',
-          value: reason,
+          value: reason || "No reason provided",
           inline: false
         }
       ],
       footer: { text: footerMessage + '\nLogged on ' + date }
     }]
   });
+
+  console.log(JSON.parse(payload));
 
   let params = {
     headers: {
@@ -160,7 +171,7 @@ function sendDiscordLog(inputData, targetData, userData) {
   }
 
   // Send message
-  webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
+  const response = webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
   Logger.log('Discord Notification Sent Successfully.');
 }
 
@@ -214,7 +225,7 @@ function sendDiscordUnauthed() {
   // Send message
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
   Logger.log('Discord Notification Sent Successfully.');
-  // TODO: add PermissionsGuard();
+  permissionsGuard(JSON.parse(getAllowedStaff()));
 }
 
 /**
@@ -336,6 +347,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       break;
     case "Staff":
       webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
+      break;
     default:
       throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
   }
@@ -416,7 +428,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
         return `"${f.getName()}" `;
       });
 
-      info = `Title: ${userData.title}\nHierarchy Position: before ${userData.rankBefore}\nViewer Access to: ${userData.viewerAccess}\nEditor Access to: ${userData.editorAccess}`;
+      info = `Title: ${userData.title}\nHierarchy Position: before ${userData.rankBefore}\nViewer Access to: ${userData.viewerAccess}\nEditor Access to: ${userData.editorAccess}\nInterview Required?: ${userData.interviewRequired.toString() === "true" ? "Yes" : "No"}`;
       footerMessage = "Not all change info listen above is necessarily new";
       break;
     case "folderEdit":

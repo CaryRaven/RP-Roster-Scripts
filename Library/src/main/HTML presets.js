@@ -1502,3 +1502,274 @@ function getHtmlRetroTerminal() {
 </body>
 </html>`
 }
+
+/**
+ * NO PARAMTERS
+ * @returns {String}
+ */
+function getHtmlInterview() {
+  return `
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
+  <style>
+    * {
+      font-family: Lexend;
+    }
+    
+    body {
+      background-color: whitesmoke;
+      justify-content: center;
+      text-align: center;
+      font-family: Lexend;
+    }
+
+    @keyframes shake {
+        0% {
+        transform: translate(1px, 1px) rotate(0deg);
+        }
+
+        10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+        }
+
+        20% {
+        transform: translate(-3px, 0px) rotate(1deg);
+        }
+
+        30% {
+        transform: translate(3px, 2px) rotate(0deg);
+        }
+
+        40% {
+        transform: translate(1px, -1px) rotate(1deg);
+        }
+
+        50% {
+        transform: translate(-1px, 2px) rotate(-1deg);
+        }
+
+        60% {
+        transform: translate(-3px, 1px) rotate(0deg);
+        }
+
+        70% {
+        transform: translate(3px, 1px) rotate(-1deg);
+        }
+
+        80% {
+        transform: translate(-1px, -1px) rotate(1deg);
+        }
+
+        90% {
+        transform: translate(1px, 2px) rotate(0deg);
+        }
+
+        100% {
+        transform: translate(1px, -2px) rotate(-1deg);
+        }
+    }
+
+    .shake {
+        overflow: hidden;
+        animation: shake 0.1s;
+    }
+
+    label {
+      font-size: 23px;
+      margin-top: 15px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      align-self: center;
+      padding: 12px 20px;
+      margin-bottom: 40px;
+      box-sizing: border-box;
+      border: 4px solid #111111;
+      box-shadow: 0 0.3rem 0.4rem #111111;
+      border-radius: 10px;
+      -webkit-transition: 0.5s;
+      transition: 0.5s;
+      background-color: #444444;
+      color: #fff;
+      outline: none;
+      text-align: center;
+    }
+
+    input:hover,
+    select:hover,
+    textarea:hover {
+      border: 4px solid #ccc;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border: 4px solid #ccc;
+      background-color: #222222;
+    }
+
+    input:invalid,
+    select:invalid,
+    textarea:invalid {
+      border: 4px solid #8B0000;
+    }
+
+    input:invalid:focus,
+    select:invalid:focus,
+    textarea:invalid:focus,
+    input:invalid:hover,
+    select:invalid:hover,
+    textarea:invalid:hover {
+      border: 4px solid red;
+    }
+
+    p {
+      font-size: 15px;
+    }
+
+    #description {
+      height: 4rem;
+      text-align: left;
+      justify-content: top;
+      word-wrap: break-word;
+      resize: none;
+      text-align: left;
+    }
+
+    .submitButton {
+        background-color: #4a4a4a;
+        color: whitesmoke;
+        text-align: center;
+        align-self: center;
+        border-radius: 20px;
+        box-shadow: 0 0.3rem 0.4rem #111111;
+        width: 45%;
+        padding: 20px 20px;
+        font-size: 20px;
+        border: 4px solid #111111;
+        transition: 0.5s ease;
+        overflow: hidden;
+    }
+
+    .submitButton:hover {
+        background-color: #222222;
+        transition: 0.5s ease;
+        cursor: pointer;
+    }
+
+    .submitButton:disabled {
+        background-color: #4a4a4a;
+        color: gray;
+        cursor: not-allowed;
+    }
+
+    .loader {
+        border: 16px solid #666666;
+        border-top: 16px solid black;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        animation: spin 1.2s linear infinite;
+        justify-self: center;
+    }
+
+    @keyframes spin {
+        0% {
+        transform: rotate(0deg);
+        }
+
+        100% {
+        transform: rotate(360deg);
+        }
+    }
+
+    .red {
+        background-color: red !important;
+        color: black !important;
+    }
+
+    .green {
+        background-color: green !important;
+        color: black !important;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      window.GenerateDoc = function(event) {
+        event.preventDefault();
+        const interviewerEmail = document.getElementById("interviewerEmail").value;
+        const applicantName = document.getElementById("applicantName").value;
+        const button = document.getElementById("generateButton");
+        const patience = document.getElementById("patience");
+
+        if (!interviewerEmail || !applicantName || applicantName.length > 20 || !interviewerEmail.includes("@")) {
+          document.body.classList.add("shake");
+          setTimeout(() => {
+            document.body.classList.remove("shake");
+          }, 100);
+          console.error("Invalid arguments");
+          return;
+        };
+
+        button.disabled = true;
+        button.innerHTML = '<div class="loader"></div>';
+        patience.innerHTML = "<br>Please be patient while your document is being generated, a link will be provided to you here once it's done.";
+
+        google.script.run
+          .withSuccessHandler(response => {
+            if (response) {
+              document.getElementById("docForm").reset();
+              button.innerText = "Success";
+              button.classList.add("green");
+              patience.innerHTML = "<br><a href='" + response + "' target='_blank'>Interview Document</a>";
+            } else {
+              button.classList.add("red");
+              button.innerText = "Something went wrong";
+            }
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.classList.remove("green");
+            }, 2000);
+          })
+          .withFailureHandler(() => {
+            button.innerText = "Something went wrong";
+            document.body.classList.add("shake");
+            setTimeout(() => {
+              document.body.classList.remove("shake");
+            }, 100);
+            setTimeout(() => {
+              button.disabled = false;
+              button.innerHTML = "";
+              button.innerText = "Submit";
+            }, 2000);
+          })
+          .GenerateInterview(interviewerEmail, applicantName);
+      };   
+    });
+  </script>
+</head>
+
+<body>
+    <h1>Generate Interview Document</h1>
+    <p>Fill out all of the below questions in order to properly generate an Interview Document.<br>
+    This script will use the template to automatically create a usable document in order for you to swiftly conduct a Security Interview.<br><br>
+    It will fill out the information that you provide below and it will randomly select 10 questions from a list of predfined questions, which the applicant will need to answer.</p><span id="patience"></span>
+    <hr>
+    <form id="docForm">
+      <label for="interviewerEmail">Enter your email address:</label>
+      <input type="email" id="interviewerEmail" placeholder="Enter your email address (the one logged on the roster)" required>
+      <label for="applicantName">Enter the <strong>name</strong> of the applicant undertaking this Interview:</label>
+      <input type="text" id="applicantName" placeholder="Enter the name of the applicant that is undertaking this interview" maxlength="20" required>
+      <button onclick="GenerateDoc(event)" type="submit" class="submitButton" id="generateButton">Generate</button>
+    </form>
+</body>
+
+</html>`;
+}
