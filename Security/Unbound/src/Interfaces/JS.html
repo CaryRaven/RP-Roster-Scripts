@@ -1,0 +1,2085 @@
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    /* ******** UTILITIES *******************************************************/
+    window.CloseChangelog =  function(event) {
+      try { event.preventDefault(); } catch(e) { }
+      document.getElementById("update-popup").setAttribute("style", "display: none;");
+      document.getElementById("changeLoader").setAttribute("style", "display: none;");
+      document.getElementById("admin-menu").setAttribute("style", "display: block;");
+    }
+
+    window.Shake = function() {
+      document.body.classList.add('shake');
+      setTimeout(() => document.body.classList.remove('shake'), 200);
+    };
+
+    window.SetSpecSelects = function() {
+      google.script.run.withSuccessHandler(specs => {
+        const specField = document.getElementById("specfield").value;
+        document.getElementById("removeSpec").innerHTML = "";
+        const editSpec = document.getElementById("editSpecSelect").value;
+
+        if (editSpec === "") document.getElementById("editSpecSelect").innerHTML = "";
+        if (specField === "") document.getElementById("specfield").innerHTML = "";
+        specs = JSON.parse(specs);
+
+        specs.forEach(spec => {
+          if (specField === "") {
+            const specOption = document.createElement("option");
+            specOption.innerText = spec.title;
+            document.getElementById("specfield").appendChild(specOption);
+          }
+
+          const specOptionConfig = document.createElement("option");
+          specOptionConfig.innerText = spec.title;
+          document.getElementById("removeSpec").appendChild(specOptionConfig);
+
+          if (editSpec === "") {  
+            const specOptionConfig2 = document.createElement("option");
+            specOptionConfig2.innerText = spec.title;
+            document.getElementById("editSpecSelect").appendChild(specOptionConfig2);
+          }
+        });
+      }).ReturnSpecs();
+    };
+
+    window.SetRankSelects = function(forced = false) {
+      let initRanks = document.getElementById("ranks")?.innerText;
+      let rankSelect = document.getElementById("amdin-role-select");
+      let rankRowSelect = document.getElementById("new-rank-select");
+      let addRankSelect = document.getElementById("new-rank-before-select");
+      let removeRankSelect = document.getElementById("remove-rank-select");
+      const editRankSelect = document.getElementById("editRankSelect");
+
+      if (initRanks) {
+        initRanks = initRanks.split(",");
+      } else {
+        initRanks = [];
+      }
+
+      if (rankSelect.value === "" || forced === true) rankSelect.innerHTML = '<option value=""></option>';
+      if (rankRowSelect.value === "" || forced === true) rankRowSelect.innerHTML = '<option value=""></option>';
+      if (removeRankSelect.value === "" || forced === true) removeRankSelect.innerHTML = '<option value=""></option>';
+      if (addRankSelect.value === "" || forced === true) addRankSelect.innerHTML = '<option value=""></option>';
+      if (editRankSelect.value === "" || forced === true) editRankSelect.innerHTML = '<option value=""></option>';
+
+      initRanks.forEach(rankName => {
+
+        if (!rankName.includes("Site") && !rankName.includes("Chief")) {
+
+          if (rankSelect.value === "" || forced === true) {
+            const rankOption = document.createElement("option");
+            rankOption.value = rankName;
+            rankOption.innerText = rankName;
+            rankSelect.appendChild(rankOption); 
+          }
+
+          if (rankRowSelect.value === "" || forced === true) {
+            const rankRowOption = document.createElement("option");
+            rankRowOption.value = rankName;
+            rankRowOption.innerText = rankName;
+            rankRowSelect.appendChild(rankRowOption);
+          }
+
+          if (addRankSelect.value === "" || forced === true) {
+            const addRankOption = document.createElement("option");
+            addRankOption.value = rankName;
+            addRankOption.innerText = rankName;
+            addRankSelect.appendChild(addRankOption);
+          }
+
+          if (editRankSelect.value == "" || forced === true) {
+            const editRankOption = document.createElement("option");
+            editRankOption.value = rankName;
+            editRankOption.innerText = rankName;
+            editRankSelect.appendChild(editRankOption);
+          }
+
+          if (removeRankSelect.value === "" || forced === true) {
+            const removeRankOption = document.createElement("option");
+            removeRankOption.value = rankName;
+            removeRankOption.innerText = rankName;
+            removeRankSelect.appendChild(removeRankOption);
+          }
+        }
+      });
+    };
+
+    window.SetSliders = function() {
+      google.script.run.withSuccessHandler(r => {
+        r = JSON.parse(r);
+        document.getElementById('manualEditingSlider').checked = !(r[0] === "true");
+        document.getElementById('pingSlider').checked = (r[1] === "true");
+        document.getElementById('backupSlider').checked = (r[2] === "true");
+        if (r[3] === "true") {
+          document.getElementById('lockdown-topbanner').style.display = "block";
+          document.getElementById('lockdownIdentifier').innerText = "Disable";
+        } else {
+          document.getElementById('lockdown-topbanner').style.display = "none";
+          document.getElementById('lockdownIdentifier').innerText = "Enable";
+        }
+      }).ReturnSliders();
+    };
+
+    // Set the changelog data if applicable
+    let viewChange = document.getElementById("viewChange");
+    let changeLogList = document.getElementById("changeLogList");
+    if (viewChange.innerText == "false") {
+      CloseChangelog();
+    } else {
+      google.script.run.withSuccessHandler(property => {
+        property = JSON.parse(property);
+        const notes = property.fields;
+
+        notes.forEach(note => {
+          const noteLi = document.createElement("li");
+          noteLi.innerText = note;
+          changeLogList.appendChild(noteLi);
+        });
+        document.getElementById("update-popup").setAttribute("style", "display: block;");
+        document.getElementById("changeLoader").setAttribute("style", "display: none;");
+      }).withFailureHandler(() => {
+        document.getElementById("update-popup").setAttribute("style", "display: block;");
+        document.getElementById("changeLoader").setAttribute("style", "display: none;");
+        changeLogList.innerHTML = "<li>Something went wrong while loading the changelogs</li>"
+      }).GetChangeNotes();
+    }
+
+    /*
+    **************************************************************************************************
+      Function responsible for handling the sidebar functionality
+      When adding a new tab, make sure you update these functions to show/hide the new panel too
+    */
+    let configupdate;
+    window.ShowDash = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: block;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      document.getElementById("requests-panel").setAttribute("style", "display: none;");
+      try {
+        document.getElementById('config').setAttribute('style', 'display: none;'); 
+        clearInterval(configupdate);
+        SetRankSelects(true);
+        setInterval(() => {
+          SetRankSelects();
+        }, 10000);
+      } catch (e) {  }
+    }
+
+    window.ShowManual = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: block;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      document.getElementById("requests-panel").setAttribute("style", "display: none;");
+      try { 
+        document.getElementById('config').setAttribute('style', 'display: none;'); 
+        clearInterval(configupdate);
+      } catch (e) {  }
+    }
+
+    window.ShowConnections = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: block;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      document.getElementById("requests-panel").setAttribute("style", "display: none;");
+      try { 
+        document.getElementById('config').setAttribute('style', 'display: none;'); 
+        clearInterval(configupdate);
+      } catch (e) {  }
+    }
+
+    window.ShowSearch = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: block;');
+      document.getElementById("searchLoading").setAttribute("style", "display: none;");
+      document.getElementById("requests-panel").setAttribute("style", "display: none;");
+      try { 
+        document.getElementById('config').setAttribute('style', 'display: none;'); 
+        clearInterval(configupdate);
+      } catch (e) {  }
+    }
+
+    window.ShowConfig = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      document.getElementById('config').setAttribute('style', 'display: block;');
+      document.getElementById("requests-panel").setAttribute("style", "display: none;");
+      try { 
+        clearInterval(configupdate); 
+      } catch(e) { }
+
+      // Making sure the config is synced every 10 seconds
+      SetSpecSelects();
+      SetRankSelects(true);
+      SetSliders();
+      configupdate = setInterval(() => {
+        SetSpecSelects();
+        SetRankSelects();
+        SetSliders();
+      }, 10000);
+    }
+
+    window.ShowRequests = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('data-forms').setAttribute('style', 'display: none;');
+      document.getElementById('usermanual').setAttribute('style', 'display: none;');
+      // document.getElementById('connections').setAttribute('style', 'display: none;');
+      document.getElementById('search_panel').setAttribute('style', 'display: none;');
+      document.getElementById("searchLoading").setAttribute("style", "display: none;");
+      document.getElementById("requests-panel").setAttribute("style", "display: block;");
+      try { 
+        document.getElementById('config').setAttribute('style', 'display: none;'); 
+        clearInterval(configupdate);
+        FillRequests();
+      } catch (e) {  }
+    }
+    /* ************************************************************************************************* */
+
+    // Managing form (dashboard visibility)
+    window.OpenLogForm = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('loggerForm').setAttribute('style', 'display: flex;');
+      document.getElementById('data-forms').setAttribute('style', 'display: block;');
+      document.getElementById('editForm').setAttribute('style', 'display: none;');
+    }
+
+    window.OpenEditForm = function () {
+      document.getElementById('dashboard').setAttribute('style', 'display: none;');
+      document.getElementById('editForm').setAttribute('style', 'display: block;');
+      document.getElementById('data-forms').setAttribute('style', 'display: block;');
+      document.getElementById('loggerForm').setAttribute('style', 'display: none;');
+    }
+
+    // Show the slider option to toggle the terminal animation on open
+    google.script.run.withSuccessHandler((response) => {
+      document.getElementById("showTerminalSlider").checked = (response === "true");
+      document.getElementById("terminalConfig").style.display = "block";
+      console.log(response);
+    }).ReturnTerminalSetting();
+    try {
+      document.getElementById('showTerminalSlider').addEventListener('change', function () {
+        google.script.run.withSuccessHandler((response) => {
+          document.getElementById("showTerminalSlider").checked = (response === "true");
+          console.log(response);
+        }).ToggleTerminal(this.checked);
+      });
+    } catch(e) {
+      console.log("Terminal failed");
+    }
+
+    // SEARCH HANDLERS ********************************************************************************
+    window.UpdateDiv = function (event) {
+      event.preventDefault();
+      const inputValue = document.getElementById('inputField').value;
+      if (inputValue === "" || !inputValue.includes("STEAM_")) {
+        Shake();
+        return;
+      }
+
+      document.getElementById("loading-search").innerText = "Searching for matching data...";
+      document.getElementById("searchLoading").setAttribute("style", "display: block;")
+
+      google.script.run
+        .withSuccessHandler(DisplayData)
+        .withFailureHandler(error => {
+          console.error("Server error:", error); // Log server-side errors
+          
+          document.getElementById("loading-search").innerText = "An error occured when trying to fetch the data: " + error;
+          document.getElementById("searchLoading").setAttribute("style", "display: none;");
+        }).GetSpreadsheetData(inputValue);
+    }
+
+    window.DisplayData = function (data) {
+      data = JSON.parse(data);
+
+      const outputDiv = document.getElementById('outputDiv');
+      outputDiv.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        document.getElementById("loading-search").innerText = "No matching data was found, please try another steam ID.";
+        document.getElementById("searchLoading").setAttribute("style", "display: none;");
+        return;
+      }
+
+      // Format dates to be readable => made using AI (I couldn't be asked)
+      function FormatDate(dateString) {
+        const date = new Date(dateString);
+        if (isNaN(date)) return dateString; // Return original string if not a valid date
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      const cardContainer = document.createElement('div');
+      cardContainer.style.display = "flex";
+      cardContainer.style.flexWrap = "wrap";
+      cardContainer.style.justifyContent = "center";
+      cardContainer.style.gap = "15px";
+      cardContainer.style.backgroundColor = "#777777";
+      cardContainer.style.marginTop = "20px";
+      cardContainer.style.padding = "20px";
+      cardContainer.style.borderRadius = "10px";
+
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.style.border = "4px solid black";
+        card.style.borderRadius = "10px";
+        card.style.padding = "20px";
+        card.style.backgroundColor = "#444444";
+        card.style.boxShadow = "0 4px 8px black";
+        card.style.flex = "1 1 calc(33% - 30px)";
+        card.style.maxWidth = "calc(33% - 30px)";
+        card.style.boxSizing = "border-box";
+        card.style.lineHeight = "1.8";
+
+        const head = document.createElement('div');
+        head.textContent = item.sheetLabel;
+        head.style.fontSize = "20px";
+        head.style.fontWeight = "bold";
+        head.style.color = "whitesmoke";
+        head.style.fontFamily = "Lexend";
+        head.style.paddingBottom = "5px";
+        card.appendChild(head);
+
+        Object.entries(item).forEach(([key, value]) => {
+          if (key === "sheetLabel") return;
+
+          const field = document.createElement('div');
+          field.style.fontSize = "16px";
+          field.style.fontWeight = "bold";
+
+          if (key.toLowerCase().includes("date")) {
+            value = FormatDate(value);
+          }
+
+          // Style color for easy reading
+          switch (value) {
+            case "Promotion":
+              field.style.color = "#34a853";
+              break;
+            case "Demotion":
+              field.style.color = "#ff2f2f";
+              break;
+            case "Removal":
+              field.style.color = "#ff2f2f";
+              break;
+            case "Severe":
+              field.style.color = "#ff2f2f";
+              break;
+            case "Transfer":
+              field.style.color = "#8e7cc3";
+              break;
+            case "Passed Interview":
+              field.style.color = "#3c78d8";
+              break;
+            default:
+              field.style.color = "whitesmoke";
+              break;
+          }
+
+          // Differentiate logger information
+          if (key.includes("Logger")) {
+            field.style.color = "gray";
+          }
+
+          field.style.fontFamily = "Lexend";
+          field.textContent = `${key}: ${value !== null ? value : 'N/A'}`;
+          card.appendChild(field);
+        });
+
+        cardContainer.appendChild(card);
+      });
+
+      outputDiv.appendChild(cardContainer);
+      document.getElementById("loading-search").innerText = "";
+      document.getElementById("searchLoading").setAttribute("style", "display: none;")
+    }
+    // ******************************************************************************************************
+
+    // REQUEST HANDLERS *************************************************************************************
+    let requestNum = 0;
+    const accessTypeReq = document.getElementById("accessType").innerText;
+
+    function handleAction(task, action) {
+      // Get task data => querySelector() / querySelectorAll()
+      console.log(action);
+      const id = task.querySelector(".task-id").textContent.replace("ID: ", "");
+      task.querySelector(".icon").innerHTML = '<div class="loader"></div>';
+      clearInterval(requestInterval);
+      console.log("interval cleared");
+
+      google.script.run.withSuccessHandler(response => {
+        console.log(response);
+        const banner = document.getElementById("actionBanner");
+
+        if (typeof response == "string") {
+          banner.style.display = "block";
+          banner.style.backgroundColor = "red";
+          document.getElementById("requestType").innerText = `Failed: ${response}`;
+          task.querySelector(".icon").innerHTML = "<i class='bx bx-calendar-check bx-tada-hover'></i>";
+          setTimeout(() => {
+            document.getElementById("actionBanner").style.display = "none";
+          }, 2000);
+        } else {
+          task.remove();
+          requestNum -= 1;
+
+          if (requestNum > 0) {
+            document.getElementById("requestButton").style.backgroundColor = "rgba(255, 0, 0, 0.1)";
+            document.getElementById("requestButton").style.animation = "redBlob 2.5s infinite ease-in-out";
+          } else {
+            document.getElementById("requestButton").style.backgroundColor = "";
+            document.getElementById("requestButton").style.animation = "";
+          }
+          
+          banner.style.display = "block";
+          action === "accepted" ? banner.style.backgroundColor = "green" : banner.style.backgroundColor = "red";
+          document.getElementById("requestType").innerText = action;
+          task.querySelector(".icon").innerHTML = "<i class='bx bx-calendar-check bx-tada-hover'></i>";
+          setTimeout(() => {
+            document.getElementById("actionBanner").style.display = "none";
+          }, 2000);
+        }
+        FillRequests();
+        requestInterval = setInterval(() => {
+          FillRequests();
+        }, 10000);
+      }).withFailureHandler((error) => {
+        console.log(error);
+        task.querySelector(".icon").innerHTML = "<i class='bx bx-calendar-check bx-tada-hover'></i>";
+        requestInterval = setInterval(() => {
+          FillRequests();
+        }, 10000);
+      }).ManageRequests(action, id);
+    }
+
+    window.FillRequests = function() {
+      requestNum = 0;
+      if (accessTypeReq === "visitor" || accessTypeReq === "mod") return;
+      google.script.run.withSuccessHandler(data => {
+        data = JSON.parse(data);
+        if (!Array.isArray(data)) return;
+        document.getElementById("mainDiv").innerHTML = "";
+        
+        data.forEach(request => {
+          GenerateRequest(request);
+        });
+      }).withFailureHandler(() => {
+        console.log("Something went wrong");
+      }).GetRequests();
+    }
+
+    FillRequests();
+    let requestInterval = setInterval(() => {
+      FillRequests();
+    }, 10000);
+
+    window.GenerateRequest = function(data) {
+      let task = document.createElement("div");
+      task.classList.add("task");
+      
+      let taskHeader = document.createElement("div");
+      taskHeader.classList.add("task-header");
+      
+      let title = document.createElement("h3");
+      title.textContent = data.title;
+      title.style.fontSize = "20px";
+      
+      let icon = document.createElement("div");
+      icon.classList.add("icon");
+      icon.innerHTML = "<i class='bx bx-calendar-check bx-tada-hover'></i>";
+      
+      taskHeader.appendChild(title);
+      taskHeader.appendChild(icon);
+      
+      let description = document.createElement("p");
+      description.textContent = data.desc;
+      
+      let type = document.createElement("p");
+      type.textContent = "Type: " + data.type;
+      
+      let addedBy = document.createElement("p");
+      addedBy.textContent = "Requested by: " + data.logger;
+
+      let taskFooter = document.createElement("div");
+      taskFooter.classList.add("task-footer");
+
+      let taskMeta = document.createElement("div");
+      taskMeta.classList.add("task-meta");
+
+      let id = document.createElement("small");
+      id.classList.add("task-id");
+      id.textContent = "ID: " + data.id;
+      
+      let date = document.createElement("small");
+      date.textContent = "Date: " + new Date().toLocaleDateString();
+      
+      let buttonGroup = document.createElement("div");
+      buttonGroup.classList.add("button-group");
+      
+      let acceptBtn = document.createElement("button");
+      acceptBtn.classList.add("accept-btn");
+      acceptBtn.textContent = "Accept";
+      acceptBtn.addEventListener("click", function() {
+        handleAction(task, "accepted");
+      });
+      
+      let denyBtn = document.createElement("button");
+      denyBtn.classList.add("deny-btn");
+      denyBtn.textContent = "Deny";
+      denyBtn.addEventListener("click", function() {
+        handleAction(task, "denied");
+      });
+      
+      buttonGroup.appendChild(acceptBtn);
+      buttonGroup.appendChild(denyBtn);
+      
+      taskMeta.appendChild(id);
+      taskMeta.appendChild(date);
+      
+      taskFooter.appendChild(taskMeta);
+      taskFooter.appendChild(buttonGroup);
+      
+      task.appendChild(taskHeader);
+      task.appendChild(description);
+      task.appendChild(type);
+      task.appendChild(addedBy);
+      task.appendChild(taskFooter);
+      
+      let mainContainer = document.getElementById("mainDiv");
+      mainContainer.insertBefore(task, mainContainer.firstChild);
+      requestNum += 1;
+      if (requestNum > 0) {
+        document.getElementById("requestButton").style.backgroundColor = "rgba(255, 0, 0, 0.1)";
+        document.getElementById("requestButton").style.animation = "redBlob 2.5s infinite ease-in-out";
+      } else {
+        document.getElementById("requestButton").style.backgroundColor = "";
+        document.getElementById("requestButton").style.animation = "";
+      }
+    };
+    // ******************************************************************************************************
+
+    /* CONFIG HANDLERS *************************************************************************************
+      All functions tasked with handing the configuration panel
+    */
+
+    try {
+      google.script.run.withSuccessHandler(response => {
+        try { document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`; } catch(e) {}
+        // Make sure everything has the time to load
+        setTimeout(() => {
+          document.getElementById('config-textbox').style.display = "block"; // This one appears to be the slowest
+          document.getElementById('config-loading').innerHTML = '';
+        }, 1000);
+      }).GetLastBackupTime();
+
+      SetSliders();
+      SetRankSelects(true);
+    } catch (e) {  }
+
+    document.getElementById('manualEditingSlider').addEventListener('change', function () {
+      document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('config-loading').innerHTML = '';
+      }).ToggleManualEditing(this.checked);
+    });
+
+    document.getElementById('pingSlider').addEventListener('change', function () {
+      document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('config-loading').innerHTML = '';
+      }).TogglePings(this.checked);
+    });
+
+    try {
+      document.getElementById('backupSlider').addEventListener('change', function () {
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(() => {
+          document.getElementById('config-loading').innerHTML = '';
+        }).ToggleBackup(this.checked);
+      });
+    } catch(e) {}
+
+    window.LockdownInit = function (event) {
+      event.preventDefault();
+      document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      const button = document.getElementById('lockdownButton');
+      button.disabled = true;
+
+      google.script.run.withSuccessHandler((re) => {
+        document.getElementById('config-loading').innerHTML = '';
+        button.disabled = false;
+        console.log(re);
+        SetSliders();
+      }).withFailureHandler((error) => {
+        document.getElementById('config-loading').innerHTML = '';
+        
+        button.disabled = false;
+      }).ToggleLockdown();
+    };
+
+    window.AddRankRow = function (event) {
+      event.preventDefault();
+      let rankElement = document.getElementById('new-rank-select');
+      const rank = rankElement.value;
+      let rowAmount = document.getElementById("rankRowAmount").value;
+      rowAmount = Number(rowAmount);
+
+      if (!rank) return Shake();
+      if (!rowAmount || rowAmount <= 0 || rowAmount > 15) {
+        Shake();
+        if (rowAmount) alert("You must select a number of rows to add between 1 and 15");
+        return;
+      }
+
+      const buttonAdd = document.getElementById('addrankrow-button');
+      const buttonRemove = document.getElementById('removerankrow-button');
+      let configLoading = document.getElementById('config-loading');
+
+      configLoading.innerHTML = '<div class="loader"></div>';
+      buttonAdd.disabled = true;
+      buttonRemove.disabled = true;
+      rankElement.disabled = true;
+
+      google.script.run.withSuccessHandler(response => {
+        configLoading.innerHTML = '';
+        buttonAdd.classList.add('green');
+        buttonRemove.classList.add('green');
+        setTimeout(() => {
+          buttonAdd.classList.remove('green');
+          buttonRemove.classList.remove('green');
+          buttonAdd.disabled = false;
+          buttonRemove.disabled = false;
+          rankElement.disabled = false;
+        }, 3000);
+      }).withFailureHandler((error) => {
+        
+        Shake();
+        configLoading.innerHTML = '';
+        configLoading.innerText = "Something went wrong while adding a rank slot";
+        buttonAdd.classList.add('red');
+        buttonRemove.classList.add('red');
+        setTimeout(() => {
+          configLoading.innerText = ""
+          buttonAdd.disabled = false;
+          buttonRemove.disabled = false;
+          rankElement.disabled = false;
+          buttonAdd.classList.remove('red');
+          buttonRemove.classList.remove('red');
+        }, 3000);
+      }).AddRankRow(rank, rowAmount);
+    };
+
+    window.RemoveRankRow = function (event) {
+      event.preventDefault();
+      const rankElement = document.getElementById('new-rank-select');
+      const rank = rankElement.value;
+      let rowAmount = document.getElementById("rankRowAmount").value;
+      rowAmount = Number(rowAmount);
+
+      if (!rowAmount || rowAmount <= 0) {
+        Shake();
+        return;
+      }
+
+      const buttonAdd = document.getElementById('addrankrow-button');
+      const buttonRemove = document.getElementById('removerankrow-button');
+      let configLoading = document.getElementById('config-loading');
+
+      configLoading.innerHTML = '<div class="loader"></div>';
+      buttonAdd.disabled = true;
+      buttonRemove.disabled = true;
+      rankElement.disabled = true;
+
+      if (!rank) {
+        Shake();
+        configLoading.innerHTML = '';
+        buttonAdd.disabled = false;
+        buttonRemove.disabled = false;
+        rankElement.disabled = false;
+        return;
+      }
+
+      google.script.run.withSuccessHandler(response => {
+        configLoading.innerHTML = '';
+        if (response) {
+          buttonAdd.classList.add('red');
+          buttonRemove.classList.add('red');
+          Shake();
+          setTimeout(() => {
+            buttonAdd.classList.remove('red');
+            buttonRemove.classList.remove('red');
+            buttonAdd.disabled = false;
+            buttonRemove.disabled = false;
+            rankElement.disabled = false;
+          }, 3000);
+        } else {
+          buttonAdd.classList.add('green');
+          buttonRemove.classList.add('green');
+          setTimeout(() => {
+            buttonAdd.classList.remove('green');
+            buttonRemove.classList.remove('green');
+            buttonAdd.disabled = false;
+            buttonRemove.disabled = false;
+            rankElement.disabled = false;
+          }, 3000);
+        }
+      }).withFailureHandler(error => {
+        
+        Shake();
+        configLoading.innerHTML = '';
+        configLoading.innerText = "Something went wrong while adding a rank slot";
+        buttonAdd.classList.add('red');
+        buttonRemove.classList.add('red');
+        setTimeout(() => {
+          configLoading.innerText = ""
+          buttonAdd.disabled = false;
+          buttonRemove.disabled = false;
+          rankElement.disabled = false;
+          buttonAdd.classList.remove('red');
+          buttonRemove.classList.remove('red');
+        }, 3000);
+      }).RemoveRankRow(rank, rowAmount);
+    };
+
+    window.RestoreBackup = function (event) {
+      event.preventDefault();
+      try {
+        const button = document.getElementById('restoreBackupButton');
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        button.disabled = true;
+
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById('config-loading').innerHTML = '';
+          if (response) {
+            button.classList.add("red");
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.disabled = false;
+            }, 2000);
+          } else {
+            button.disabled = false;
+          }
+        }).withFailureHandler(error => {
+          
+          document.getElementById('config-loading').innerHTML = '';
+          button.disabled = false;
+          button.classList.add("red");
+          setTimeout(() => button.classList.remove("red"), 2000);
+        }).RestoreSheet();
+      } catch(e) {
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        document.getElementById('restoreBackupButton').disabled = true;
+      }
+    };
+
+    window.MakeBackup = function (event) {
+      event.preventDefault();
+      try {
+        const button = document.getElementById('backupButton');
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        button.disabled = true;
+
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById('config-loading').innerHTML = '';
+          if (response) {
+            button.classList.add("red");
+            setTimeout(() => {
+              button.classList.remove("red");
+              button.disabled = false;
+            }, 2000);
+          } else {
+            button.disabled = false;
+          }
+
+          // Update last backup time
+          google.script.run.withSuccessHandler(response => {
+            document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+          }).GetLastBackupTime();
+        }).withFailureHandler(error => {
+          
+          document.getElementById('config-loading').innerHTML = '';
+          button.disabled = false;
+          button.classList.add("red");
+          setTimeout(() => button.classList.remove("red"), 2000);
+        }).BackupSheet();
+      } catch(e) {
+        document.getElementById('config-loading').innerHTML = '';
+        document.getElementById('backupButton').disabled = false;
+      }
+    };
+
+    window.RefreshBackupTime = function (event) {
+      event.preventDefault();
+      try {
+        document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(response => {
+          document.getElementById("backupTime").innerText = `Last Backup made ${response} minutes ago`;
+          document.getElementById('config-loading').innerHTML = '';
+        }).GetLastBackupTime();
+      } catch(e) { 
+        document.getElementById('config-loading').innerHTML = '';
+      }
+    }
+
+    window.ResetPerms = function (event) {
+      event.preventDefault();
+      const button = document.getElementById('resetButton');
+      button.disabled = true;
+      document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(() => {
+        button.disabled = false;
+        document.getElementById('config-loading').innerHTML = '';
+      }).withFailureHandler(error => {
+        
+        button.disabled = false;
+        document.getElementById('config-loading').innerHTML = '';
+      }).ResetPermissions();
+    }
+
+    window.SaveAdminRanks = function () {
+      event.preventDefault();
+      const button = document.getElementById('AdminRankButton');
+      button.disabled = true;
+      let accessRank = document.getElementById("amdin-role-select").value;
+      let rank = document.getElementById("rank").innerText;
+      let ranks = document.getElementById("ranks")?.innerText;
+      ranks = ranks.split(",");
+
+      if (!accessRank) {
+        Shake();
+        button.disabled = false;
+        return;
+      }
+
+      if ((ranks.indexOf(accessRank) >= ranks.indexOf(rank)) && !rank.includes("Blackshadow Staff")) {
+        Shake();
+        button.disabled = false;
+        console.log("You cannot manage rank access above your own rank");
+        return;
+      }
+
+      google.script.run.withSuccessHandler((updatedarray) => {
+        if (!updatedarray) {
+          button.classList.add("red");
+          button.innerText = "No Permissions";
+          setTimeout(() => {
+            button.classList.remove("red");
+            button.innerText = "Add/Remove";
+            button.disabled = false;
+            document.getElementById("config-form-adminRanks").reset();
+          }, 2000);
+        } else {
+          InsertRanks(updatedarray);
+        }
+      }).withFailureHandler(error => {
+        
+        button.disabled = false;
+      }).UpdateAccess(accessRank, rank);
+    };
+
+    window.InsertRanks = function (ranks) {
+      const button = document.getElementById('AdminRankButton');
+      ranks = JSON.parse(ranks);
+      document.getElementById("allowedRanks").innerText = ranks;
+      button.disabled = false;
+      document.getElementById("config-form-adminRanks").reset();
+    };
+
+    window.SubmitChangelog = function(event) {
+      event.preventDefault();
+      let changelog = document.getElementById("changes").value;
+      const button = document.getElementById("changelogButton");
+
+      if (changelog.length < 20) {
+        Shake();
+        return;
+      }
+
+      button.disabled = true;
+      google.script.run.withSuccessHandler(() => {
+        button.disabled = false;
+        document.getElementById("changelog-form").reset();
+      }).withFailureHandler(() => {
+        button.disabled = false;
+      }).SubmitChange(changelog);
+    };
+
+    // *********** DROPDOWN HANDLERS ************
+
+    let coll = document.getElementById("manageRank");
+
+    coll.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("newRankContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    });
+
+    let coll2 = document.getElementById("manageSpecialization");
+
+    coll2.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("manageSpecContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    });
+
+    let coll3 = document.getElementById("manageCooldown");
+
+    coll3.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("manageCooldownContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+      google.script.run.withSuccessHandler(r => {
+        r = JSON.parse(r);
+        document.getElementById("loaCooldown").value = r[0];
+        document.getElementById("promoCooldown").value = r[1];
+      }).ReturnCooldown();
+    });
+
+    let coll4 = document.getElementById("manageThreshold");
+
+    coll4.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("manageThresholdContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+      google.script.run.withSuccessHandler(r => {
+        r = JSON.parse(r);
+        document.getElementById("threshold").value = r[0];
+        document.getElementById("thresholdActionSelect").value = r[1];
+      }).ReturnThreshold();
+    });
+
+    // **********************************************
+
+    window.AddNewRank = function(event) {
+      event.preventDefault();
+      let button = document.getElementById("newrank-button");
+      const hierarchySelect = document.getElementById("new-rank-before-select");
+
+      let data = {
+        title: document.getElementById("newRankTitle").value,
+        rankBefore: hierarchySelect.value,
+        viewerFolders: document.getElementById("newRankViewFolders").value,
+        editorFolders: document.getElementById("newRankEditFolders").value,
+        editRank: document.getElementById("editRankSelect").value,
+        interviewRequired: document.getElementById("interviewNeeded").checked
+      }
+
+      if (!data.title) return Shake();
+
+      if (hierarchySelect.value == data.editRank && data.editRank !== "") {
+        hierarchySelect.value = "";
+        button.disabled = true;
+        Shake();
+        button.classList.add("red");
+        button.innerText = "Cannot place a rank before itself"; //
+        return setTimeout(() => {
+          button.innerText = "Edit Existing Rank";
+          button.classList.remove("red");
+          button.disabled = false;
+        }, 3000);
+      }
+
+      let valid = true;
+      Object.values(data).forEach(value => {
+        if (typeof value === "string" && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+          valid = false;
+        }
+      });
+
+      if (!valid) {
+        Shake();
+        button.innerText = "No special characters allowed in input values";
+        button.disabled = true;
+        setTimeout(() => {
+          button.innerText = "Submit New Rank";
+          button.disabled = false;
+        }, 2000);
+        return;
+      }
+
+      button.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler((response) => {
+        if (
+          response.toLowerCase().includes("not") 
+          || response.toLowerCase().includes("already") 
+          || response.toLowerCase().includes("invalid")
+          || response.toLowerCase().includes("unrelated")
+        ) {
+          Shake();
+          button.classList.add('red');
+        } else {
+          button.classList.add('green');
+          document.getElementById("newrankForm").reset();
+        }
+
+        button.innerHTML = "";
+        button.innerText = response;
+        setTimeout(() => {
+          button.innerText = "Submit New Rank";
+          button.disabled = false;
+          button.classList.remove('red');
+          button.classList.remove('green');
+        }, 3000);
+
+        google.script.run.withSuccessHandler(ranks => {
+          ranks = JSON.parse(ranks);
+          document.getElementById("ranks").innerText = ranks;
+          SetRankSelects(true);
+        }).GetRanks();
+
+      }).withFailureHandler(error => {
+        
+
+        // Manipulating button text to give info to user.
+        button.innerHTML = "";
+        button.innerText = "Something went wrong";
+        setTimeout(() => {
+          button.innerText = "Submit New Rank";
+          button.disabled = false;
+        }, 4000);
+      }).AddNewRank(data);
+    };
+
+    window.RemoveRank = function(event) {
+      event.preventDefault();
+      const button = document.getElementById("removeRank-button");
+      const rank = document.getElementById("remove-rank-select").value;
+
+      if (!rank) return Shake();
+
+      const proceed = confirm(`You are about to remove the rank of ${rank} from the roster. Press OK if you would like to continue this action.`);
+
+      if (proceed == true) {
+        button.disabled = true;
+        document.getElementById('config-loading').innerHTML = '<div class="loader" style="width: 10px; height: 10px;"></div>';
+
+        google.script.run.withSuccessHandler(response => {
+          if (response.toLowerCase().includes("not") || response.toLowerCase().includes("invalid")) {
+            Shake();
+            response.toLowerCase().includes("not") ? button.innerText = "Population" : button.innerText = "Invalid";
+            console.log(response);
+            button.classList.add('red');
+          } else {
+            button.classList.add('green');
+            button.innerText = "Success";
+            document.getElementById("newrankForm").reset();
+          }
+
+          setTimeout(() => {
+            button.innerText = "Delete";
+            document.getElementById('config-loading').innerHTML = "";
+            button.disabled = false;
+            button.classList.remove('red');
+            button.classList.remove('green');
+          }, 3000);
+
+          google.script.run.withSuccessHandler(ranks => {
+            ranks = JSON.parse(ranks);
+            document.getElementById("ranks").innerText = ranks;
+            SetRankSelects(true);
+          }).GetRanks();
+        }).withFailureHandler(error => {
+          
+          button.disabled = false;
+          button.innerText = "Delete";
+          document.getElementById('config-loading').innerHTML = "";
+        }).RemoveRank(rank);
+      }
+    };
+
+    window.AddNewSpec = function(event) {
+      event.preventDefault();
+      const title = document.getElementById("specTitle").value;
+      const desc = document.getElementById("specDesc").value;
+      const editExisting = document.getElementById("editSpecSelect").value;
+      const button = document.getElementById("spec-button");
+
+      if (!title || !desc) return Shake();
+      if (title.length > 20 || desc.length > 250) return Shake();
+
+      button.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(response => {
+        button.innerHTML = "";
+        if (response.toLowerCase().includes("not")) {
+          Shake();
+          button.classList.add('red');
+        } else {
+          button.classList.add('green');
+          document.getElementById("spec-form").reset();
+        }
+
+        button.innerText = response;
+        setTimeout(() => {
+          button.innerText = `${editExisting == "" ? "Submit New" : "Edit Existing"} Specialization`;
+          button.disabled = false;
+          button.classList.remove('red');
+          button.classList.remove('green');
+        }, 3000);
+
+        SetSpecSelects();
+      }).withFailureHandler(error => {
+        
+        button.innerHTML = "";
+        button.innerText = "Something went wrong";
+        setTimeout(() => {
+          button.innerText = `${editExisting == "" ? "Submit New" : "Edit Existing"} Specialization`;
+          button.disabled = false;
+        }, 3000);
+      }).AddSpec(title, desc, editExisting);
+    };
+
+    window.RemoveExistingSpec = function(event) {
+      event.preventDefault();
+      const title = document.getElementById("removeSpec").value;
+      const button = document.getElementById("removespec-button");
+
+      if (!title) return Shake();
+
+      button.disabled = true;
+
+      google.script.run.withSuccessHandler(response => {
+        if (response.includes("not")) {
+          Shake();
+          button.classList.add('red');
+        } else {
+          button.classList.add('green');
+          document.getElementById("removespec-form").reset();
+        }
+
+        setTimeout(() => {
+          button.disabled = false;
+          button.classList.remove('red');
+          button.classList.remove('green');
+        }, 1000);
+
+        SetSpecSelects();
+      }).withFailureHandler(error => {
+        console.log(error);
+        button.disabled = false;
+      }).RemoveSpec(title);
+    };
+
+    window.FillSpec = function(event) {
+      event.preventDefault();
+      const select = document.getElementById("editSpecSelect");
+      const titleField = document.getElementById("specTitle");
+      const descField = document.getElementById("specDesc");
+      const button = document.getElementById("spec-button");
+
+      if (select.value == "") {
+        titleField.value = "";
+        descField.value = "";
+        button.disabled = false;
+        select.disabled = false;
+        return button.innerText = "Submit New Specialization";
+      }
+
+      button.disabled = true;
+      select.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(content => {
+        content = JSON.parse(content);
+        if (content.length !== 2) {
+          button.innerText = "Rank not found";
+          button.classList.add("red");
+          setTimeout(() => {
+            button.disabled = false;
+            select.disabled = false;
+            button.innerText = "Edit Existing Specialization";
+            return;
+          }, 3000); 
+        }
+
+        titleField.value = content[0];
+        descField.value = content[1];
+
+        button.disabled = false;
+        select.disabled = false;
+        button.innerHTML = '';
+        button.innerText = "Edit Existing Specialization";
+      }).withFailureHandler(() => {
+        button.innerHTML = "";
+        button.innerText = "Something went wrong";
+        setTimeout(() => {
+          button.innerText = "Submit New Specialization";
+          button.disabled = false;
+          select.disabled = false;
+        }, 3000);
+      }).GetSpecContent(select.value);
+    };
+
+    window.FillRank = function(event) {
+      event.preventDefault();
+
+      const select = document.getElementById("editRankSelect");
+      const titleInput = document.getElementById("newRankTitle");
+      const hierarchySelect = document.getElementById("new-rank-before-select");
+      const viewFoldersInput = document.getElementById("newRankViewFolders");
+      const editFoldersInput = document.getElementById("newRankEditFolders");
+      const hasInterviewSlider = document.getElementById("interviewNeeded");
+      const button = document.getElementById("newrank-button");
+      const form = document.getElementById("newrankForm");
+
+      if (select.value == "") {
+        form.reset();
+        button.disabled = false;
+        return button.innerText = "Submit New Rank";
+      }
+
+      button.disabled = true;
+      select.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(content => {
+        content = JSON.parse(content);
+        if (content.length !== 5) {
+          button.innerText = "Rank not found";
+          button.classList.add("red");
+          return setTimeout(() => {
+            form.reset();
+            button.classList.remove("red");
+            button.disabled = false;
+            select.disabled = false;
+            button.innerText = "Edit Existing Rank";
+          }, 3000); 
+        }
+
+        titleInput.value = content[0];
+        hierarchySelect.value = content[1];
+        viewFoldersInput.value = content[2];
+        editFoldersInput.value = content[3];
+        hasInterviewSlider.checked = (content[4] === "true");
+
+        button.disabled = false;
+        select.disabled = false;
+        button.innerHTML = "";
+        button.innerText = "Edit Existing Rank";
+      }).withFailureHandler(error => {
+        button.innerText = "something went wrong";
+        button.classList.add("red");
+        setTimeout(() => {
+          form.reset();
+          button.disabled = false;
+          select.dsiabled = false;
+          button.classList.remove("red");
+          select.value = "";
+          button.innerText = "Submit New Rank";
+        }, 3000);
+      }).GetRankContent(select.value);
+    };
+
+    window.ManageAllFolders = function(event) {
+      event.preventDefault();
+      let id = document.getElementById("newFolderId").value;
+      const button = document.getElementById("newfolder-button");
+      id = id.replace(/\s+/g, "");
+      if (!id) return Shake();
+
+      button.disabled = true;
+
+      google.script.run.withSuccessHandler(response => {
+        console.log(response);
+        if (response.toLowerCase().includes("no") || response.toLowerCase().includes("invalid")) {
+          button.classList.add("red");
+          Shake();
+          return setTimeout(() => {
+            button.disabled = false;
+            button.classList.remove("red");
+          }, 3000);
+        } else {
+          button.classList.add("green");
+          response.includes("removed") ? button.innerText = "Removed" : button.innerText = "Added";
+          return setTimeout(() => {
+            button.disabled = false;
+            button.classList.remove("green");
+            button.innerText = "Manage";
+            document.getElementById("config-new-folder").reset();
+          }, 3000);
+        }
+      }).withFailureHandler(error => {
+        console.log(error);
+        button.classList.add("red");
+        Shake();
+        return setTimeout(() => {
+          button.disabled = false;
+          button.classList.remove("red");
+        }, 3000);
+      }).AddFolder(id);
+    }
+
+    window.ChangeLOACooldown = function(event) {
+      event.preventDefault();
+      const days = document.getElementById("loaCooldown").value;
+      const button = document.getElementById("loaCooldown-button");
+      if (Number(days) > 60 || Number(days) < 0 || !days) return Shake();
+
+      button.disabled = true;
+
+      google.script.run.withSuccessHandler(response => {
+        if (!response) {
+          button.classList.add("green");
+          button.innerText = "Edited";
+          setTimeout(() => {
+            button.classList.remove("green");
+            button.innerText = "Change";
+            button.disabled = false;
+          }, 3000);
+        } else {
+          button.classList.add("red");
+          button.innerText = "Invalid";
+          setTimeout(() => {
+            button.classList.remove("red");
+            button.innerText = "Change";
+            button.disabled = false;
+          }, 3000);
+        }
+      }).withFailureHandler(() => {
+        button.classList.add("red");
+        button.innerText = "Error";
+        setTimeout(() => {
+          button.classList.remove("red");
+          button.innerText = "Change";
+          button.disabled = false;
+        }, 3000);
+      }).ChangeLOACooldown(days);
+    };
+
+    window.ChangePromoCooldown = function(event) {
+      event.preventDefault();
+      const days = document.getElementById("promoCooldown").value;
+      const button = document.getElementById("promoCooldown-button");
+      if (Number(days) > 60 || Number(days) < 0 || !days) return Shake();
+
+      button.disabled = true;
+
+      google.script.run.withSuccessHandler(response => {
+        if (!response) {
+          button.classList.add("green");
+          button.innerText = "Edited";
+          setTimeout(() => {
+            button.classList.remove("green");
+            button.innerText = "Change";
+            button.disabled = false;
+          }, 3000);
+        } else {
+          button.classList.add("red");
+          button.innerText = "Invalid";
+          setTimeout(() => {
+            button.classList.remove("red");
+            button.innerText = "Change";
+            button.disabled = false;
+          }, 3000);
+        }
+      }).withFailureHandler(() => {
+        button.classList.add("red");
+        button.innerText = "Error";
+        setTimeout(() => {
+          button.classList.remove("red");
+          button.innerText = "Change";
+          button.disabled = false;
+        }, 3000);
+      }).ChangePromoCooldown(days);
+    };
+
+    window.ManageThreshold = function(event) {
+      event.preventDefault();
+      const infractions = document.getElementById("threshold");
+      const action = document.getElementById("thresholdActionSelect");
+      const button = document.getElementById("threshold-button");
+      if (Number(infractions.value) > 10 || Number(infractions.value) < 1 || !infractions.value) return Shake();
+      if (!action.value) return Shake();
+
+      button.disabled = true;
+      infractions.disabled = true;
+      action.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(response => {
+        button.innerHTML = "";
+        button.innerText = response;
+        if (!response.includes("not")) {
+          button.classList.add("green");
+          setTimeout(() => {
+            button.classList.remove("green");
+            button.innerText = "Submit";
+            button.disabled = false;
+            infractions.disabled = false;
+            action.disabled = false;
+          }, 3000);
+        } else {
+          button.classList.add("red");
+          setTimeout(() => {
+            button.classList.remove("red");
+            button.innerText = "Submit";
+            button.disabled = false;
+            infractions.disabled = false;
+            action.disabled = false;
+          }, 3000);
+        }
+      }).withFailureHandler(() => {
+        button.classList.add("red");
+        button.innerText = "Something went wrong";
+        setTimeout(() => {
+          button.classList.remove("red");
+          button.innerText = "Submit";
+          button.disabled = false;
+          infractions.disabled = false;
+          action.disabled = false;
+        }, 3000);
+      }).ManageThreshold(infractions.value, action.value);
+    };
+
+    // Give the collapsible menus their functionality
+    document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+    document.getElementById("newRankContent").classList.add("collapseContent");
+    document.getElementById("manageRank").classList.add("collapsible");
+    document.getElementById("manageSpecContent").classList.add("collapseContent");
+    document.getElementById("manageSpecialization").classList.add("collapsible");
+    document.getElementById("manageCooldown").classList.add("collapsible");
+    document.getElementById("manageCooldownContent").classList.add("collapseContent");
+    document.getElementById("manageThreshold").classList.add("collapsible");
+    document.getElementById("manageThresholdContent").classList.add("collapseContent");
+
+    // ******************************************************************************************************
+
+    // GENERAL LOG HANDLERS *********************************************************************************
+
+    const accessTypeLog = document.getElementById("accessType").innerText;
+    if (accessTypeLog === "visitor") {
+      document.getElementById('namefield').setAttribute('style', 'display: none;');
+      document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+      document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+      document.getElementById('emailfield').setAttribute('style', 'display: block;');
+      document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+      document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+      document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+      document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+      document.getElementById('enddatelabelLOA').setAttribute('style', 'display: block;');
+      document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+      document.getElementById('appealable').setAttribute('style', 'display: none;');
+      document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+      document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+      document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+      document.getElementById('idfield').setAttribute('style', 'display: none;');
+      document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+      document.getElementById('bllabel').setAttribute('style', 'display: none;');
+      document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+    }
+
+    // Toggle which questions are visible depending on main selection
+    window.HideCheck = function () {
+      // This MASSIVE switch statement is not best practice, but it works :)
+      let logtype = document.getElementById('logTypeList').value;
+      switch (logtype) {
+        case 'Infraction Log':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: block;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: block;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'Rank Change':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: block;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: block;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'LOA Log':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'Blacklist':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: none;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: none;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: block;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: block;');
+          document.getElementById('bltypelist').value = "";
+          break;
+        case 'Infraction Appeal':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: none;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: block;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: block;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'Blacklist Appeal':
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: none;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: block;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: block;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case 'New Member':
+          document.getElementById('namefield').setAttribute('style', 'display: block;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: block;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+          document.getElementById('appealable').setAttribute('style', 'display: none;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+          document.getElementById('idfield').setAttribute('style', 'display: none;');
+          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+          document.getElementById('bllabel').setAttribute('style', 'display: none;');
+          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+      }
+    }
+
+    window.ResetUI = function (button, response) {
+      button.innerHTML = "";
+      button.innerText = response;
+      setTimeout(() => {
+        button.innerText = "Submit";
+        button.disabled = false;
+        button.classList.remove('red');
+        button.classList.remove('green');
+        HideCheck();
+        console.log("Log sucessfully submitted");
+      }, 4000);
+      document.getElementById('rctypefield').value = "";
+      document.getElementById('bltypelist').value = "";
+    }
+
+    window.UIEnd = function (button, response) {
+      if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
+        Shake();
+        button.classList.add('red');
+        ResetUI(button, response[0]);
+      } else if (!response.includes('something')) {
+        document.getElementById('dataform').reset();
+        HideCheck();
+        button.classList.add('green');
+        ResetUI(button, response[0]);
+      }
+    }
+
+    // SUBMITING FORMS
+    window.SubmitLog = function (event) {
+      event.preventDefault();
+      console.time("Log Submission Runtime");
+      const button = document.getElementById("loggerSubmitButton");
+      button.disabled = true;
+
+      // Set some data if a New Member was logged so it can use the same script as Rank Change in the logger engine
+      let data_type = document.getElementById('logTypeList').value == "New Member" ? "Rank Change" : document.getElementById('logTypeList').value;
+      let data_rankchangetype = document.getElementById('logTypeList').value == "New Member" ? "Passed Interview" : document.getElementById('rctypefield').value;
+      let data_type_check = document.getElementById('logTypeList').value == "New Member" ? "New Member" : document.getElementById('logTypeList').value;
+
+      const dataToSubmit = {
+        type: data_type,
+        type_check: data_type_check,
+        name: document.getElementById('namefield').value,
+        steamid: document.getElementById('steamidfield').value,
+        discordid: document.getElementById('discordidfield').value,
+        email: document.getElementById('emailfield').value,
+        rankchangetype: data_rankchangetype,
+        reason: document.getElementById('reasonfield').value,
+        infraction_type: document.getElementById('infrtypelist').value,
+        end_date: document.getElementById('enddatefield').value,
+        blacklist_appealable: document.getElementById('appealable').value,
+        log_id: document.getElementById('idfield').value,
+        blacklist_type: document.getElementById('bltypelist').value
+      };
+
+      // Data validation -> check if correct data has been inputted
+      let valid = false;
+      switch (dataToSubmit.type_check) {
+        case 'Rank Change':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') { valid = true; }
+          if (dataToSubmit.rankchangetype == "Transfer") { dataToSubmit.branch != "" ? valid = true : valid = false; }
+          break;
+        case 'Infraction Log':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') { valid = true; }
+          break;
+        case 'LOA Log':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
+          break;
+        case 'Blacklist':
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.end_date != '' && dataToSubmit.reason != '' && dataToSubmit.blacklist_appealable != '') {
+            switch (dataToSubmit.blacklist_type) {
+              case "Suspension":
+                valid = true;
+                break;
+              case "Blacklist":
+                if (dataToSubmit.name != '' && dataToSubmit.steamid != '' && dataToSubmit.discordid != '' && dataToSubmit.blacklist_type != '') valid = true;
+                break;
+            }
+          }
+          break;
+        case 'Infraction Appeal':
+          if (dataToSubmit.reason != '' && dataToSubmit.log_id >= 7) valid = true;
+          break;
+        case 'Blacklist Appeal':
+          if (dataToSubmit.log_id >= 7) valid = true;
+          break;
+        case "New Member":
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '' && dataToSubmit.branch != '') valid = true;
+          break;
+        default:
+          break;
+      }
+
+      Object.values(dataToSubmit).forEach(value => {
+        if (!value) return;
+        if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+          valid = false;
+        }
+      });
+
+      if (!valid) {
+        Shake();
+        button.innerText = "No special characters allowed in input values";
+        button.disabled = true;
+        setTimeout(() => {
+          button.innerText = "Submit New Rank";
+          button.disabled = false;
+        }, 2000);
+        return;
+      }
+
+      // Actually submitting data
+      if (valid === true) {
+        button.innerText = "";
+        button.innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(response => {
+          try {
+            response = JSON.parse(response);
+            console.log(response);
+            if (Number(response[1]) >= Number(response[2]) && dataToSubmit.type == "Infraction Log") {
+              const proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
+              if (proceed == true) {
+                google.script.run.withSuccessHandler(() => {
+                  ResetUI(button, response[0]);
+                }).ProcessLog(dataToSubmit, true, accessTypeLog);
+              } else {
+                UIEnd(button, response)
+              }
+            } else {
+              UIEnd(button, response);
+            }
+          } catch(e) {
+              if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
+              Shake();
+              button.classList.add('red');
+              ResetUI(button, response);
+            } else if (!response.includes('something')) {
+              document.getElementById('dataform').reset();
+              HideCheck();
+              button.classList.add('green');
+              ResetUI(button, response);
+            }
+          }
+
+          console.timeEnd("Log Submission Runtime");
+
+        }).withFailureHandler(error => {
+          
+
+          // Manipulating button text to give info to user.
+          button.innerHTML = "";
+          button.innerText = "Something went wrong";
+          setTimeout(() => {
+            button.innerText = "Submit";
+            button.disabled = false;
+          }, 4000);
+          console.timeEnd("Log Submission Runtime");
+
+        }).ProcessLog(dataToSubmit, false, accessTypeLog);
+      } else if (valid == false) {
+        // Make screen shake if not all questions were answered (idk seemed fun)
+        Shake();
+        console.log("You did not fill out all questions correctly -- Submission failed");
+        button.disabled = false;
+        console.timeEnd("Log Submission Runtime");
+      }
+    }
+
+    window.BlacklistToggle = function () {
+      try {
+        const blacklistTypeSelector = document.getElementById('bltypelist');
+        if (blacklistTypeSelector.value == "Suspension") {
+          document.getElementById('namefield').setAttribute('style', 'display: none;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
+          document.getElementById('appealable').setAttribute('style', 'display: block;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').innerText = "Is the Suspension appealable?";
+          document.getElementById('enddatelabelBL').innerText = "Select expiry date of Suspension:";
+        } else if (blacklistTypeSelector.value == "Blacklist") {
+          document.getElementById('namefield').setAttribute('style', 'display: block;');
+          document.getElementById('steamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('discordidfield').setAttribute('style', 'display: block;');
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
+          document.getElementById('appealable').setAttribute('style', 'display: block;');
+          document.getElementById('enddatefield').setAttribute('style', 'display: block;');
+          document.getElementById('enddatelabelBL').setAttribute('style', 'display: block;');
+          document.getElementById('appealablelabel').innerText = "Is the Blacklist appealable?";
+          document.getElementById('enddatelabelBL').innerText = "Select expiry date of Blacklist:";
+        }
+      } catch (e) {
+        console.log("Blacklist Type edited");
+      }
+    }
+
+    // **********************************************************************************************************
+
+    const accessType = document.getElementById("accessType").innerText;
+    // MANAGE VISIBILITY ON EDITS
+    window.InfoHideCheck = function () {
+      const infotype = document.getElementById('infoTypeList').value;
+      switch (infotype) {
+        case 'Edit Name':
+          document.getElementById('newnamefield').setAttribute('style', 'display: block;');
+          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+          document.getElementById('specfield').setAttribute('style', 'display: none;');
+          break;
+        case 'Edit steamID':
+          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+          document.getElementById('newsteamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+          document.getElementById('specfield').setAttribute('style', 'display: none;');
+          break;
+        case 'Edit discordID':
+          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newsdiscidfield').setAttribute('style', 'display: block;');
+          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+          document.getElementById('specfield').setAttribute('style', 'display: none;');
+          break;
+        case 'Edit Email':
+          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newemailfield').setAttribute('style', 'display: block;');
+          document.getElementById('newemailfield').maxlength = 70;
+          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+          document.getElementById('specfield').setAttribute('style', 'display: none;');
+          break;
+        case 'Edit Specialization':
+          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+          document.getElementById('specfield').setAttribute('style', 'display: block;');
+          break;
+        case 'Edit Note':
+          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+          document.getElementById('newnotesfield').setAttribute('style', 'display: block;');
+          document.getElementById('specfield').setAttribute('style', 'display: none;');
+          break;
+      }
+    }
+
+    // Submit Edit Data
+    window.SubmitEdit = function (event) {
+      event.preventDefault();
+      console.time("Edit Submission Runtime");
+      const button = document.getElementById("editSubmitButton");
+      button.disabled = true;
+
+      const editdata = {
+        type: document.getElementById('infoTypeList')?.value || '',
+        current_email: document.getElementById('curremailfield')?.value || '',
+        name: document.getElementById('newnamefield')?.value || '',
+        steamid: document.getElementById('newsteamidfield')?.value || '',
+        discordid: document.getElementById('newsdiscidfield')?.value || '',
+        email: document.getElementById('newemailfield')?.value || '',
+        specialization: document.getElementById('specfield')?.value || '',
+        notes: document.getElementById('newnotesfield')?.value || ''
+      };
+
+      let validEdit = false;
+      switch (editdata.type) {
+        case 'Edit Name':
+          if (editdata.name != '' && editdata.current_email != '') { validEdit = true; }
+          break;
+        case 'Edit steamID':
+          if (editdata.steamid != '' && editdata.current_email != '') { validEdit = true; }
+          break;
+        case 'Edit dicsordID':
+          if (editdata.discordid != '' && editdata.current_email != '') { validEdit = true; }
+          break;
+        case 'Edit Email':
+          if (editdata.email != '' && editdata.current_email != '') { validEdit = true; }
+          break;
+        case 'Edit Specialization':
+          if (editdata.current_email != '') { validEdit = true; }
+          break;
+        case 'Edit Note':
+          if (editdata.notes != '' && editdata.current_email != '') { validEdit = true; }
+          break;
+      }
+
+      Object.values(editdata).forEach(value => {
+      if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+        validEdit = false;
+      }
+    });
+
+    if (!validEdit) {
+      Shake();
+      button.innerText = "No special characters allowed in input values";
+      button.disabled = true;
+      setTimeout(() => {
+        button.innerText = "Submit New Rank";
+        button.disabled = false;
+      }, 2000);
+      return;
+    }
+
+      if (validEdit == true) {
+        button.innerText = "";
+        button.innerHTML = '<div class="loader"></div>';
+        google.script.run.withSuccessHandler(response => {
+
+          if (response.includes("not")) {
+            Shake();
+            button.classList.add('red');
+          } else if (!response.includes('something')) {
+            document.getElementById('editform').reset();
+            InfoHideCheck();
+            button.classList.add('green');
+          }
+
+          // Manipulating button text to give info to user.
+          button.innerHTML = "";
+          button.innerText = response;
+          setTimeout(() => {
+            button.innerText = "Submit";
+            button.disabled = false;
+            button.classList.remove('red');
+            button.classList.remove('green');
+          }, 4000);
+          console.timeEnd("Edit Submission Runtime");
+        }).withFailureHandler(error => {
+          //
+
+          // Manipulating button text to give info to user.
+          button.innerHTML = "";
+          button.innerText = "Something went wrong";
+          setTimeout(() => {
+            button.innerText = "Submit";
+            button.disabled = false;
+          }, 4000);
+          console.timeEnd("Edit Submission Runtime");
+        }).ProcessInputEdits(editdata, accessType);
+      } else if (validEdit == false) {
+        // Make screen shake if not all questions were answered (idk seemed fun)
+        Shake();
+        console.log("You did not fill out all questions correctly -- Submission failed");
+        button.disabled = false;
+        console.timeEnd("Edit Submission Runtime");
+      }
+    }
+
+    // On open
+    SetSpecSelects();
+
+    document.getElementById('curremailfield').addEventListener('change', () => {
+      const emailField = document.getElementById('curremailfield');
+      const elements = ["newnamefield", "newsteamidfield", "newsdiscidfield", "newnotesfield"];
+      const button = document.getElementById('editSubmitButton');
+
+      emailField.disabled = true;
+      button.disabled = true;
+      elements.forEach(elementId => document.getElementById(elementId).disabled = true);
+      button.innerText = "";
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(targetData => {
+        try {
+          targetData = JSON.parse(targetData);
+          if (!targetData.row) {
+            elements.forEach(element => document.getElementById(element[0]).value = "");
+            elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+            emailField.disabled = false;
+            button.disabled = false;
+            button.innerHTML = '';
+            button.innerText = "Submit";
+            return;
+          }
+
+          document.getElementById(elements[0]).value = targetData.name;
+          document.getElementById(elements[1]).value = targetData.steamId;
+          document.getElementById(elements[2]).value = targetData.discordId;
+          document.getElementById(elements[3]).value = targetData.notes;
+
+          elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+          emailField.disabled = false;
+          button.disabled = false;
+          button.innerHTML = '';
+          button.innerText = "Submit";
+        } catch (e) {
+          
+          emailField.disabled = false;
+          button.disabled = false;
+          elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+          button.innerHTML = '';
+          button.innerText = "Submit";
+        }
+      }).withFailureHandler(error => {
+        
+        
+        emailField.disabled = false;
+        button.disabled = false;
+        elements.forEach(elementId => document.getElementById(elementId).disabled = false);
+        button.innerHTML = '';
+        button.innerText = "Submit";
+      }).ReturnUserData(emailField.value, true);
+    });
+
+    let specInterval;
+    document.getElementById("infoTypeList").addEventListener("change", () => {
+      if (document.getElementById("infoTypeList").value === "Edit Specialization") {
+        SetSpecSelects();
+        specInterval = setInterval(() => { SetSpecSelects(); }, 15000);
+      } else {
+        try { clearInterval(specInterval) } catch(e) { }
+      }
+    });
+
+
+  });
+</script>

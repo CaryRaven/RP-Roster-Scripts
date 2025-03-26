@@ -1504,7 +1504,6 @@ function getHtmlRetroTerminal() {
 }
 
 /**
- * NO PARAMTERS
  * @returns {String}
  */
 function getHtmlInterview() {

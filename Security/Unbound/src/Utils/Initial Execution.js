@@ -12,6 +12,7 @@ function T() {
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
+  // user = "mil.matthys@gmail.com";
   Logger.log(user);
   let userProperty = PropertiesService.getUserProperties();
   let userData = RosterService.getUserData(user);
@@ -48,7 +49,7 @@ function doGet() {
   }
 
   // Actual admin menu -> Check if allowed (allowedStaff, adminRanks & not suspended)
-  if ((allowedStaff.includes(user) || LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) && userData.status !== "Suspended") {
+  if (allowedStaff.includes(user) || (userData.row && userData.status !== "Suspended")) {
     const lastOpenTerminal = userProperty.getProperty("lastOpenTime"); // deciding terminal
     let configShowTerminal = userProperty.getProperty("configShowTerminal");
     let terminalShownThisSession = userProperty.getProperty("terminalShownThisSession");
@@ -83,6 +84,17 @@ function doGet() {
     template.allowedStaff = allowedStaff;
     template.factionName = LIBRARY_SETTINGS.factionName;
 
+    // Set which access the user gets
+    if (allowedStaff.includes(user)) {
+      template.accessType = "dev";
+    } else if (LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2].includes(userData.rank)) {
+      template.accessType = "admin";
+    } else if (LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) {
+      template.accessType = "mod";
+    } else {
+      template.accessType = "visitor";
+    }
+
     const latestChangelog = JSON.parse(PropertiesService.getScriptProperties().getProperty("lastestChangeLog"));
     let changeDate = latestChangelog.date;
     let changeTime = new Date(changeDate).valueOf();
@@ -112,7 +124,7 @@ function doGet() {
     unauthedPage.rank = "user";
     unauthedPage.factionName = LIBRARY_SETTINGS.factionName;
     unauthedPage.name = "Undefined";
-    RosterService.sendDiscordUnauthed(); // Send warning (something wrong with doc access)
+    if (!userData.row) RosterService.sendDiscordUnauthed(); // Send warning (something wrong with doc access)
     return unauthedPage.evaluate();
   }
 }

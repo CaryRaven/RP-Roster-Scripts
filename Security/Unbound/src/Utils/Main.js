@@ -1,15 +1,129 @@
-function ProcessLog(inputData, threshold = false) {
+function ProcessLog(inputData, threshold = false, accessType) {
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
-  return RosterService.processLog(inputData, userData, allowedStaff, lockdown, threshold);
+  const filter = RosterService.filterQuotes(inputData);
+  if (!filter) return "No special characters allowed";
+
+  if (accessType === "admin" || accessType === "dev") {
+    // Normal log
+    return RosterService.processLog(inputData, userData, allowedStaff, lockdown, threshold);
+  } else {
+    // Permission Checks
+    if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal") {
+      let targetDataCheck = RosterService.getUserData(inputData.email);
+      let ranks = LIBRARY_SETTINGS.ranks;
+      if (!targetDataCheck.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
+      if (targetDataCheck.steamId == userData.steamId) return "You cannot manage yourself";
+      if (ranks[ranks.length - 1].includes(targetDataCheck.rank) || ranks[ranks.length - 2].includes(targetDataCheck.rank)) return "You cannot manage Senior CL4 members";
+      if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetDataCheck.email)) return "You cannot manage Staff from this menu";
+      if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) <= ranks.indexOf(userData.rank)) {
+        return "You cannot manage people with a higher rank than you.";
+      }
+    }
+
+    // Submit log to the request system for review
+    let requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
+    requests = !requests ? [] : requests;
+
+    let type = inputData.type === "Rank Change" ? inputData.rankchangetype : inputData.type === "Blacklist" ? inputData.blacklist_type : inputData.type;
+    const targetData = RosterService.getUserData(inputData.email);
+    let prefix = "";
+    if (type === "Passed Interview") {
+      type = LIBRARY_SETTINGS.ranks[0] + " Acceptance";
+      prefix = "New";
+      targetData.name = inputData.name;
+    }
+
+    let logData = {
+      id: Math.random() * 1000,
+      title: `${prefix} ${LIBRARY_SETTINGS.factionName} ${type}`,
+      desc: `${userData.name} has requested a ${prefix} ${type} to be performed on ${type === "New Member" ? inputData.name : targetData.name} for the reason: "${inputData.reason}". ${type === "LOA Log" ? `\nThis LOA will end on ${inputData.end_date}.` : inputData.type === "Blacklist" ? `\nThis ${inputData.blacklist_type} will end on ${inputData.end_date}.` : ""}`,
+      logger: userData.name,
+      type: inputData.type,
+      userData: userData,
+      inputData: inputData
+    };
+
+    requests.push(logData);
+    PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
+    return "Request Submitted";
+  }
 }
 
-function ProcessInputEdits(inputData) {
+function ProcessInputEdits(inputData, accessType) {
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
   const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  return RosterService.processEdit(inputData, allowedStaff, lockdown, userData);
+  const filter = RosterService.filterQuotes(inputData);
+  if (!filter) return "No special characters allowed";
+
+  if (accessType === "admin" || accessType === "dev") {
+    // Normal log
+    return RosterService.processEdit(inputData, allowedStaff, lockdown, userData);
+  } else {
+    // Submit log to the request system for review
+    let requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
+    requests = !requests ? [] : requests;
+
+    const type = inputData.type.replace("Edit ", "");
+    const targetData = RosterService.getUserData(inputData.email)
+    let logData = {
+      id: Math.random() * 1000,
+      title: `${inputData.type}`,
+      desc: `${userData.name} has requested to edit the ${type} to be performed on ${targetData.name} for the reason: "${inputData.reason}".`,
+      logger: userData.name,
+      type: inputData.type,
+      userData: userData,
+      inputData: inputData
+    };
+
+    requests.push(logData);
+    PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
+    return "Request Submitted";
+  }
+}
+
+function ManageRequests(action, id) {
+  id = Number(id);
+  if (!id) return "Invalid ID";
+  const requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
+  if (action === "accepted") {
+    let returnVal;
+    let result;
+
+    requests.forEach((request, i) => {
+      if (request.id != id) return;
+      const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
+      const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+
+      if (request.type.includes("Edit")) {
+        returnVal = RosterService.processEdit(request.inputData, allowedStaff, lockdown, request.userData);
+      } else {
+        returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, lockdown, false);
+      }
+
+      try { returnVal = JSON.parse(returnVal); } catch(e) {}
+      if (Array.isArray(returnVal) || returnVal == "Information Edited") {
+        requests.splice(i, 1);
+        PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
+      } else {
+        console.log(returnVal);
+        if (returnVal.includes("interview")) {
+          const match = returnVal.match(/^([^"]*"[^"]*")/);
+          result = match ? match[1] : returnVal;
+        }
+      }
+    });
+    
+    return result ? result.toString() : null;
+  } else if (action === "denied") {
+    requests.forEach((request, i) => {
+      if (request.id != id) return "Invalid ID";
+      requests.splice(i, 1);
+      PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
+    });
+  } else return 'Something went wrong';
 }
 
 function SubmitChange(changes) {
@@ -28,6 +142,10 @@ function SubmitChange(changes) {
 // Get property set above
 function GetChangeNotes() {
   return PropertiesService.getScriptProperties().getProperty("lastestChangeLog");
+}
+
+function GetRequests() {
+  return PropertiesService.getScriptProperties().getProperty("requests");
 }
 
 // Get the current ranks

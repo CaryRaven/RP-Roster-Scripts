@@ -238,7 +238,7 @@ function filterQuotes(inputData) {
     } catch(e) {
       Logger.log(value + " could not be evaluated");
     }
-  })
+  });
 
   return valid;
 }

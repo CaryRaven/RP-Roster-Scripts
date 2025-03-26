@@ -109,6 +109,9 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     if (targetData.steamId == userData.steamId) return "You cannot manage yourself";
     if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
     if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
+    if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank)) {
+      return "You cannot manage people with a higher rank than you."
+    }
 
     // used when moving members around
     firstRankRow = getFirstRankRow(targetData.rank);
@@ -117,7 +120,8 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
   let sheet;
   let insertLogRow;
-
+  console.log("Processing Data2");
+  console.log(inputData.rankchangetype);
   // Main case
   switch (inputData.type) {
     case "Rank Change":
@@ -198,6 +202,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           removeDocAccess(targetData.email);
           break;
         case "Passed Interview":
+          console.log("Processing Data3");
           const newStaffDestination = ranks[0];
           rowDestination = getFirstRankRow(newStaffDestination);
           if (rowDestination[0] === 0) return `${newStaffDestination} has reached capacity`;
@@ -240,6 +245,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
             removeDocAccess(inputData.email);
             addDocAccess(0, inputData.email);
           }
+          console.log("Processing Data4");
           break;
       }
       break;

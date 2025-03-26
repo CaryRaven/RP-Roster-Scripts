@@ -484,7 +484,7 @@
         color: #555555;
     }
 
-    .lockdown-banner {
+    .lockdown-banner, #actionBanner {
         z-index: 10;
         width: 100%;
         background-color: rgb(255, 70, 70);
@@ -630,5 +630,117 @@
         100% {
         transform: rotate(360deg);
         }
+    }
+
+    #mainDiv {
+        width: 80%;
+        margin: auto;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        justify-content: center;
+    }
+    
+    .task {
+        display: flex;
+        justify-self: center;
+        border-radius: 10px;
+        color: white;
+        font-size: 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 85%;
+        background-color: #4a4a4a;
+        padding: 16px;
+        margin: 10px 0;
+        border-left: 8px solid #152e48;
+        box-shadow: 0 0.5rem 0.8rem black;
+        position: relative;
+        transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+    }
+
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .icon {
+      font-size: 35px;
+    }
+
+    .task h3, .task p, .task small {
+      margin: 5px 0;
+      text-align: left;
+    }
+
+    .task small {
+      color: gray;
+    }
+
+    .task-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      align-self: flex-end;
+    }
+
+    .accept-btn, .deny-btn {
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      color: white;
+      transition: 0.3s ease;
+    }
+
+    .accept-btn:hover, .deny-btn:hover {
+      box-shadow: 0 0.2rem 0.4rem black;
+      transition: 0.15s ease;
+    }
+
+    .accept-btn {
+      background: green;
+    }
+
+    .accept-btn:hover {
+      background: rgba(0, 255, 0, 0.7);
+    }
+
+    .deny-btn {
+      background: rgba(255, 0, 0, 0.7);
+    }
+
+    .deny-btn:hover {
+      background: rgb(238, 75, 43);
+    }
+
+    .task.removing {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    .task-meta {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .task-id {
+      margin-right: 20px !important;
+    }
+
+    @keyframes redBlob {
+      0% { background-color: rgba(255, 0, 0, 0.4); }
+      50% { background-color: red; }
+      100% { background-color: rgba(255, 0, 0, 0.4); }
     }
 </style>

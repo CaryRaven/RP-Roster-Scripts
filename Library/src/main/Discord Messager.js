@@ -198,7 +198,7 @@ function sendDiscordUnauthed() {
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
-    content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
+    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [{
       title: "Unauthed Access",
       color: "11600386",

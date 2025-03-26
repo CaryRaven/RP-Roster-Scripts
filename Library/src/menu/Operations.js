@@ -145,26 +145,30 @@ function restoreSheet() {
   const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
 
   wb.getSheets().forEach(sheet => {
-    const sheetId = sheet.getSheetId();
-    const sourceSheet = wbBackup.getSheetById(sheetId);
-    if (!sourceSheet) throw new Error("Cannot open backup sheet with ID " + sheetId);
-    let rows = sheet.getMaxRows();
-    let cols = sheet.getMaxColumns();
+    try {
+      const sheetId = sheet.getSheetId();
+      const sourceSheet = wbBackup.getSheetById(sheetId);
+      if (!sourceSheet) throw new Error("Cannot open backup sheet with ID " + sheetId);
+      let rows = sheet.getMaxRows();
+      let cols = sheet.getMaxColumns();
 
-    if (sourceSheet.getLastRow() > rows) {
-      rows = sourceSheet.getLastRow();
-      cols = sourceSheet.getLastColumn();
+      if (sourceSheet.getLastRow() > rows) {
+        rows = sourceSheet.getLastRow();
+        cols = sourceSheet.getLastColumn();
+      }
+
+      const formulas = sourceSheet.getRange(1, 1, rows, cols).getFormulas();
+      const values = sourceSheet.getRange(1, 1, rows, cols).getValues();
+
+      // Apply formulas where available, otherwise apply values
+      const finalData = formulas.map((row, rowIndex) =>
+        row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
+      );
+
+      sheet.getRange(1, 1, rows, cols).setValues(finalData);
+    } catch(e) {
+      console.log(`Failed at sheet with id ${sheet.getSheetId()}`);
     }
-
-    const formulas = sourceSheet.getRange(1, 1, rows, cols).getFormulas();
-    const values = sourceSheet.getRange(1, 1, rows, cols).getValues();
-
-    // Apply formulas where available, otherwise apply values
-    const finalData = formulas.map((row, rowIndex) =>
-      row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
-    );
-
-    sheet.getRange(1, 1, rows, cols).setValues(finalData);
   });
 }
 
