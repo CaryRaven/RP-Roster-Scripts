@@ -3,8 +3,11 @@ let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getPro
 if (RosterService.getSizeInBytes(LIBRARY_SETTINGS) >= 450000) throw new Error("Settings exceeded size limit");
 RosterService.init(LIBRARY_SETTINGS);
 
+// test function - ignore
 function T() {
-  console.log(LIBRARY_SETTINGS);
+  // console.log(LIBRARY_SETTINGS);
+  // RosterService.addReqRow("SGT", 5);
+  console.log( LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf("")].length);
 }
 
 /**
@@ -12,7 +15,6 @@ function T() {
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
-  // user = "mil.matthys@gmail.com";
   Logger.log(user);
   let userProperty = PropertiesService.getUserProperties();
   let userData = RosterService.getUserData(user);
@@ -144,7 +146,13 @@ function GetScriptUrl() {
  * @returns {Void|String}
  */
 function AddRankRow(rank, num = 1, discordnotif = true) {
+  console.log(rank);
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  
+  if (LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length > 0) {
+    RosterService.addReqRow(rank.toString(), num);
+  }
+
   const returnVal = RosterService.addRankRow(rank, userData, num, discordnotif); // Actual func
   return returnVal; // Only returns something if no proper rank was given
 }
@@ -195,7 +203,7 @@ function ReturnSpecs() {
  * |-> Cannot use library without a full & complete settings obj
  */
 function Set() {
-  throw new Error("Do not run this function from the editor");
+  // throw new Error("Do not run this function from the editor");
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
     dataCols: {
       firstCol: 3,
@@ -209,13 +217,14 @@ function Set() {
       specialization: 12,
       loaEnd: 14,
       blacklistEnd: 16,
-      notes: 17,
+      notes: 18,
       supervisor_name: 1,
       supervisor_steamId: 1,
-      cooldown: 1
+      cooldown: 1,
+      firstReqRow: 6
     },
 
-    rosterIds: [2063800821],
+    rosterIds: [2063800821, 46188961],
     firstMemberRow: 6,
     lastRankChange: 13,
     spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
@@ -235,23 +244,25 @@ function Set() {
     adminRanks: ["Security Chief"],
     folders: [
       {
-        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE"],
+        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE", '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE'],
         "editorAccess":[]
       },
       {
-        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE"],
+        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE", '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE'],
         "editorAccess":["13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A"]
       },
       [
-        "1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE",
-        "13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A",
-        "1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-",
-        "17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB"
+        '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
+       '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
+       '1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-',
+       '17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB',
+       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE'
       ]
     ],
     ranks: ["Captain","Captain Major","Security Chief","Site Management"],
     interviewRequired: [true, false, false, false],
-    specializations: [{title: "", desc: ""}, {title: "Security Liaison", desc: "In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs"}],
+    promoReqs: [[], [], [], []],
+    specializations: [{title: "", desc: ""}, {title: "Security Liaison", desc: "In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs"},{ title: 'Punishment Lead',desc: 'Specialist of the security department\'s policies, in charge of handing out appropriate punishments to security personnel.' }],
     pings: true,
     newRowData: [[ // TODO: Add a way to dynamically edit this?
       "/title/", "/title/", "", "", "", "", "", 
@@ -261,6 +272,7 @@ function Set() {
       `= LAST_RANKCHANGE(F/row/, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
       `= LOA_DATE(F/row/, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
       false,
+      `= REQS_CHECK(F/row/, 'Promotion Progress'!F:F, 'Promotion Progress'!H:L)`,
       `= BLACKLIST_DATE(F/row/, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
     ]]
   }));

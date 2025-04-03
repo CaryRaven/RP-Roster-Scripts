@@ -298,7 +298,7 @@ function sendDiscordPermissionReport(flagArray) {
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Access Report`,
-    content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
+    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [
       {
         title: "Flagged Users",
@@ -420,11 +420,24 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       embedColor = "1143627";
 
       userData.viewerAccess = userData.viewerAccess.map(id => {
-        const f = DriveApp.getFolderById(id);
+        let f;
+        try {
+          f = DriveApp.getFolderById(id);
+        } catch(e) {
+          f = DriveApp.getFileById(id);
+        }
+
         return `"${f.getName()}" `;
       });
+
       userData.editorAccess = userData.editorAccess.map(id => {
-        const f = DriveApp.getFolderById(id);
+        let f;
+        try {
+          f = DriveApp.getFolderById(id);
+        } catch(e) {
+          f = DriveApp.getFileById(id);
+        }
+
         return `"${f.getName()}" `;
       });
 
@@ -608,7 +621,7 @@ function sendDiscordChangeLog(notes, url = '') {
 
    let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
-    content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
+    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [
       {
         title: `⚙️ Admin Menu Update ⚙️`,
@@ -671,6 +684,60 @@ function sendDiscordManualEdit(range) {
         footer: {
           text:
             `An Unknown and unauthorized user has manually edited the ${LIBRARY_SETTINGS.factionName} Roster. \nPlease investigate this possible permission breach to prevent further harm.\nLogged on ${Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy")}`,
+        },
+      },
+    ],
+  });
+
+  var params = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    payload: payload,
+    muteHttpExceptions: true,
+  };
+
+  let webhookURLs;
+  switch(LIBRARY_SETTINGS.factionName) {
+    case "Security":
+      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
+      break;
+    case "Staff":
+      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
+    default:
+      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
+  }
+
+  webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
+}
+
+/**
+ * Send config message that a rank slot was added/removed
+ * @param {Object} data - Data pertaining the request that was denied
+ * @param {Object} userData - data of the user authorizing the request
+ * @returns {Void}
+ */
+function sendDiscordRequestDenied(data, userData) {
+
+  // Compose discord embed
+  let payload = JSON.stringify({
+    username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
+    embeds: [
+      {
+        title: `📋 ${data.title} Denied`,
+        color: `11600386`,
+        fields: [
+          {
+            name: `${userData.rank} ${userData.name} has denied the request of ${data.logger} to perform a "${data.type}" on ${data.targetName}.\nYou may contact ${userData.name} for more information regarding this denial.`,
+            value: ``,
+            inline: false,
+          },
+        ],
+        footer: {
+          text:
+            "Logged on " +
+            Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
         },
       },
     ],

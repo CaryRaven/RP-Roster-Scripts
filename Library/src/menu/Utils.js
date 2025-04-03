@@ -85,6 +85,7 @@ function getLastRankRow(rank, branch = 0) {
   const total_rows = sheet.getMaxRows();
   
   for (let i = 2; i <= total_rows; i++) {
+    // Check if current row != rank but previous row == rank
     if (sheet.getRange(i - 1, LIBRARY_SETTINGS.dataCols.rank).getValue() == rank && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() != rank) return i - 1;
   }
 }
@@ -114,6 +115,20 @@ function getStartRankRow(rank, branch = 0) {
 * @param {String} rank - Rank name of the target
 * @returns {Array} Array with length of 2: [rowNumber, sheetObject]
 */
+/**
+ * Get the first empty slot of a certian rank, not to be confused with GetStartRankRow()
+ * @param {String} rank - Rank name of the target
+ * @returns {Array} Array with length of 2: [rowNumber, sheetObject]
+ */
+/**
+ * Gets the first row in a given branch's roster with the specified rank and an empty Steam ID.
+ *
+ * @param {string} rank The rank to search for.
+ * @param {number} branch The branch number (default: 0).
+ * @returns {[number, GoogleAppsScript.Spreadsheet.Sheet]} An array containing the row number and sheet,
+ *                                                          or [0, sheet] if no matching row is found.
+ * @throws {Error} If the library is not initialized or if the rank is invalid.
+ */
 function getFirstRankRow(rank, branch = 0) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (typeof rank != "string") throw new Error("GetLastRankRow: No rank valid provided");
@@ -121,13 +136,12 @@ function getFirstRankRow(rank, branch = 0) {
   branch = branch == 4 ? 0 : branch;
   if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
 
-  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(branch)]);
   const total_rows = sheet.getMaxRows();
 
-  for (let i = 1; i <= total_rows; i++) {
-
+  for (let i = LIBRARY_SETTINGS.dataCols.firstReqRow; i <= total_rows; i++) {
     // Check if col D = rank & steamID isn't empty
-    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() === rank && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.email).getValue() === '') {
+    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank, 1, 1).getValue() === rank && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.steamId, 1, 1).getValue() === '') {
       return [i, sheet];
     }
   }
@@ -272,7 +286,11 @@ function permissionsGuard(exempt) {
     try {
       folder = DriveApp.getFolderById(folderId);
     } catch (e) {
-      return console.log(`Error found at ${folderId}`);
+      try {
+        folder = DriveApp.getFileById(folderId);
+      } catch(ee) {
+        return console.log(`Error found at ${folderId}`);
+      }
     }
 
     const folderName = folder.getName();
@@ -340,7 +358,8 @@ function getRankContent(title) {
         LIBRARY_SETTINGS.ranks[i + 1],
         LIBRARY_SETTINGS.folders[i].viewerAccess,
         LIBRARY_SETTINGS.folders[i].editorAccess,
-        LIBRARY_SETTINGS.interviewRequired[i].toString()
+        LIBRARY_SETTINGS.interviewRequired[i].toString(),
+        LIBRARY_SETTINGS.promoReqs[i]
       ];
     }
   });

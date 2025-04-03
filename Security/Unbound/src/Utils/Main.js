@@ -10,15 +10,19 @@ function ProcessLog(inputData, threshold = false, accessType) {
     return RosterService.processLog(inputData, userData, allowedStaff, lockdown, threshold);
   } else {
     // Permission Checks
-    if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal") {
+    if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
+
+    if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal" && accessType !== "visitor") {
       let targetDataCheck = RosterService.getUserData(inputData.email);
       let ranks = LIBRARY_SETTINGS.ranks;
+
+      // More perm checks
       if (!targetDataCheck.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
       if (targetDataCheck.steamId == userData.steamId) return "You cannot manage yourself";
       if (ranks[ranks.length - 1].includes(targetDataCheck.rank) || ranks[ranks.length - 2].includes(targetDataCheck.rank)) return "You cannot manage Senior CL4 members";
       if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetDataCheck.email)) return "You cannot manage Staff from this menu";
-      if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) <= ranks.indexOf(userData.rank)) {
-        return "You cannot manage people with a higher rank than you.";
+      if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) > ranks.indexOf(userData.rank)) {
+        return "You cannot manage people with a higher rank than you."
       }
     }
 
@@ -42,7 +46,8 @@ function ProcessLog(inputData, threshold = false, accessType) {
       logger: userData.name,
       type: inputData.type,
       userData: userData,
-      inputData: inputData
+      inputData: inputData,
+      targetName: type === "New Member" ? inputData.name : targetData.name
     };
 
     requests.push(logData);
@@ -62,20 +67,35 @@ function ProcessInputEdits(inputData, accessType) {
     // Normal log
     return RosterService.processEdit(inputData, allowedStaff, lockdown, userData);
   } else {
+    // Permission Checks
+    if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
+    if (accessType !== "visitor") {
+      let targetDataCheck = RosterService.getUserData(inputData.email);
+      let ranks = LIBRARY_SETTINGS.ranks;
+      if (!targetDataCheck.row) return "User not found";
+      if (targetDataCheck.steamId == userData.steamId) return "You cannot manage yourself";
+      if (ranks[ranks.length - 1].includes(targetDataCheck.rank) || ranks[ranks.length - 2].includes(targetDataCheck.rank)) return "You cannot manage Senior CL4 members";
+      if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetDataCheck.email)) return "You cannot manage Staff from this menu";
+      if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) > ranks.indexOf(userData.rank)) {
+        return "You cannot manage people with a higher rank than you."
+      }
+    }
+
     // Submit log to the request system for review
     let requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
     requests = !requests ? [] : requests;
 
     const type = inputData.type.replace("Edit ", "");
-    const targetData = RosterService.getUserData(inputData.email)
+    const targetData = RosterService.getUserData(inputData.current_email);
     let logData = {
       id: Math.random() * 1000,
       title: `${inputData.type}`,
-      desc: `${userData.name} has requested to edit the ${type} to be performed on ${targetData.name} for the reason: "${inputData.reason}".`,
+      desc: `${userData.name} has requested to change the ${type} of ${targetData.name} to ${inputData[type.toLowerCase()]}.`,
       logger: userData.name,
       type: inputData.type,
       userData: userData,
-      inputData: inputData
+      inputData: inputData,
+      targetName: targetData.name
     };
 
     requests.push(logData);
@@ -92,10 +112,17 @@ function ManageRequests(action, id) {
     let returnVal;
     let result;
 
+    // Loop through requests
     requests.forEach((request, i) => {
       if (request.id != id) return;
+      
       const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
       const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+      const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+
+      // If a dev is accepting request (not on roster)
+      if (request.inputData.email === request.userData.email) request.userData = userData;
+      if (allowedStaff.includes(Session.getActiveUser().getEmail())) request.userData.email = Session.getActiveUser().getEmail();
 
       if (request.type.includes("Edit")) {
         returnVal = RosterService.processEdit(request.inputData, allowedStaff, lockdown, request.userData);
@@ -116,12 +143,14 @@ function ManageRequests(action, id) {
       }
     });
     
-    return result ? result.toString() : null;
+    return result ? result.toString() : returnVal;
   } else if (action === "denied") {
     requests.forEach((request, i) => {
       if (request.id != id) return "Invalid ID";
       requests.splice(i, 1);
+      const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
       PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
+      RosterService.sendDiscordRequestDenied(request, userData);
     });
   } else return 'Something went wrong';
 }
@@ -159,7 +188,7 @@ function AddNewRank(inputData) {
   if (!valid) return "No special characters allowed";
 
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 15], [17, 17]], userData);
+  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData);
 
   if (typeof returnVal === "string") {
     return returnVal;
@@ -194,7 +223,11 @@ function RemoveRank(rank, discordnotif = true) {
 function RemoveRankRow(rank, num = 1) {
   if (!rank || typeof rank !== "string") return "no";
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const returnVal = RosterService.removeRankRow(rank, userData, num);
+  let returnVal;
+  if (LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length > 0) {
+    returnVal = RosterService.removeReqRow(rank.toString(), num);
+  }
+  returnVal = RosterService.removeRankRow(rank, userData, num);
   return returnVal;
 }
 
@@ -275,7 +308,7 @@ function ReturnLockdown() {
 function ResetPermissions() {
   RemoveAllDocAccess();
   RosterService.restoreAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
-  console.log("Staff Documentation Permissions reset");
+  console.log(`${LIBRARY_SETTINGS.factionName} Documentation Permissions reset`);
   RosterService.sendDiscordConfig("resetPerms", null, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
   PermissionsGuard();
 }
@@ -390,28 +423,33 @@ function AddFolder(id) {
   let valid = RosterService.filterQuotes(id);
   if (!valid) return "No quotes allowed";
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  let folder;
 
   try {
-    const folder = DriveApp.getFolderById(id.toString());
-    let message;
-
-    if (LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id) >= 0) {
-      LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].splice(LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id), 1);
-      message = `${folder.getName()} removed from list`;
-      userData.title = folder.getName();
-      RosterService.sendDiscordConfig("folderEdit", false, userData);
-    } else {
-      LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].push(id.toString());
-      message = `${folder.getName()} added to list`;
-      userData.title = folder.getName();
-      RosterService.sendDiscordConfig("folderEdit", true, userData);
-    }
-    PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
-    RosterService.init(LIBRARY_SETTINGS);
-    return message;
+    folder = DriveApp.getFolderById(id.toString());
   } catch(e) {
-    return "Invalid Folder ID";
+    try {
+      folder = DriveApp.getFileById(id.toString());
+    } catch(ee) {
+      return "Invalid Folder/File ID"; 
+    }
   }
+
+  let message;
+  if (LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id) >= 0) {
+    LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].splice(LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id), 1);
+    message = `${folder.getName()} removed from list`;
+    userData.title = folder.getName();
+    RosterService.sendDiscordConfig("folderEdit", false, userData);
+  } else {
+    LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].push(id.toString());
+    message = `${folder.getName()} added to list`;
+    userData.title = folder.getName();
+    RosterService.sendDiscordConfig("folderEdit", true, userData);
+  }
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.init(LIBRARY_SETTINGS);
+  return message;
 }
 
 /**

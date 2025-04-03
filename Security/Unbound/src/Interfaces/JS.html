@@ -411,7 +411,7 @@
 
     // REQUEST HANDLERS *************************************************************************************
     let requestNum = 0;
-    const accessTypeReq = document.getElementById("accessType").innerText;
+    const accessType = document.getElementById("accessType").innerText;
 
     function handleAction(task, action) {
       // Get task data => querySelector() / querySelectorAll()
@@ -419,10 +419,8 @@
       const id = task.querySelector(".task-id").textContent.replace("ID: ", "");
       task.querySelector(".icon").innerHTML = '<div class="loader"></div>';
       clearInterval(requestInterval);
-      console.log("interval cleared");
 
       google.script.run.withSuccessHandler(response => {
-        console.log(response);
         const banner = document.getElementById("actionBanner");
 
         if (typeof response == "string") {
@@ -468,7 +466,7 @@
 
     window.FillRequests = function() {
       requestNum = 0;
-      if (accessTypeReq === "visitor" || accessTypeReq === "mod") return;
+      if (accessType === "visitor" || accessType === "mod") return;
       google.script.run.withSuccessHandler(data => {
         data = JSON.parse(data);
         if (!Array.isArray(data)) return;
@@ -476,9 +474,10 @@
         
         data.forEach(request => {
           GenerateRequest(request);
+          console.log("request generated")
         });
       }).withFailureHandler(() => {
-        console.log("Something went wrong");
+        console.log("Something went wrong while fetching requests");
       }).GetRequests();
     }
 
@@ -981,10 +980,31 @@
 
     // **********************************************
 
-    window.AddNewRank = function(event) {
+    window.ExtractReqs = function() {
+      const reqs = [];
+      let valid = true;
+
+      document.querySelectorAll(".req").forEach(task => {
+        const title = task.querySelector(".title").value;
+        const desc = task.querySelector(".description").value;
+        const completionType = task.querySelector(".completion_type").value;
+        const formula = completionType === "formula" ? task.querySelector(".formula").value : "";
+
+        if (!title || !desc || title.length > 10 || desc.length > 300 || !completionType) return valid = false;
+        
+        reqs.push({ title, desc, completion_type: completionType, formula });
+      });
+
+      if (!valid) return "invalid";
+      return reqs;
+    }
+
+    window.AddNewRank = function (event) {
       event.preventDefault();
       let button = document.getElementById("newrank-button");
       const hierarchySelect = document.getElementById("new-rank-before-select");
+      const reqs = ExtractReqs();
+      if (reqs === "invalid") return Shake();
 
       let data = {
         title: document.getElementById("newRankTitle").value,
@@ -992,7 +1012,8 @@
         viewerFolders: document.getElementById("newRankViewFolders").value,
         editorFolders: document.getElementById("newRankEditFolders").value,
         editRank: document.getElementById("editRankSelect").value,
-        interviewRequired: document.getElementById("interviewNeeded").checked
+        interviewRequired: document.getElementById("interviewNeeded").checked,
+        promoReqs: reqs
       }
 
       if (!data.title) return Shake();
@@ -1043,6 +1064,8 @@
         } else {
           button.classList.add('green');
           document.getElementById("newrankForm").reset();
+          document.getElementById("reqs").innerHTML = "";
+          reqCount = 0;
         }
 
         button.innerHTML = "";
@@ -1253,6 +1276,7 @@
       const viewFoldersInput = document.getElementById("newRankViewFolders");
       const editFoldersInput = document.getElementById("newRankEditFolders");
       const hasInterviewSlider = document.getElementById("interviewNeeded");
+      const reqDiv = document.getElementById("reqs");
       const button = document.getElementById("newrank-button");
       const form = document.getElementById("newrankForm");
 
@@ -1268,7 +1292,7 @@
 
       google.script.run.withSuccessHandler(content => {
         content = JSON.parse(content);
-        if (content.length !== 5) {
+        if (content.length !== 6) {
           button.innerText = "Rank not found";
           button.classList.add("red");
           return setTimeout(() => {
@@ -1285,6 +1309,10 @@
         viewFoldersInput.value = content[2];
         editFoldersInput.value = content[3];
         hasInterviewSlider.checked = (content[4] === "true");
+        document.getElementById("reqs").innerHTML = "";
+        if (content[5]) content[5].forEach(req => {
+          AddReq(null, req);
+        });
 
         button.disabled = false;
         select.disabled = false;
@@ -1476,12 +1504,59 @@
     document.getElementById("manageThreshold").classList.add("collapsible");
     document.getElementById("manageThresholdContent").classList.add("collapseContent");
 
+    // Promotion Req Manager
+    let reqCount = 0;
+    window.AddReq = function (event = null, data = null) {
+      if (event) event.preventDefault();
+      if (!data) {
+        data = {
+          title: '',
+          desc: '',
+          completion_type: 'manual',
+          formula: ''
+        };
+      }
+
+      if (reqCount >= 5) return alert("You can only have 5 promo reqs.");
+      
+      const reqContainer = document.getElementById("reqs");
+      const reqDiv = document.createElement("div");
+      reqDiv.className = "req";
+      
+      reqDiv.innerHTML = `
+        <input type="text" class="title" placeholder="Promotion Requirement Name" maxlength="10" style="font-weight: bold; display: block; width: 40%;" value="${data.title}" required/>
+        <input type="text" class="description" placeholder="Promotion Requirement Description" maxlength="300" style="display: block; width: 100%; margin-top: 5px;" value="${data.desc}" required/>
+        <select class="completion_type" style="display: block; margin-top: 5px; width: 100%;" required>
+          <option value="manual">Manual</option>
+          <option value="formula">Formula</option>
+        </select>
+        <input type="text" class="formula" placeholder="Enter custom formula" style="display: none; margin-top: 5px; width: 100%;" value="${data.formula}"/>
+        <button class="submitButton-mini" style="position: absolute; top: 5px; right: 5px; background-color: red;">Delete</button>
+      `;
+      
+      reqDiv.style = "position: relative; padding: 10px; margin-bottom: 20px; width: 80%;";
+      
+      reqDiv.querySelector(".completion_type").addEventListener("change", function() {
+        const formulaInput = reqDiv.querySelector(".formula");
+        formulaInput.style.display = this.value === "formula" ? "block" : "none";
+      });
+
+      reqDiv.querySelector(".completion_type").value = data.completion_type;
+      
+      reqDiv.querySelector(".submitButton-mini").addEventListener("click", function() {
+        reqDiv.remove();
+        reqCount--;
+      });
+      
+      reqContainer.prepend(reqDiv);
+      reqCount++;
+    }
+
     // ******************************************************************************************************
 
     // GENERAL LOG HANDLERS *********************************************************************************
 
-    const accessTypeLog = document.getElementById("accessType").innerText;
-    if (accessTypeLog === "visitor") {
+    if (accessType === "visitor") {
       document.getElementById('namefield').setAttribute('style', 'display: none;');
       document.getElementById('steamidfield').setAttribute('style', 'display: none;');
       document.getElementById('discordidfield').setAttribute('style', 'display: none;');
@@ -1504,7 +1579,7 @@
 
     // Toggle which questions are visible depending on main selection
     window.HideCheck = function () {
-      // This MASSIVE switch statement is not best practice, but it works :)
+      // This MASSIVE switch statement is probably not best practice, but it works :)
       let logtype = document.getElementById('logTypeList').value;
       switch (logtype) {
         case 'Infraction Log':
@@ -1776,7 +1851,7 @@
               if (proceed == true) {
                 google.script.run.withSuccessHandler(() => {
                   ResetUI(button, response[0]);
-                }).ProcessLog(dataToSubmit, true, accessTypeLog);
+                }).ProcessLog(dataToSubmit, true, accessType);
               } else {
                 UIEnd(button, response)
               }
@@ -1810,7 +1885,7 @@
           }, 4000);
           console.timeEnd("Log Submission Runtime");
 
-        }).ProcessLog(dataToSubmit, false, accessTypeLog);
+        }).ProcessLog(dataToSubmit, false, accessType);
       } else if (valid == false) {
         // Make screen shake if not all questions were answered (idk seemed fun)
         Shake();
@@ -1855,7 +1930,6 @@
 
     // **********************************************************************************************************
 
-    const accessType = document.getElementById("accessType").innerText;
     // MANAGE VISIBILITY ON EDITS
     window.InfoHideCheck = function () {
       const infotype = document.getElementById('infoTypeList').value;

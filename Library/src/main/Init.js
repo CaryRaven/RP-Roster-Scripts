@@ -66,5 +66,6 @@ class SettingsTemplate {
     this.specializations = [];
     this.pings = true;
     this.newRowData = [];
+    this.promoReqs = [];
   }
 }

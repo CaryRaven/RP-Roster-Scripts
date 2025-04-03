@@ -16,14 +16,24 @@ function addDocAccess(foldersIndex, emailToAdd) {
   let folderChangeList = [];
   try {
     if (folders.viewerAccess.length) folders.viewerAccess.forEach(folderId => {
-      folder = DriveApp.getFolderById(folderId);
+      try {
+        folder = DriveApp.getFolderById(folderId);
+      } catch(ee) {
+        folder = DriveApp.getFileById(folderId);
+      }
+
       folder.addViewer(emailToAdd);
       console.log(`Added viewer access to ${emailToAdd} in ${folder.getName()}`);
       folderChangeList.push({ folderName: folder.getName(), permission: "Viewer"});
     });
     
     if (folders.editorAccess.length) folders.editorAccess.forEach(folderId => {
-      folder = DriveApp.getFolderById(folderId);
+      try {
+        folder = DriveApp.getFolderById(folderId);
+      } catch(ee) {
+        folder = DriveApp.getFileById(folderId);
+      }
+      
       folder.addEditor(emailToAdd);
       console.log(`Added editor access to ${emailToAdd} in ${folder.getName()}`);
       folderChangeList.push({ folderName: folder.getName(), permission: "Editor"});
@@ -43,7 +53,17 @@ function removeDocAccess(emailToRemove) {
 
   try {
     LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].forEach(folderId => {
-      this.docAccessHandler(DriveApp.getFolderById(folderId.toString()), emailToRemove);
+      let folder;
+      try {
+        folder = DriveApp.getFolderById(folderId.toString());
+      } catch(e) {
+        try {
+          folder = DriveApp.getFileById(folderId.toString());
+        } catch(ee) {
+          return `Error at ${folderId.toString()}`;
+        }
+      }
+      docAccessHandler(folder, emailToRemove);
     });
     // PropertiesService.getUserProperties().deleteProperty("accessFolders");
   } catch(e)  {
@@ -90,7 +110,17 @@ function removeAllDocAccess(allowedStaff) {
 
   folders[folders.length - 1].forEach(folderID => {
     try {
-      let folder = DriveApp.getFolderById(folderID);
+      let folder;
+      try {
+        folder = DriveApp.getFolderById(folderID);
+      } catch(e) {
+        try {
+          folder = DriveApp.getFileById(folderID);
+        } catch(ee) {
+          return `Error occured at ${folderID}`;
+        }
+      }
+
       if (!folder) return;
       const editors = folder.getEditors();
       const viewers = folder.getViewers();

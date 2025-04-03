@@ -17,6 +17,7 @@
     <h3>Request <span id="requestType"></span></h3>
   </div>
   <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
+  <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
 
   <div class="loader" id="changeLoader"></div>
   <div id="update-popup" class="main-content" style="display: none;">
@@ -351,9 +352,9 @@
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:<br><span style="font-size: 13px; font-weight: 100;">Optional, default: at the top of the hierarchy (below the Chiefs)</span></label><br>
               <select id="new-rank-before-select">
               </select><br>
-              <label for="newRankViewFolders">Add the IDs of the folders that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
+              <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
-              <label for="newRankEditFolders">Add the IDs of the folders that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
+              <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma">
               <table class="config-switches">
                 <tr>
@@ -367,7 +368,16 @@
                     </label>
                   </td>
                 </tr>
+                <tr>
+                  <td>
+                    Add Promotion Requirements<br><span style="font-weight: 200; font-size: 12px;">Max 5, Min 0 (set to 0 for no promo reqs)</span>
+                  </td>
+                  <td class="config-switch">
+                    <button onclick="AddReq(event)" class="submitButton-mini" style="width: 100%; font-size: 20px; text-align: center;">+</button>
+                  </td>
+                </tr>
               </table><br>
+              <div id="reqs"></div>
               <button onclick="AddNewRank(event)" class="submitButton" id="newrank-button" type="submit">Submit New Rank</button>
             </form><br><hr><br>
 
@@ -388,7 +398,7 @@
             </form><br><hr><br>
 
             <form id="config-new-folder">
-              <label for="newFolderId">Enter the ID of the folder you want to add/remove<br><span style="font-size: 13px; font-weight: 100;">If your folder is already added, it will be removed instead.</span></label><br>
+              <label for="newFolderId">Enter the ID of the folder/file you want to add/remove<br><span style="font-size: 13px; font-weight: 100;">If your folder is already added, it will be removed instead.</span></label><br>
               <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folderID">
               <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button>
             </form><br>

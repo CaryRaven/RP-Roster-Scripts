@@ -23,7 +23,7 @@ function SubmitTask(inputData) {
   if (valid !== true) throw new Error("No quotes allowed");
 
   const s = RosterService.getCollect(1504741049);
-  let loc = RosterService.taskGetRow(s, "Backlog");
+  let loc = RosterService.getTaskRow(s, "Backlog");
   let endLoc = RosterService.getLastTaskRow(s, "Backlog");
   console.log(`End Loc: ${endLoc}\nLoc: ${loc}`);
   if (!endLoc) return;
@@ -54,13 +54,13 @@ function TaskManager(e) {
   if (!e) throw new Error("Do not run this function from the editor.");
 
   const sheet = e.source.getActiveSheet();
-  let range = e.range;
-  if (range.getValue() === false) return range.setValue(false);
-
+  const range = e.range;
   const col = range.getColumn();
   const row = range.getRow();
   const sheetID = sheet.getSheetId();
-  if (sheetID !== 1504741049) return;
+
+  if (sheetID !== 1504741049 || sheetID === 2063800821) return;
+  if (range.getValue() === false) return range.setValue(false);
 
   const types = ["Backlog", "In Progress", "Completed"];
   if (!types.includes(sheet.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
@@ -227,17 +227,17 @@ function CycleStatus(row) {
 
   switch (type) {
     case "Backlog":
-      newLoc = RosterService.taskGetRow(s, "In Progress");
+      newLoc = RosterService.getTaskRow(s, "In Progress");
       endLoc = RosterService.getLastTaskRow(s, "In Progress");
       type = "In Progress";
       break;
     case "In Progress":
-      newLoc = RosterService.taskGetRow(s, "Completed");
+      newLoc = RosterService.getTaskRow(s, "Completed");
       endLoc = RosterService.getLastTaskRow(s, "Completed");
       type = "Completed";
       break;
     case "Completed":
-      newLoc = RosterService.taskGetRow(s, "Backlog");
+      newLoc = RosterService.getTaskRow(s, "Backlog");
       endLoc = RosterService.getLastTaskRow(s, "Backlog");
       type = "Backlog";
       break;
