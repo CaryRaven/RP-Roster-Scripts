@@ -5,9 +5,9 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() {
-  // console.log(LIBRARY_SETTINGS);
+  console.log(LIBRARY_SETTINGS.promoReqs);
   // RosterService.addReqRow("SGT", 5);
-  console.log( LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf("")].length);
+  // console.log( LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf("")].length);
 }
 
 /**
@@ -15,6 +15,7 @@ function T() {
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
+  // user = "frizgeraldroomba@gmail.com";
   Logger.log(user);
   let userProperty = PropertiesService.getUserProperties();
   let userData = RosterService.getUserData(user);
@@ -148,9 +149,10 @@ function GetScriptUrl() {
 function AddRankRow(rank, num = 1, discordnotif = true) {
   console.log(rank);
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   
-  if (LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length > 0) {
-    RosterService.addReqRow(rank.toString(), num);
+  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0) {
+    RosterService.addReqRow(rank.toString(), num, undefined, LIBRARY_SETTINGS.promoReqs[rankIndex]);
   }
 
   const returnVal = RosterService.addRankRow(rank, userData, num, discordnotif); // Actual func
@@ -235,6 +237,7 @@ function Set() {
     infractionId: 343884184,
     loaId: 977408594,
     blId: 1787594911,
+    reqId: 1535565949,
     loaCooldown: 14,
     promoCooldown: 14,
     threshold: 3,

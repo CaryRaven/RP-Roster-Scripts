@@ -32,6 +32,24 @@ function ProcessLog(inputData, threshold = false, accessType) {
 
     let type = inputData.type === "Rank Change" ? inputData.rankchangetype : inputData.type === "Blacklist" ? inputData.blacklist_type : inputData.type;
     const targetData = RosterService.getUserData(inputData.email);
+
+    if (inputData.type === "Requirement Log") {
+      // Check if user completed req yet
+      sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
+      let reqTitleRow = RosterService.getFirstRankRow(targetData.rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
+
+      // Get column where req is located
+      for (let i = 8; i < sheet.getMaxColumns(); i++) {
+        if (sheet.getRange(reqTitleRow, i).getValue() === inputData.reqName) {
+
+          // Get row where req is located
+          for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
+            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.steamId).getValue() === targetData.steamId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
+          }
+        }
+      }
+    }
+
     let prefix = "";
     if (type === "Passed Interview") {
       type = LIBRARY_SETTINGS.ranks[0] + " Acceptance";
@@ -42,13 +60,20 @@ function ProcessLog(inputData, threshold = false, accessType) {
     let logData = {
       id: Math.random() * 1000,
       title: `${prefix} ${LIBRARY_SETTINGS.factionName} ${type}`,
-      desc: `${userData.name} has requested a ${prefix} ${type} to be performed on ${type === "New Member" ? inputData.name : targetData.name} for the reason: "${inputData.reason}". ${type === "LOA Log" ? `\nThis LOA will end on ${inputData.end_date}.` : inputData.type === "Blacklist" ? `\nThis ${inputData.blacklist_type} will end on ${inputData.end_date}.` : ""}`,
+
+      // Long description
+      desc: `${userData.name} has requested a ${prefix} ${type} to be performed on ${type === "New Member" ? inputData.name : targetData.name} ${inputData.type === "Requirement Log" ? "with the proof" : "for the reason"}: "${inputData.reason}".
+        ${inputData.type === "Requirement Log" ? `Please make sure that the evidence provided is valid for the completion of this requirement, misuse of approvals will result in harsh repercussions.`: ""}
+        ${type === "LOA Log" ? `\nThis LOA will end on ${inputData.end_date}.` : inputData.type === "Blacklist" ? `This ${inputData.blacklist_type} will end on ${inputData.end_date}.` : ""}`,
       logger: userData.name,
       type: inputData.type,
       userData: userData,
       inputData: inputData,
-      targetName: type === "New Member" ? inputData.name : targetData.name
+      targetName: type === "New Member" ? inputData.name : targetData.name,
+      reqName: inputData.reqName
     };
+
+    if (inputData.type === "Requirement Log") logData.desc += `\nRequirement Logged: ${inputData.reqName}`;
 
     requests.push(logData);
     PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
@@ -123,6 +148,8 @@ function ManageRequests(action, id) {
       // If a dev is accepting request (not on roster)
       if (request.inputData.email === request.userData.email) request.userData = userData;
       if (allowedStaff.includes(Session.getActiveUser().getEmail())) request.userData.email = Session.getActiveUser().getEmail();
+
+      request.inputData.reqName = request.reqName;
 
       if (request.type.includes("Edit")) {
         returnVal = RosterService.processEdit(request.inputData, allowedStaff, lockdown, request.userData);
@@ -204,13 +231,21 @@ function AddNewRank(inputData) {
  * @returns {String}
  */
 function RemoveRank(rank, discordnotif = true) {
-  const returnVal = RosterService.removeRank(rank, discordnotif);
+  // Remove from req roster -> has to be removed first
+  let returnVal = RosterService.removeRank(rank, false, LIBRARY_SETTINGS.rosterIds.length - 1, true);
 
   if (typeof returnVal === "string") {
     return returnVal;
   } else if (Array.isArray(returnVal)) {
-    PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
-    return returnVal[0];
+    returnVal = RosterService.removeRank(rank, discordnotif);
+    if (typeof returnVal === "string") {
+      return returnVal;
+    } else if (Array.isArray(returnVal)) {
+      PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
+      LIBRARY_SETTINGS = returnVal[1];
+      RosterService.init(returnVal[1]);
+      return returnVal[0];
+    }
   }
 }
 
@@ -497,4 +532,21 @@ function ManageThreshold(threshold, action) {
   RosterService.init(LIBRARY_SETTINGS);
 
   return "Infraction Threshold Edited";
+}
+
+/**
+ * Get the promotion requirements of a rank based on the rank's name
+ * @param {String} rank
+ * @param {String} email - Check for an email if you're not logging your own prom req
+ * @returns {JSON.Array}
+ */
+function GetReqs(rank, email = null) {
+  if (email) {
+    let data = RosterService.getUserData(email);
+    rank = data.rank;
+  }
+  if (!rank) return rank;
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
+  if (rankIndex < 0) return;
+  return JSON.stringify(LIBRARY_SETTINGS.promoReqs[rankIndex]);
 }

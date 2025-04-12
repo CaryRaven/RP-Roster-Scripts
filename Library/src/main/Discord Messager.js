@@ -117,6 +117,15 @@ function sendDiscordLog(inputData, targetData, userData) {
       footerMessage = 'Congratulations!';
       inline2 = false;
       break;
+    case "Requirement Log":
+      embedTitle = `✅ ${LIBRARY_SETTINGS.factionName} Requirement Completed ✅`;
+      embedColor = '1143627';
+      field1Name = 'Requirement Information';
+      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscordID: ${targetData.discordId}\nRequirement Completed: ${inputData.reqName}`;
+      footerMessage = `Congratulations on having your requirement completed.`;
+      break;
+    default:
+      throw new Error(`Type ${inputData.type} not supported`);
   }
 
   // Compose discord embed

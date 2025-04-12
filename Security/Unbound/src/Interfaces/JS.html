@@ -505,7 +505,7 @@
       taskHeader.appendChild(icon);
       
       let description = document.createElement("p");
-      description.textContent = data.desc;
+      description.innerHTML = data.desc.replace(/\n/g, "<br>");
       
       let type = document.createElement("p");
       type.textContent = "Type: " + data.type;
@@ -990,7 +990,7 @@
         const completionType = task.querySelector(".completion_type").value;
         const formula = completionType === "formula" ? task.querySelector(".formula").value : "";
 
-        if (!title || !desc || title.length > 10 || desc.length > 300 || !completionType) return valid = false;
+        if (!title || !desc || title.length > 16 || desc.length > 300 || !completionType) return valid = false;
         
         reqs.push({ title, desc, completion_type: completionType, formula });
       });
@@ -1018,6 +1018,7 @@
 
       if (!data.title) return Shake();
 
+      // Permission check
       if (hierarchySelect.value == data.editRank && data.editRank !== "") {
         hierarchySelect.value = "";
         button.disabled = true;
@@ -1031,6 +1032,7 @@
         }, 3000);
       }
 
+      // Input sanitization
       let valid = true;
       Object.values(data).forEach(value => {
         if (typeof value === "string" && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
@@ -1049,6 +1051,7 @@
         return;
       }
 
+      // Start submitting
       button.disabled = true;
       button.innerHTML = '<div class="loader"></div>';
 
@@ -1283,6 +1286,8 @@
       if (select.value == "") {
         form.reset();
         button.disabled = false;
+        reqDiv.innerHTML = "";
+        reqCount = 0;
         return button.innerText = "Submit New Rank";
       }
 
@@ -1306,8 +1311,28 @@
 
         titleInput.value = content[0];
         hierarchySelect.value = content[1];
-        viewFoldersInput.value = content[2];
-        editFoldersInput.value = content[3];
+
+        /* Map for better styling & user experience (if not, it's just a series of bunched up characters)
+          It's literally just one space, but it makes a difference
+        */
+        viewFoldersInput.value = content[2].map((id, i) => {
+          switch (i) {
+            case 0:
+              return `${id}`;
+            default:
+              return ` ${id}`      
+          }
+        });
+
+        editFoldersInput.value = content[3].map((id, i) => {
+          switch (i) {
+            case 0:
+              return `${id}`;
+            default:
+              return ` ${id}`      
+          }
+        });
+
         hasInterviewSlider.checked = (content[4] === "true");
         document.getElementById("reqs").innerHTML = "";
         if (content[5]) content[5].forEach(req => {
@@ -1523,12 +1548,12 @@
       const reqDiv = document.createElement("div");
       reqDiv.className = "req";
       
+      // I've removed the option to add a custom formula (completion_type select is hidden & no option for formula)
       reqDiv.innerHTML = `
-        <input type="text" class="title" placeholder="Promotion Requirement Name" maxlength="10" style="font-weight: bold; display: block; width: 40%;" value="${data.title}" required/>
+        <input type="text" class="title" placeholder="Promotion Requirement Name" maxlength="16" style="font-weight: bold; display: block; width: 40%;" value="${data.title}" required/>
         <input type="text" class="description" placeholder="Promotion Requirement Description" maxlength="300" style="display: block; width: 100%; margin-top: 5px;" value="${data.desc}" required/>
-        <select class="completion_type" style="display: block; margin-top: 5px; width: 100%;" required>
+        <select class="completion_type" style="display: none; margin-top: 5px; width: 100%;" required>
           <option value="manual">Manual</option>
-          <option value="formula">Formula</option>
         </select>
         <input type="text" class="formula" placeholder="Enter custom formula" style="display: none; margin-top: 5px; width: 100%;" value="${data.formula}"/>
         <button class="submitButton-mini" style="position: absolute; top: 5px; right: 5px; background-color: red;">Delete</button>
@@ -1536,10 +1561,11 @@
       
       reqDiv.style = "position: relative; padding: 10px; margin-bottom: 20px; width: 80%;";
       
-      reqDiv.querySelector(".completion_type").addEventListener("change", function() {
-        const formulaInput = reqDiv.querySelector(".formula");
-        formulaInput.style.display = this.value === "formula" ? "block" : "none";
-      });
+      // Removed custom formula option
+      // reqDiv.querySelector(".completion_type").addEventListener("change", function() {
+      //   const formulaInput = reqDiv.querySelector(".formula");
+      //   formulaInput.style.display = this.value === "formula" ? "block" : "none";
+      // });
 
       reqDiv.querySelector(".completion_type").value = data.completion_type;
       
@@ -1579,129 +1605,65 @@
 
     // Toggle which questions are visible depending on main selection
     window.HideCheck = function () {
-      // This MASSIVE switch statement is probably not best practice, but it works :)
+      // lmk if there's a better way to do this then the setAttributes
       let logtype = document.getElementById('logTypeList').value;
+
+      // Can be set seperate as they're almost always set to none (apart from New Member)
+      document.getElementById('namefield').setAttribute('style', 'display: none;');
+      document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+      document.getElementById('discordidfield').setAttribute('style', 'display: none;');
+      document.getElementById('emailfield').setAttribute('style', 'display: none;');
+      document.getElementById('reasonfield').setAttribute('style', 'display: none;');
+      document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
+      document.getElementById('infrlabel').setAttribute('style', 'display: none;');
+      document.getElementById('enddatefield').setAttribute('style', 'display: none;');
+      document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
+      document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
+      document.getElementById('appealable').setAttribute('style', 'display: none;');
+      document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
+      document.getElementById('rctypefield').setAttribute('style', 'display: none;');
+      document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
+      document.getElementById('idfield').setAttribute('style', 'display: none;');
+      document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
+      document.getElementById('bllabel').setAttribute('style', 'display: none;');
+      document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+      document.getElementById('reqfield').setAttribute('style', 'display: none;');
+      document.getElementById('reqfieldlabel').setAttribute('style', 'display: none;');
+      document.getElementById('reasonfield').placeholder = "Provide a reason for this log.";
+
       switch (logtype) {
         case 'Infraction Log':
-          document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
-          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
           document.getElementById('emailfield').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('infrtypelist').setAttribute('style', 'display: block;');
           document.getElementById('infrlabel').setAttribute('style', 'display: block;');
-          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
-          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
-          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
-          document.getElementById('idfield').setAttribute('style', 'display: none;');
-          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
-          document.getElementById('bllabel').setAttribute('style', 'display: none;');
-          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
           break;
         case 'Rank Change':
-          document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
-          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
           document.getElementById('emailfield').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
-          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
-          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
-          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
           document.getElementById('rctypefield').setAttribute('style', 'display: block;');
           document.getElementById('rctypelabel').setAttribute('style', 'display: block;');
-          document.getElementById('idfield').setAttribute('style', 'display: none;');
-          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
-          document.getElementById('bllabel').setAttribute('style', 'display: none;');
-          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
           break;
         case 'LOA Log':
-          document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
-          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
           document.getElementById('emailfield').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
-          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
-          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
           document.getElementById('enddatefield').setAttribute('style', 'display: block;');
           document.getElementById('enddatelabelLOA').setAttribute('style', 'display: block;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
-          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
-          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
-          document.getElementById('idfield').setAttribute('style', 'display: none;');
-          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
-          document.getElementById('bllabel').setAttribute('style', 'display: none;');
-          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
           break;
         case 'Blacklist':
-          document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
-          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-          document.getElementById('emailfield').setAttribute('style', 'display: none;');
-          document.getElementById('reasonfield').setAttribute('style', 'display: none;');
-          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
-          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
-          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
-          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
-          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
-          document.getElementById('idfield').setAttribute('style', 'display: none;');
-          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
           document.getElementById('bllabel').setAttribute('style', 'display: block;');
           document.getElementById('bltypelist').setAttribute('style', 'display: block;');
           document.getElementById('bltypelist').value = "";
           break;
         case 'Infraction Appeal':
-          document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
-          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-          document.getElementById('emailfield').setAttribute('style', 'display: none;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
-          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
-          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
-          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
-          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
-          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
           document.getElementById('idfield').setAttribute('style', 'display: block;');
           document.getElementById('idfieldlabel').setAttribute('style', 'display: block;');
-          document.getElementById('bllabel').setAttribute('style', 'display: none;');
-          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
           break;
         case 'Blacklist Appeal':
-          document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
-          document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-          document.getElementById('emailfield').setAttribute('style', 'display: none;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
-          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
-          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
-          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
-          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
-          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
           document.getElementById('idfield').setAttribute('style', 'display: block;');
           document.getElementById('idfieldlabel').setAttribute('style', 'display: block;');
-          document.getElementById('bllabel').setAttribute('style', 'display: none;');
-          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
           break;
         case 'New Member':
           document.getElementById('namefield').setAttribute('style', 'display: block;');
@@ -1709,22 +1671,63 @@
           document.getElementById('discordidfield').setAttribute('style', 'display: block;');
           document.getElementById('emailfield').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
-          document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
-          document.getElementById('infrlabel').setAttribute('style', 'display: none;');
-          document.getElementById('enddatefield').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelLOA').setAttribute('style', 'display: none;');
-          document.getElementById('enddatelabelBL').setAttribute('style', 'display: none;');
-          document.getElementById('appealable').setAttribute('style', 'display: none;');
-          document.getElementById('appealablelabel').setAttribute('style', 'display: none;');
-          document.getElementById('rctypefield').setAttribute('style', 'display: none;');
-          document.getElementById('rctypelabel').setAttribute('style', 'display: none;');
-          document.getElementById('idfield').setAttribute('style', 'display: none;');
-          document.getElementById('idfieldlabel').setAttribute('style', 'display: none;');
-          document.getElementById('bllabel').setAttribute('style', 'display: none;');
-          document.getElementById('bltypelist').setAttribute('style', 'display: none;');
+          break;
+        case "Requirement Log":
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('reqfieldlabel').setAttribute('style', 'display: block;');
+          document.getElementById('reqfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').placeholder = "Provide a visual (working image link) proof of completion.";
+
+          // Get reqs of user's rank
+          GetReqTitles();
           break;
       }
     }
+
+    window.GetReqTitles = function() {
+      // Get reqs of user's rank
+      let rank = document.getElementById("rank").innerText;
+      let email;
+      console.log(rank);
+
+      // TODO: possibly change to dynamic check
+      if (rank.includes("Blackshadow") || rank.includes("Site") || rank.includes("Chief")) {
+        rank = null;
+        email = document.getElementById('emailfield').value;
+      }
+      
+      google.script.run.withSuccessHandler(response => {
+        response = JSON.parse(response);
+        if (typeof response === "string") return console.log("Returned");
+        
+        try {
+          const reqField = document.getElementById("reqfield");
+          reqField.innerHTML = "<option value=''></option>";
+          console.log(response);
+          response.forEach(req => {
+            const reqOption = document.createElement("option");
+            reqOption.value = req.title;
+            reqOption.innerText = req.title;
+            reqField.appendChild(reqOption);
+          });
+        } catch(e) {
+          console.log("Getting req titles failed");
+        }
+      }).GetReqs(rank, email);
+    }
+
+    // If you're not logging a req for yourself -> check the reqs of the person on every input change
+    document.getElementById("emailfield").addEventListener("input", () => {
+      if (document.getElementById("logTypeList").value !== "Requirement Log") return;
+      if (!document.getElementById("emailfield").value.includes("@")) return;
+      if (!document.getElementById("emailfield").value.includes(".")) return;
+      try {
+        GetReqTitles();
+      } catch(e) {
+        console.log("Getting req titles failed");
+      }
+    });
 
     window.ResetUI = function (button, response) {
       button.innerHTML = "";
@@ -1779,7 +1782,8 @@
         end_date: document.getElementById('enddatefield').value,
         blacklist_appealable: document.getElementById('appealable').value,
         log_id: document.getElementById('idfield').value,
-        blacklist_type: document.getElementById('bltypelist').value
+        blacklist_type: document.getElementById('bltypelist').value,
+        reqName: document.getElementById("reqfield").value
       };
 
       // Data validation -> check if correct data has been inputted
@@ -1814,10 +1818,13 @@
           if (dataToSubmit.log_id >= 7) valid = true;
           break;
         case "New Member":
-          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '' && dataToSubmit.branch != '') valid = true;
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '') valid = true;
+          break;
+        case "Requirement Log":
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
           break;
         default:
-          break;
+          return Shake();
       }
 
       Object.values(dataToSubmit).forEach(value => {

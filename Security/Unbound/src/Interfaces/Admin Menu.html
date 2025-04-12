@@ -192,7 +192,7 @@
             <strong>Before we begin I must emphasize: NEVER edit the <?= factionName ?> roster directly unless you know very well what you're doing. The whole reason why this
               admin menu was made is so you don't have to make direct edits to the spreadsheet itself. Why you might ask?
               This is because the Admin Menu performs a lot of operations behind the scenes, such as managing document access.
-              If you add a staff member manually you will also have to manually give them permissions to all the folders.
+              If you add a <?= factionName; ?> member manually you will also have to manually give them permissions to all the folders.
               Using this UI might seem slow and inefficient, but trust me that you are saving yourself a lot of time &
               effort. In order to prevent human error, please use the admin menu. Thanks :)</strong>
           </p><br>
@@ -538,7 +538,7 @@
 
           <div id="loggerForm" style="display: none;">
             <form id="dataform">
-              <h1>Staff Roster Logger Form</h1>
+              <h1><?= factionName; ?> Roster Logger Form</h1>
               <p>Please fill out <strong>all</strong> the below questions in order to submit a log.</p>
               <p>Before submitting, double-check your answers as once you press the button, they can no longer be
                 adjusted.
@@ -556,6 +556,7 @@
                 <option value="Infraction Log">Infraction Log</option>
                 <? } ?>
                 <option value="LOA Log">LOA Log</option>
+                <option value="Requirement Log">Promotion Requirement Log</option>
                 <? if (accessType !== "visitor" && accessType !== "mod") { ?>
                 <option value="Blacklist">Blacklist / Suspension</option>
                 <? } ?>
@@ -599,7 +600,7 @@
               <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
               <input type="email" placeholder="Email Address" id='emailfield' maxlength="40" required />
               <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
-              <select type="text" id="rctypefield" style='display: block;' required>
+              <select id="rctypefield" style='display: block;' required>
                 <option value=''></option>
                 <option value='Promotion'>Promotion</option>
                 <option value="Demotion">Demotion</option>
@@ -609,6 +610,10 @@
               <label for="enddatefield" id="enddatelabelBL" style="display: none;">Select expiry date of
                 Blacklist:</label>
               <input type="date" placeholder="dd-mm-yyyy" id='enddatefield' style="display: none;" required />
+              <label for="reqfield" id="reqfieldlabel" style="display: none;">Select which requirement you have completed:</label>
+              <select id="reqfield" style='display: none;' required>
+                <option value=''></option>
+              </select>
               <input type="text" placeholder="Reason" id='reasonfield' maxlength="70" required />
               <button onclick="SubmitLog(event)" type="submit" class="submitButton" id="loggerSubmitButton">Submit</button>
               <p id="disclaimerText"></p>
@@ -617,7 +622,7 @@
 
           <div id="editForm" style="display: none;">
             <form id="editform">
-              <h1>Staff Roster Info Editor Form</h1>
+              <h1><?= factionName; ?> Roster Info Editor Form</h1>
               <br>
               <p>Please fill out <strong>all</strong> the below questions in order to submit an edit.</p>
               <p>Before submitting, double-check your answers as once you press the button, they can no longer be

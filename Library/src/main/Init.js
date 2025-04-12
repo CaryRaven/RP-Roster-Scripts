@@ -54,6 +54,7 @@ class SettingsTemplate {
     this.infractionId = 0;
     this.loaId = 0;
     this.blId = 0;
+    this.reqId = 0;
     this.loaCooldown = 0;
     this.promoCooldown = 0;
     this.threshold = 0;

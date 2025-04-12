@@ -285,19 +285,42 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
       protectRange("A", sheet, 10, insertLogRow);
 
-      if (inputData.blacklist_type === "Blacklist") {
-        if (targetData.row) {
-          sheet = getCollect(LIBRARY_SETTINGS.rankchangeId);
-          moveMember(targetData.row);
-          inputData.rankchangetype = "Blacklisted";
-          insertLogRow = getLastRow(sheet);
+      if (inputData.blacklist_type === "Blacklist" && targetData.row) {
+        sheet = getCollect(LIBRARY_SETTINGS.rankchangeId);
+        moveMember(targetData.row);
+        inputData.rankchangetype = "Blacklisted";
+        insertLogRow = getLastRow(sheet);
 
-          moveMember(firstRankRow[0], targetData.row);
-          insertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
-          protectRange("N", sheet, null, insertLogRow);
-          removeDocAccess(targetData.email);
+        moveMember(firstRankRow[0], targetData.row);
+        insertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
+        protectRange("N", sheet, null, insertLogRow);
+        removeDocAccess(targetData.email);
+      }
+      break;
+    case "Requirement Log":
+      if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
+
+      // Check if user completed req yet
+      sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
+      const reqTitleRow = getFirstRankRow(targetData.rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
+
+      // Get column where req is located
+      for (let i = 8; i < sheet.getMaxColumns(); i++) {
+        if (sheet.getRange(reqTitleRow, i).getValue() === inputData.reqName) {
+
+          // Get row where req is located
+          for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
+            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.steamId).getValue() === targetData.steamId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
+          }
         }
       }
+
+      sheet = getCollect(LIBRARY_SETTINGS.reqId);
+      insertLogRow = getLastRow(sheet);
+
+      // Insert log
+      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 11).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.reqName, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+      protectRange("N", sheet, null, insertLogRow);
       break;
     case "Blacklist Appeal":
       sheet = getCollect(LIBRARY_SETTINGS.blId);
