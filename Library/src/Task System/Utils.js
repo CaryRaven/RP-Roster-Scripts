@@ -12,7 +12,6 @@ function getTaskRow(s, type) {
 
   for (let i = 10; i <= total_rows; i++) {
     let taskType = r[i - 10][0];
-    console.log(taskType);
     if (s.getRange(i, 3).getValue() === "" && taskType == type) return i;
   }
   return undefined;
@@ -27,12 +26,12 @@ function getTaskRow(s, type) {
 function getLastTaskRow(s, type) {
   if (!isInit) throw new Error("Library is not initialized yet");
   if (!s || !type) throw new Error("Do not run this function from the editor");
-  let r = s.getRange(10, 2, s.getMaxRows(), 1).getValues();
+  let r = s.getRange(9, 2, s.getMaxRows(), 1).getValues();
   const total_rows = s.getMaxRows();
 
   for (let i = 10; i <= total_rows; i++) {
-    let taskType = r[i - 10][0];
-    if (taskType !== type && s.getRange(i - 1, 2).getValue() == type) return i - 1;
+    let taskType = r[i - 9][0];
+    if (taskType !== type && r[i - 10][0] == type) return i - 1;
   }
   return undefined;
 }

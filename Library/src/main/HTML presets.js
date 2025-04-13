@@ -689,8 +689,7 @@ function getHtmlAddTask() {
             } else {
               button.classList.remove("red");
             }
-            button.innerHTML = "";
-            button.innerText = "Submit";
+            google.script.host.close();
           }, 2000);
         }
       }).withFailureHandler(() => {
@@ -1705,6 +1704,7 @@ function getHtmlInterview() {
         event.preventDefault();
         const interviewerEmail = document.getElementById("interviewerEmail").value;
         const applicantName = document.getElementById("applicantName").value;
+        const applicantRank = document.getElementById("applicantRank").value;
         const button = document.getElementById("generateButton");
         const patience = document.getElementById("patience");
 
@@ -1723,19 +1723,27 @@ function getHtmlInterview() {
 
         google.script.run
           .withSuccessHandler(response => {
-            if (response) {
+            if (response.includes("docs.google.com")) {
               document.getElementById("docForm").reset();
               button.innerText = "Success";
               button.classList.add("green");
               patience.innerHTML = "<br><a href='" + response + "' target='_blank'>Interview Document</a>";
+              document.getElementById("interviewerEmail").style.display = "none";
+              document.getElementById("applicantName").style.display = "none";
+              document.getElementById("applicantRank").style.display = "none";
+              document.getElementById("rankLabel").style.display = "none";
+              document.getElementById("nameLabel").style.display = "none";
+              document.getElementById("emailLabel").style.display = "none";
             } else {
               button.classList.add("red");
-              button.innerText = "Something went wrong";
+              button.innerText = response;
+              patience.innerHTML = "";
+              setTimeout(() => {
+                button.classList.remove("red");
+                button.disabled = false;
+                button.innerText = "Generate";
+              }, 2000);
             }
-            setTimeout(() => {
-              button.classList.remove("red");
-              button.classList.remove("green");
-            }, 2000);
           })
           .withFailureHandler(() => {
             button.innerText = "Something went wrong";
@@ -1749,7 +1757,7 @@ function getHtmlInterview() {
               button.innerText = "Submit";
             }, 2000);
           })
-          .GenerateInterview(interviewerEmail, applicantName);
+          .GenerateInterview(interviewerEmail, applicantName, applicantRank);
       };   
     });
   </script>
@@ -1762,10 +1770,12 @@ function getHtmlInterview() {
     It will fill out the information that you provide below and it will randomly select 10 questions from a list of predfined questions, which the applicant will need to answer.</p><span id="patience"></span>
     <hr>
     <form id="docForm">
-      <label for="interviewerEmail">Enter your email address:</label>
+      <label for="interviewerEmail" id="emailLabel">Enter your email address:</label>
       <input type="email" id="interviewerEmail" placeholder="Enter your email address (the one logged on the roster)" required>
-      <label for="applicantName">Enter the <strong>name</strong> of the applicant undertaking this Interview:</label>
+      <label for="applicantName" id="nameLabel">Enter the <strong>name</strong> of the applicant undertaking this Interview:</label>
       <input type="text" id="applicantName" placeholder="Enter the name of the applicant that is undertaking this interview" maxlength="20" required>
+      <label for="applicantRank" id="rankLabel">Enter the <strong>name</strong> of the rank that the applicant is doing an interview for:<br><span style="font-size: 13px; font-weight: 100;">Make sure the name you input corresponds EXACTLY to the name of the rank that this person will be promoted to after the interview</span></label>
+      <input type="text" id="applicantRank" placeholder="Enter the name of the rank that the applicant is doing an interview for" maxlength="20" required>
       <button onclick="GenerateDoc(event)" type="submit" class="submitButton" id="generateButton">Generate</button>
     </form>
 </body>

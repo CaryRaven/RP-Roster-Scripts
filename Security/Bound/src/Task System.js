@@ -54,7 +54,7 @@ function SubmitTask(inputData) {
  */
 function TaskManager(e) {
   if (!e) throw new Error("Do not run this function from the editor.");
-
+  
   const sheet = e.source.getActiveSheet();
   const range = e.range;
   const col = range.getColumn();
@@ -174,7 +174,7 @@ function ChangeAssignment(inputData) {
   return `${targetData.name} ${assigned}`;
 }
 
-function DeleteTask(row, clearcell = 13, endLoc = null, startLoc = null) {
+function DeleteTask(row, clearcell = 14, endLoc = null, startLoc = null) {
   if (!row) throw new Error("Do not run this function from the editor");
   const s = RosterService.getCollect(1504741049);
   if (s.getRange(row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
@@ -244,10 +244,7 @@ function CycleStatus(row) {
       type = "Completed";
       break;
     case "Completed":
-      newLoc = RosterService.getTaskRow(s, "Backlog");
-      endLoc = RosterService.getLastTaskRow(s, "Backlog");
-      type = "Backlog";
-      break;
+      return SpreadsheetApp.getUi().alert("You cannot change the status of a completed task");
     default:
       throw new Error("No matching type found");
   }
@@ -266,14 +263,27 @@ function CycleStatus(row) {
     // Style new row
     [[3, 8], [10, 14]].forEach(cellpair => {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
+
+      // Border styling
       s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
-      s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      if (type === "Completed" && cellpair[0] === 10) {
+        s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(false, null, null, null, false, false);
+      } else {
+        s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+      }
+
+      // Remove checboxes to avoid confusion
+      if (cellpair[0] === 10 && type === "Completed") s.getRange(newLoc, cellpair[0], 1, numcols).clearDataValidations().clearContent();
+
+      // Set background color just in case (spreadsheets can be slippery with conditional formatting)
+      if (newLoc > row) s.getRange(row, cellpair[0], 1, numcols).setBackground("#666666");
+      if (newLoc < row) s.getRange(row + 1, cellpair[0], 1, numcols).setBackground("#666666");
     });
   }
 
   s.getRange(newLoc, 3, 1, 6).setValues(data);
   s.getRange(newLoc, 2).setValue(type);
-  RosterService.protectRange("N", s, null, newLoc);
+  if (type === "Completed") RosterService.protectRange("N", s, null, newLoc);
   SendDiscordMessage("Status", inputData);
 }
 

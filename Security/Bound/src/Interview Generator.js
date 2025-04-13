@@ -2,13 +2,18 @@ function GenInterviewUI() {
   try {
     DriveApp.getFolderById("17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB");
     const interviewFile = RosterService.getHtmlInterview();
-    return SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(interviewFile).setWidth(600).setHeight(800), "Generate Interview Doc [BETA]");
+    return SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(interviewFile).setWidth(700).setHeight(900), "Generate Interview Doc");
   } catch(e) {
     return SpreadsheetApp.getUi().alert("Only Security Chiefs+ are allowed to perform this action.");
   }
 }
 
-function GenerateInterview(email, name) {
+function GenerateInterview(email, name, rank) {
+  if (!email || !name || !rank) return "Please fill out all questions";
+  const rankRow = RosterService.getStartRankRow(rank);
+  console.log(rankRow);
+  if (!rankRow) return "Invalid Rank";
+
   let docNum = PropertiesService.getDocumentProperties().getProperty("docNum");
   docNum = Number(docNum) ? Number(docNum) + 1 : 1;
   PropertiesService.getDocumentProperties().setProperty("docNum", docNum);
@@ -22,15 +27,18 @@ function GenerateInterview(email, name) {
     userData.rank = "External Staff";
   }
 
-  const copy = template.makeCopy(`[BS] Captain Interview "${name}"`, destination);
+  const copy = template.makeCopy(`[BS] ${rank} Interview "${name}"`, destination);
   const doc = DocumentApp.openById(copy.getId());
   const body = doc.getBody();
+  const header = doc.getHeader();
 
-  doc.getHeader().replaceText("{{DocNum}}", `#0${docNum}`);
+  header.replaceText("{{DocNum}}", `#0${docNum}`);
+  header.replaceText("{{Rank}}", rank);
   body.replaceText("{{DocNum}}", `#0${docNum}`);
   body.replaceText("{{ApplicantName}}", name);
   body.replaceText("{{InterviewerName}}", `${userData.rank} ${userData.name}`);
   body.replaceText("{{Date}}", Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss"));
+  body.replaceText("{{Rank}}", rank);
 
   const q = JSON.parse(PropertiesService.getDocumentProperties().getProperty("q"));
 
@@ -51,12 +59,3 @@ function GenerateInterview(email, name) {
   doc.saveAndClose();
   return copy.getUrl();
 }
-
-// function CloseDoc() {
-//   const destination = DriveApp.getFolderById("1Nr4xPCEfMMtynlzJqenrjt7itkCSBfYq");
-//   const doc = DriveApp.getFileById(DocumentApp.getActiveDocument().getId())
-//   DocumentApp.getActiveDocument().setName(`[COMPLETED]${DocumentApp.getActiveDocument().getName()}`);
-//   doc.moveTo(destination);
-//   doc.setOwner("dontorro208@gmail.com");
-//   doc.removeEditors(doc.getEditors());
-// }

@@ -134,6 +134,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           if (targetData.status == "LOA") return "You cannot promote members who are on LOA";
           if (Number(targetData.infractions) !== 0) return "You cannot promote members with an active infraction";
           if (targetData.status == "Suspended") return "You cannot promote suspended members";
+          if (roster.getRange(targetData.row, 16).getDisplayValue().toLowerCase() == "false") return "This user must complete all their requirements before promotion."; 
           const promotionDestination = ranks[currentRankIndex + 1];
           if (!promotionDestination || currentRankIndex === ranks.length - 3) return "This user cannot be promoted any further";
 
@@ -146,13 +147,30 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           if (LIBRARY_SETTINGS.interviewRequired[currentRankIndex + 1].toString() !== "false") {
             const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
             let hasInterview = false;
-            while (files.hasNext()) {
+            while (files.hasNext() && !hasInterview) {
               const file = files.next();
               const fileName = file.getName();
-              if (fileName.includes(targetData.name) && fileName.includes("[PASSED]") && fileName.includes(promotionDestination)) {
-                hasInterview = true;
-                file.setOwner("dontorro208@gmail.com");
-                file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+              if (fileName.includes(targetData.name) && fileName.includes("[PASSED]") && fileName.includes(promotionDestination) && fileName.toLowerCase().includes(promotionDestination.toLowerCase())) {
+                let wrongRank = LIBRARY_SETTINGS.ranks.some(rank => {
+                  return rank.toLowerCase() !== promotionDestination.toLowerCase() && fileName.toLowerCase().includes(rank.toLowerCase());
+                });
+
+                if (wrongRank) continue;
+
+                console.log("Processing Interview");
+                const owner = file.getOwner().getEmail();
+                if (userData.email === owner) {
+                  file.setOwner("dontorro208@gmail.com");
+                } else {
+                  const editors = file.getEditors();
+                  editors.map(editor => editor.getEmail());
+
+                  if (!editors.includes(userData.email)) continue;
+                }
+                try { 
+                  file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+                  hasInterview = true;
+                } catch(e) { continue }
               }
             }
             if (hasInterview !== true) return `Could not find an interview under the name: "${targetData.name}"\nMake sure they have passed a ${promotionDestination} interview first.`;
@@ -207,26 +225,33 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           if (LIBRARY_SETTINGS.interviewRequired[0].toString() !== "false") {
             const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
             let hasInterview = false;
-            while (files.hasNext()) {
+            while (files.hasNext() && !hasInterview) {
               const file = files.next();
-              if (file.getName().includes(targetData.name) && file.getName().includes("[PASSED]")) {
-                hasInterview = true;
-                file.setOwner("dontorro208@gmail.com");
-                file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+              const fileName = file.getName();
+              if (fileName.includes(targetData.name) && fileName.includes("[PASSED]") && fileName.includes(newStaffDestination) && fileName.toLowerCase().includes(newStaffDestination.toLowerCase())) {
+                let wrongRank = LIBRARY_SETTINGS.ranks.some(rank => {
+                  return rank.toLowerCase() !== newStaffDestination.toLowerCase() && fileName.toLowerCase().includes(rank.toLowerCase());
+                });
 
-                // Don't want to set perms as this would cause trouble upon removal/demotion (these docs wouldn't be updated => perms leak)
-                // DriveApp.getFileById(file.getId()).getEditors().forEach(editor => {
-                //   editor = editor.getEmail();
-                //   file.removeEditor(editor);
-                // });
+                if (wrongRank) continue;
 
-                // DriveApp.getFileById(file.getId()).getViewers().forEach(viewer => {
-                //   viewer = viewer.getEmail();
-                //   file.removeViewer(viewer);
-                // });
+                console.log("Processing Interview");
+                const owner = file.getOwner().getEmail();
+                if (userData.email === owner) {
+                  file.setOwner("dontorro208@gmail.com");
+                } else {
+                  const editors = file.getEditors();
+                  editors.map(editor => editor.getEmail());
+
+                  if (!editors.includes(userData.email)) continue;
+                }
+                try { 
+                  file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+                  hasInterview = true;
+                } catch(e) { continue }
               }
             }
-            if (hasInterview !== true) return `Could not find an interview under the name: "${targetData.name}"\nMake sure they have passed a ${LIBRARY_SETTINGS.ranks[0]} interview first.`;
+            if (hasInterview !== true) return `Could not find an interview under the name: "${targetData.name}"\nMake sure they have passed a ${newStaffDestination} interview first.`;
           }
 
           targetData["newRank"] = newStaffDestination;
