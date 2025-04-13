@@ -3,19 +3,11 @@ let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getPro
 if (RosterService.getSizeInBytes(LIBRARY_SETTINGS) >= 450000) throw new Error("Settings exceeded size limit");
 RosterService.init(LIBRARY_SETTINGS);
 
-// test function - ignore
-function T() {
-  console.log(LIBRARY_SETTINGS.promoReqs);
-  // RosterService.addReqRow("SGT", 5);
-  // console.log( LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf("")].length);
-}
-
 /**
  * Web app entry point. Default google function thus it cannot be used in your project, only defined/declared once
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
-  // user = "frizgeraldroomba@gmail.com";
   Logger.log(user);
   let userProperty = PropertiesService.getUserProperties();
   let userData = RosterService.getUserData(user);
@@ -27,11 +19,13 @@ function doGet() {
     userData.steamId = "N/A";
     userData.discordId = "N/A";
     userData.rank = "Site Management";
+    userData.email = user;
   } else if (allowedStaff.includes(user)) {
     userData.name = "N/A";
     userData.steamId = "N/A";
     userData.discordId = "N/A";
     userData.rank = "Blackshadow Staff";
+    userData.email = user;
   }
 
   // Set userData property (used per session)
@@ -81,7 +75,6 @@ function doGet() {
     // Load the Admin Menu
     const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
     template.user = user;
-    template.data = userData;
     template.ranks = LIBRARY_SETTINGS.ranks;
     template.adminRanks = LIBRARY_SETTINGS.adminRanks;
     template.allowedStaff = allowedStaff;
@@ -97,6 +90,8 @@ function doGet() {
     } else {
       template.accessType = "visitor";
     }
+
+    template.data = userData;
 
     const latestChangelog = JSON.parse(PropertiesService.getScriptProperties().getProperty("lastestChangeLog"));
     let changeDate = latestChangelog.date;
@@ -218,7 +213,7 @@ function Set() {
       status: 11,
       specialization: 12,
       loaEnd: 14,
-      blacklistEnd: 16,
+      blacklistEnd: 17,
       notes: 18,
       supervisor_name: 1,
       supervisor_steamId: 1,

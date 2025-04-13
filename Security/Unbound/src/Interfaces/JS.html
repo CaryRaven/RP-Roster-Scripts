@@ -105,6 +105,8 @@
       });
     };
 
+    let configupdate;
+
     window.SetSliders = function() {
       google.script.run.withSuccessHandler(r => {
         r = JSON.parse(r);
@@ -150,7 +152,20 @@
       Function responsible for handling the sidebar functionality
       When adding a new tab, make sure you update these functions to show/hide the new panel too
     */
-    let configupdate;
+
+    window.StartConfigInterval = function () {
+      try { clearInterval(configupdate) } catch(e) { }
+
+      SetSpecSelects();
+      SetRankSelects(true);
+      SetSliders();
+      configupdate = setInterval(() => {
+        SetSpecSelects();
+        SetRankSelects();
+        SetSliders();
+      }, 10000);
+    }
+
     window.ShowDash = function () {
       document.getElementById('dashboard').setAttribute('style', 'display: block;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
@@ -216,19 +231,7 @@
       document.getElementById('search_panel').setAttribute('style', 'display: none;');
       document.getElementById('config').setAttribute('style', 'display: block;');
       document.getElementById("requests-panel").setAttribute("style", "display: none;");
-      try { 
-        clearInterval(configupdate); 
-      } catch(e) { }
-
-      // Making sure the config is synced every 10 seconds
-      SetSpecSelects();
-      SetRankSelects(true);
-      SetSliders();
-      configupdate = setInterval(() => {
-        SetSpecSelects();
-        SetRankSelects();
-        SetSliders();
-      }, 10000);
+      StartConfigInterval();
     }
 
     window.ShowRequests = function () {
@@ -266,13 +269,11 @@
     google.script.run.withSuccessHandler((response) => {
       document.getElementById("showTerminalSlider").checked = (response === "true");
       document.getElementById("terminalConfig").style.display = "block";
-      console.log(response);
     }).ReturnTerminalSetting();
     try {
       document.getElementById('showTerminalSlider').addEventListener('change', function () {
         google.script.run.withSuccessHandler((response) => {
           document.getElementById("showTerminalSlider").checked = (response === "true");
-          console.log(response);
         }).ToggleTerminal(this.checked);
       });
     } catch(e) {
@@ -415,7 +416,6 @@
 
     function handleAction(task, action) {
       // Get task data => querySelector() / querySelectorAll()
-      console.log(action);
       const id = task.querySelector(".task-id").textContent.replace("ID: ", "");
       task.querySelector(".icon").innerHTML = '<div class="loader"></div>';
       clearInterval(requestInterval);
@@ -474,7 +474,6 @@
         
         data.forEach(request => {
           GenerateRequest(request);
-          console.log("request generated")
         });
       }).withFailureHandler(() => {
         console.log("Something went wrong while fetching requests");
@@ -590,24 +589,30 @@
     } catch (e) {  }
 
     document.getElementById('manualEditingSlider').addEventListener('change', function () {
+      try { clearInterval(configupdate) } catch(e) { }
       document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
       google.script.run.withSuccessHandler(() => {
         document.getElementById('config-loading').innerHTML = '';
+        StartConfigInterval();
       }).ToggleManualEditing(this.checked);
     });
 
     document.getElementById('pingSlider').addEventListener('change', function () {
+      try { clearInterval(configupdate) } catch(e) {  }
       document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
       google.script.run.withSuccessHandler(() => {
         document.getElementById('config-loading').innerHTML = '';
+        StartConfigInterval();
       }).TogglePings(this.checked);
     });
 
     try {
       document.getElementById('backupSlider').addEventListener('change', function () {
+        try { clearInterval(configupdate) } catch(e) { }
         document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
         google.script.run.withSuccessHandler(() => {
           document.getElementById('config-loading').innerHTML = '';
+          StartConfigInterval();
         }).ToggleBackup(this.checked);
       });
     } catch(e) {}
@@ -621,7 +626,6 @@
       google.script.run.withSuccessHandler((re) => {
         document.getElementById('config-loading').innerHTML = '';
         button.disabled = false;
-        console.log(re);
         SetSliders();
       }).withFailureHandler((error) => {
         document.getElementById('config-loading').innerHTML = '';
@@ -1116,7 +1120,6 @@
           if (response.toLowerCase().includes("not") || response.toLowerCase().includes("invalid")) {
             Shake();
             response.toLowerCase().includes("not") ? button.innerText = "Population" : button.innerText = "Invalid";
-            console.log(response);
             button.classList.add('red');
           } else {
             button.classList.add('green');
@@ -1367,7 +1370,6 @@
       button.disabled = true;
 
       google.script.run.withSuccessHandler(response => {
-        console.log(response);
         if (response.toLowerCase().includes("no") || response.toLowerCase().includes("invalid")) {
           button.classList.add("red");
           Shake();
@@ -1586,7 +1588,7 @@
       document.getElementById('namefield').setAttribute('style', 'display: none;');
       document.getElementById('steamidfield').setAttribute('style', 'display: none;');
       document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-      document.getElementById('emailfield').setAttribute('style', 'display: block;');
+      document.getElementById('emailfield').setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').setAttribute('style', 'display: block;');
       document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
       document.getElementById('infrlabel').setAttribute('style', 'display: none;');
@@ -1683,28 +1685,28 @@
           GetReqTitles();
           break;
       }
+      
+      // Visitors don't have to input their email as they can only manage themselves
+      if (accessType === "visitor") document.getElementById('emailfield').setAttribute('style', 'display: none;');
     }
 
     window.GetReqTitles = function() {
       // Get reqs of user's rank
       let rank = document.getElementById("rank").innerText;
       let email;
-      console.log(rank);
 
-      // TODO: possibly change to dynamic check
-      if (rank.includes("Blackshadow") || rank.includes("Site") || rank.includes("Chief")) {
+      if (accessType === "admin" || accessType === "dev") {
         rank = null;
         email = document.getElementById('emailfield').value;
       }
       
       google.script.run.withSuccessHandler(response => {
         response = JSON.parse(response);
-        if (typeof response === "string") return console.log("Returned");
+        if (typeof response === "string") return "Returned";
         
         try {
           const reqField = document.getElementById("reqfield");
           reqField.innerHTML = "<option value=''></option>";
-          console.log(response);
           response.forEach(req => {
             const reqOption = document.createElement("option");
             reqOption.value = req.title;
@@ -1712,16 +1714,21 @@
             reqField.appendChild(reqOption);
           });
         } catch(e) {
-          console.log("Getting req titles failed");
+          console.log("Getting req titles failed: " + e);
         }
       }).GetReqs(rank, email);
     }
 
+    // Prefill req field when loading web app
+    GetReqTitles();
+
     // If you're not logging a req for yourself -> check the reqs of the person on every input change
-    document.getElementById("emailfield").addEventListener("input", () => {
+    document.getElementById("emailfield").addEventListener("change", () => {
+      if (accessType === "visitor") return;
       if (document.getElementById("logTypeList").value !== "Requirement Log") return;
       if (!document.getElementById("emailfield").value.includes("@")) return;
       if (!document.getElementById("emailfield").value.includes(".")) return;
+
       try {
         GetReqTitles();
       } catch(e) {
@@ -1791,13 +1798,15 @@
       switch (dataToSubmit.type_check) {
         case 'Rank Change':
           if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') { valid = true; }
-          if (dataToSubmit.rankchangetype == "Transfer") { dataToSubmit.branch != "" ? valid = true : valid = false; }
           break;
         case 'Infraction Log':
           if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') { valid = true; }
           break;
         case 'LOA Log':
           if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
+
+          // Don't check email for visitors as they can't input it
+          if (accessType === "visitor" && dataToSubmit.reason != '' && dataToSubmit.end_date != '') valid = true;
           break;
         case 'Blacklist':
           if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.end_date != '' && dataToSubmit.reason != '' && dataToSubmit.blacklist_appealable != '') {
@@ -1808,6 +1817,8 @@
               case "Blacklist":
                 if (dataToSubmit.name != '' && dataToSubmit.steamid != '' && dataToSubmit.discordid != '' && dataToSubmit.blacklist_type != '') valid = true;
                 break;
+              default:
+                return Shake();
             }
           }
           break;
@@ -1822,6 +1833,9 @@
           break;
         case "Requirement Log":
           if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
+
+          // Don't check email for visitors as they can't input it
+          if (accessType === "visitor" && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
           break;
         default:
           return Shake();
@@ -1852,7 +1866,6 @@
         google.script.run.withSuccessHandler(response => {
           try {
             response = JSON.parse(response);
-            console.log(response);
             if (Number(response[1]) >= Number(response[2]) && dataToSubmit.type == "Infraction Log") {
               const proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
               if (proceed == true) {

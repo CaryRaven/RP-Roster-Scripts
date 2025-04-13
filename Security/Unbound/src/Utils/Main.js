@@ -10,6 +10,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
     return RosterService.processLog(inputData, userData, allowedStaff, lockdown, threshold);
   } else {
     // Permission Checks
+    if (accessType === "visitor") inputData.email = Session.getActiveUser().getEmail();
     if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
 
     if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal" && accessType !== "visitor") {
@@ -315,6 +316,8 @@ function TogglePings(value) {
   LIBRARY_SETTINGS.pings = Boolean(value);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
   RosterService.init(LIBRARY_SETTINGS);
+  Utilities.sleep(500);
+  RosterService.sendDiscordConfig("pingChange", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
 function ToggleLockdown() {

@@ -110,10 +110,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     if (targetData.steamId == userData.steamId) return "You cannot manage yourself";
     if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
     if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
-    if (ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank) && !allowedStaff.includes(userData.email)) {
-      // return "You cannot manage people with a higher rank than you."
-      return `${userData.email} test`;
-    }
+    if (ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank) && !allowedStaff.includes(userData.email)) return "You cannot manage people with a higher rank than you.";
 
     // used when moving members around
     firstRankRow = getFirstRankRow(targetData.rank);

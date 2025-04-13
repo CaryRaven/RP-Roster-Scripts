@@ -86,6 +86,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       inputData.end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
       info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nExpiry Date: ${inputData.end_date}\nAppealable: ${inputData.blacklist_appealable}`;
       footerMessage = `This may be appealed to ${appealTo}.`;
+      if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
     case 'LOA Log':
       embedTitle = '💤 LOA Started 💤';
@@ -123,6 +124,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       field1Name = 'Requirement Information';
       info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscordID: ${targetData.discordId}\nRequirement Completed: ${inputData.reqName}`;
       footerMessage = `Congratulations on having your requirement completed.`;
+      if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
     default:
       throw new Error(`Type ${inputData.type} not supported`);
@@ -463,6 +465,12 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       embedTitle = value === true ? `[🛠️] LOA Cooldown Changed to ${userData.days} Days` : `[🛠️] LOA Cooldown Changed to ${userData.days} Days`;
       embedColor = "1143627";
       info = value === true ? `Everybody will now have to wait a minimum of ${userData.days} days between LOAs.` : `Everybody will now have to wait a minimum of ${userData.days} days between promotions.`;
+      footerMessage = "";
+      break;
+    case "pingChange":
+      embedTitle = value === true ? `[🛠️] Users will now be pinged for changes regarding themselves.` : `[🛠️] Users will no longer be pinged for anything related to this service.`;
+      embedColor = "1143627";
+      info = value === true ? `You might be pinged for things like: promotion requirement approvals, rank changes, infractions etc...` : `You will no longer be pinged in this channel for anything, though this doesn't mean that you should stay up to date with your status. Please check the ${LIBRARY_SETTINGS.factionName} roster from time to time to not miss any important changes.`;
       footerMessage = "";
       break;
     default:
