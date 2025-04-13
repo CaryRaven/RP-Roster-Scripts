@@ -1,3 +1,5 @@
+const types = ["Backlog", "In Progress", "Completed"];
+
 function AddTask() {
   try {
     DriveApp.getFolderById("1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-");
@@ -34,7 +36,7 @@ function SubmitTask(inputData) {
     loc = endLoc + 1;
 
     // Style new row
-    [[3, 8], [10, 13]].forEach(cellpair => {
+    [[3, 8], [10, 14]].forEach(cellpair => {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(loc, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       s.getRange(loc, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
@@ -59,15 +61,21 @@ function TaskManager(e) {
   const row = range.getRow();
   const sheetID = sheet.getSheetId();
 
+  // Checks
   if (sheetID !== 1504741049 || sheetID === 2063800821) return;
   if (range.getValue() === false) return range.setValue(false);
 
-  const types = ["Backlog", "In Progress", "Completed"];
   if (!types.includes(sheet.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
   if (sheet.getRange(row, 5).getValue() == "") {
     range.setValue(false);
     return SpreadsheetApp.getUi().alert("This task is empty");
   }
+
+  if (types[2].includes(sheet.getRange(row, 2).getValue())) {
+    range.setValue(false);
+    return SpreadsheetApp.getUi().alert("You cannot edit a completed task");
+  }
+
   const title = sheet.getRange(row, 5).getValue();
 
   switch (col) {
@@ -121,7 +129,7 @@ function ChangeDeadline(inputData) {
   if (!inputData) throw new Error("Do not run this function from the editor");
   const s = RosterService.getCollect(1504741049);
 
-  const types = ["Backlog", "In Progress", "Completed"];
+  if (types[2].includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("You cannot change the status of a completed task");
   if (!types.includes(s.getRange(inputData.row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
 
   inputData.deadline = new Date(inputData.deadline);
@@ -139,12 +147,13 @@ function ChangeDeadline(inputData) {
  */
 function ChangeAssignment(inputData) {
   if (!inputData) throw new Error("Do not run this function from the editor");
-
   if (!inputData.gmail.includes("@") || !inputData.gmail.includes(".")) return "Not a valid Gmail";
+  
   const targetData = RosterService.getUserData(inputData.gmail);
   if (!targetData.row) return "User not found";
 
   const s = RosterService.getCollect(1504741049);
+  if (types[2].includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("You cannot change the status of a completed task");
   let currentAssignees = s.getRange(inputData.row, 7).getValue();
   let assigned = false;
 
@@ -170,7 +179,6 @@ function DeleteTask(row, clearcell = 13, endLoc = null, startLoc = null) {
   const s = RosterService.getCollect(1504741049);
   if (s.getRange(row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
 
-  const types = ["Backlog", "In Progress", "Completed"];
   if (!types.includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
   if (types[2].includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("You cannot delete completed tasks");
 
@@ -188,14 +196,14 @@ function DeleteTask(row, clearcell = 13, endLoc = null, startLoc = null) {
     s.getRange(row, clearcell).setValue(false);
   } else if (row === endLoc && row !== startLoc) {
     // Task is at end of section
-    [[3, 8], [10, 13]].forEach(cellpair => {
+    [[3, 8], [10, 14]].forEach(cellpair => {
       numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(row - 1, cellpair[0], 1, numcols).setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     });
     s.deleteRow(row);
   } else if (row !== endLoc && row === startLoc) {
     // Task is the first of that section
-    [[3, 8], [10, 13]].forEach(cellpair => {
+    [[3, 8], [10, 14]].forEach(cellpair => {
       numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(row + 1, cellpair[0], 1, numcols).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     });
@@ -211,7 +219,6 @@ function CycleStatus(row) {
   const s = RosterService.getCollect(1504741049);
   if (s.getRange(row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
 
-  const types = ["Backlog", "In Progress", "Completed"];
   let type = s.getRange(row, 2).getValue();
   if (!types.includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
   if (types[2].includes(s.getRange(row, 2).getValue())) return SpreadsheetApp.getUi().alert("You cannot change the status of a completed task");
@@ -254,9 +261,10 @@ function CycleStatus(row) {
   if (!newLoc) {
     s.insertRowAfter(endLoc);
     newLoc = endLoc + 1;
+    console.log(newLoc);
 
     // Style new row
-    [[3, 8], [10, 13]].forEach(cellpair => {
+    [[3, 8], [10, 14]].forEach(cellpair => {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
@@ -265,6 +273,7 @@ function CycleStatus(row) {
 
   s.getRange(newLoc, 3, 1, 6).setValues(data);
   s.getRange(newLoc, 2).setValue(type);
+  RosterService.protectRange("N", s, null, newLoc);
   SendDiscordMessage("Status", inputData);
 }
 
@@ -278,7 +287,6 @@ function ChangePriority(inputData) {
   const s = RosterService.getCollect(1504741049);
   if (s.getRange(inputData.row, 5).getValue() == "") return SpreadsheetApp.getUi().alert("This task is empty");
 
-  const types = ["Backlog", "In Progress", "Completed"];
   if (!types.includes(s.getRange(inputData.row, 2).getValue())) return SpreadsheetApp.getUi().alert("This is not a task");
   if (types[2].includes(s.getRange(inputData.row, 2).getValue())) return SpreadsheetApp.getUi().alert("You cannot change the priority of a completed task");
 
