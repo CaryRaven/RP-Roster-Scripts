@@ -368,7 +368,7 @@
                     </label>
                   </td>
                 </tr>
-                <tr>
+                <tr id="addReqButton">
                   <td>
                     Add Promotion Requirements<br><span style="font-weight: 200; font-size: 12px;">Max 5, Min 0 (set to 0 for no promo reqs)</span>
                   </td>
@@ -508,6 +508,14 @@
             </tr>
             <? } ?>
             
+            <tr>
+              <td>
+                <span id="reqIdentifier"></span> <?= factionName ?> Promotion Requirements:<br><span id="backupTime" style="font-weight: 200; font-size: 12px;">Disabling this will hide sheets/inputs regarding promotion requirements</span>
+              </td>
+              <td class="config-switch">
+                <button class="submitButton-mini-mini" id="toggleReqsButton" onclick="ToggleReqsEnabled(event)">Requirements</button>
+              </td>
+            </tr>
             <tr>
               <td>
                 Reset all <?= factionName ?> Documentation Permissions:<br><span style="font-weight: 200; font-size: 12px;">All perms will be removed & re-added for a quick emergency reset.</span>

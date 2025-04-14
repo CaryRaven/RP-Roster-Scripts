@@ -216,7 +216,8 @@ function AddNewRank(inputData) {
   if (!valid) return "No special characters allowed";
 
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData);
+  const reqsEnabled = ReturnReqsEnabled();
+  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData, reqsEnabled);
 
   if (typeof returnVal === "string") {
     return returnVal;
@@ -306,12 +307,6 @@ function ToggleBackup(value) {
   RosterService.sendDiscordConfig("backup", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
-function ReturnBackup() {
-  let properties = PropertiesService.getScriptProperties();
-  let backupValue = properties.getProperty("backupEnabled");
-  return backupValue;
-}
-
 function TogglePings(value) {
   LIBRARY_SETTINGS.pings = Boolean(value);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
@@ -321,26 +316,70 @@ function TogglePings(value) {
 }
 
 function ToggleLockdown() {
-  let value = ReturnLockdown();
+  let value = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
   value = value === "true" ? false : true;
+
   if (value) {
     RemoveAllDocAccess();
     PropertiesService.getScriptProperties().setProperty("backupEnabled", false);
   } else {
     RosterService.restoreAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
   }
+
   PropertiesService.getScriptProperties().setProperty("lockdownEnabled", value);
   RosterService.sendDiscordConfig("lockdown", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
   return value;
 }
 
-/**
- * @returns {String}
- */
-function ReturnLockdown() {
-  let properties = PropertiesService.getScriptProperties();
-  let lockdownValue = properties.getProperty("lockdownEnabled");
-  return lockdownValue;
+function ToggleReqs() {
+  let value = ReturnReqsEnabled();
+  console.log(value);
+  value = value === "true" ? false : true;
+
+  if (value) {
+    console.log("removing")
+    // Remove ranks from promo reqs sheet
+    LIBRARY_SETTINGS.ranks.forEach(rank => {
+      if (rank.includes("Security Chief") || rank.includes("Site Management")) return;
+      RosterService.removeRank(rank, false, LIBRARY_SETTINGS.rosterIds.length - 1, true);
+    });
+
+    // Hide sheets related to promo reqs
+    [46188961, 1535565949].forEach(sheetId => {
+      const s = RosterService.getCollect(sheetId);
+      s.hideSheet();
+    });
+  } else {
+    console.log("re-adding");
+    // Show sheets related to promo reqs
+    [46188961, 1535565949].forEach(sheetId => {
+      const s = RosterService.getCollect(sheetId);
+      s.showSheet();
+    });
+
+    LIBRARY_SETTINGS.ranks.forEach((rank, i) => {
+      if (LIBRARY_SETTINGS.promoReqs[i].length <= 0) return;
+      const inputData = {
+        title: rank,
+        rankBefore: LIBRARY_SETTINGS.ranks[i + 1],
+        viewerFolders: LIBRARY_SETTINGS.folders[i].viewerAccess.join(", "),
+        editorFolders: LIBRARY_SETTINGS.folders[i].editorAccess.join(", "),
+        editRank: rank,
+        interviewRequired: LIBRARY_SETTINGS.interviewRequired[i].toString(),
+        promoReqs: LIBRARY_SETTINGS.promoReqs[i]
+      };
+
+      const reqsEnabled = ReturnReqsEnabled();
+      RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), reqsEnabled, false);
+    });
+  }
+
+  PropertiesService.getScriptProperties().setProperty("reqsEnabled", value);
+  return value;
+}
+
+function ReturnReqsEnabled() {
+  return PropertiesService.getScriptProperties().getProperty("reqsEnabled");
 }
 
 function ResetPermissions() {

@@ -326,6 +326,8 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
       const reqTitleRow = getFirstRankRow(targetData.rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
 
+      if (reqTitleRow <= 6) return "Requirement not found";
+
       // Get column where req is located
       for (let i = 8; i < sheet.getMaxColumns(); i++) {
         if (sheet.getRange(reqTitleRow, i).getValue() === inputData.reqName) {

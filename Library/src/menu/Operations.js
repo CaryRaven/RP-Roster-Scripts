@@ -177,9 +177,11 @@ function restoreSheet() {
  * @param {Object} inputData - data input by the user
  * @param {Array[Array]} borderPairs - Cell pairs to draw borders between
  * @param {Object} userData
+ * @param {ScriptProperty} reqsEnabled
+ * @param {Boolean} discordnotif - whether the function should sent a discord notification
  * @returns {Array|String}
  */
-function manageRank(inputData, borderPairs, userData) {
+function manageRank(inputData, borderPairs, userData, reqsEnabled, discordnotif = true) {
   if (!inputData || typeof inputData !== "object") throw new Error("Invalid input data");
   if (!borderPairs || typeof borderPairs !== "object") throw new Error("Invalid border pairs");
   if (!userData || typeof userData !== "object") throw new Error("Invalid User Data");
@@ -275,7 +277,7 @@ function manageRank(inputData, borderPairs, userData) {
 
   // Make sure that if promo reqs were all removed, it still registers it as a change in reqs
   try {
-    if (editReq === 0 && inputData.editRank !== "") {
+    if (editReq === 0 && inputData.editRank !== "" && reqsEnabled.toString() === "false") {
       editReq = LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank)].length > 0 ? 1 : editReq;
     }
   } catch(e) {
@@ -290,11 +292,14 @@ function manageRank(inputData, borderPairs, userData) {
       let firstRankRow = getStartRankRow(inputData.editRank, i);
       let lastRankRow = getLastRankRow(inputData.editRank, i);
 
-      // title changed without hierarchy change?
-      if (inputData.title !== inputData.editRank) {
-        s.getRange(firstRankRow, LIBRARY_SETTINGS.dataCols.firstCol).setValue(inputData.title);
-        for (let j = firstRankRow; j <= lastRankRow; j++) {
-          s.getRange(j ,LIBRARY_SETTINGS.dataCols.rank).setValue(inputData.title);
+      // Only do this if the rank rows were found
+      if (firstRankRow && lastRankRow) {
+        // title changed without hierarchy change?
+        if (inputData.title !== inputData.editRank) {
+          s.getRange(firstRankRow, LIBRARY_SETTINGS.dataCols.firstCol).setValue(inputData.title);
+          for (let j = firstRankRow; j <= lastRankRow; j++) {
+            s.getRange(j ,LIBRARY_SETTINGS.dataCols.rank).setValue(inputData.title);
+          }
         }
       }
 
@@ -465,7 +470,7 @@ function manageRank(inputData, borderPairs, userData) {
 
   // Send discord message
   if (inputData.editRank == "") {
-    sendDiscordNewRank(inputData.title);
+    if (discordnotif) sendDiscordNewRank(inputData.title);
   } else {
     userData.title = inputData.title;
     userData.editRank = inputData.editRank;
@@ -474,7 +479,7 @@ function manageRank(inputData, borderPairs, userData) {
     userData.editorAccess = editorFolders;
     userData.interviewRequired = inputData.interviewRequired;
     
-    sendDiscordConfig("rankEdit", false, userData);
+    if (discordnotif) sendDiscordConfig("rankEdit", false, userData);
   }
 
   return [message, LIBRARY_SETTINGS];

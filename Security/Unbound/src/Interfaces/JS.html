@@ -652,6 +652,8 @@
       const buttonRemove = document.getElementById('removerankrow-button');
       let configLoading = document.getElementById('config-loading');
 
+      if (configLoading.innerHTML == '<div class="loader"></div>') return Shake();
+
       configLoading.innerHTML = '<div class="loader"></div>';
       buttonAdd.disabled = true;
       buttonRemove.disabled = true;
@@ -701,6 +703,8 @@
       const buttonAdd = document.getElementById('addrankrow-button');
       const buttonRemove = document.getElementById('removerankrow-button');
       let configLoading = document.getElementById('config-loading');
+
+      if (configLoading.innerHTML == '<div class="loader"></div>') return Shake();
 
       configLoading.innerHTML = '<div class="loader"></div>';
       buttonAdd.disabled = true;
@@ -1580,6 +1584,95 @@
       reqCount++;
     }
 
+    // CONFIG ENABLING/DISABLING REQUIREMENTS ******************************
+
+    // TODO
+    window.ToggleReqsEnabled = function (event) {
+      event.preventDefault();
+      const button = document.getElementById("toggleReqsButton");
+      const configLoading = document.getElementById("config-loading");
+
+      if (configLoading.innerHTML == '<div class="loader"></div>') return Shake();
+
+      configLoading.innerHTML = '<div class="loader"></div>';
+      button.disabled = true;
+      google.script.run.withSuccessHandler(value => {
+        
+        const identifier = document.getElementById("reqIdentifier");
+        button.classList.add("green");
+        if (value) {
+          identifier.innerText = "Enable";
+          button.innerText = "Reqs Disabled";
+        } else {
+          identifier.innerText = "Disable";
+          button.innerText = "Reqs Enabled";
+        }
+        
+        SetReqVis(value, false);
+
+        configLoading.innerHTML = '';
+        setTimeout(() => {
+          button.classList.remove("green");
+          button.innerText = "Requirements";
+          button.disabled = false;
+        }, 2000);
+        
+      }).withFailureHandler(err => {
+        console.log(err);
+        button.classList.add("red");
+        button.innerText = "Error";
+        configLoading.innerHTML = "";
+        Shake();
+
+        setTimeout(() => {
+          button.classList.remove("red");
+          button.disabled = false;
+          button.innerText = "Requirements";
+        }, 2000);
+      }).ToggleReqs();
+    }
+
+    window.SetReqVis = function (value, onOpen) {
+      // Set the visibility of certain elements depending on whether or not reqs are enabled
+      if (typeof value === "string") {
+        value = value === "true" ? true : false;
+      }
+
+      if (value) {
+        // Reqs disabled
+        if (accessType === "admin" || accessType === "dev") {
+          document.getElementById("addReqButton").style.display = "none";
+          document.getElementById("reqs").style.display = "none";
+          document.getElementById("reqIdentifier").innerText = "Enable";
+        }
+
+        const logTypeList = document.getElementById("logTypeList");
+        const optionToRemove = [...logTypeList.options].find(option => option.value === "Requirement Log");
+        if (optionToRemove) {
+          optionToRemove.remove();
+        }
+      } else {
+        // Reqs enabled
+        if (accessType === "admin" || accessType === "dev") {
+          // document.getElementById("addReqButton").style.display = "block";
+          document.getElementById("addReqButton").style.display = "";
+          document.getElementById("reqs").style.display = "block";
+          document.getElementById("reqIdentifier").innerText = "Disable";
+        }
+
+        if (onOpen) return;
+        const reqLog = document.createElement("option");
+        reqLog.value = "Requirement Log";
+        reqLog.innerText = "Promotion Requirement Log";
+        document.getElementById("logTypeList").appendChild(reqLog);
+      }
+    }
+      
+    // At opening of web app -> ensure req visibility is set
+    google.script.run.withSuccessHandler(value => {
+      SetReqVis(value, true)
+    }).ReturnReqsEnabled();
+
     // ******************************************************************************************************
 
     // GENERAL LOG HANDLERS *********************************************************************************
@@ -1695,6 +1788,7 @@
       let rank = document.getElementById("rank").innerText;
       let email;
 
+      // TODO: possibly change to dynamic check
       if (accessType === "admin" || accessType === "dev") {
         rank = null;
         email = document.getElementById('emailfield').value;
@@ -1841,6 +1935,17 @@
           return Shake();
       }
 
+      if (!valid) {
+        Shake();
+        button.innerText = "Invalid Input";
+        button.disabled = true;
+        setTimeout(() => {
+          button.innerText = "Submit";
+          button.disabled = false;
+        }, 1000);
+        return;
+      }
+
       Object.values(dataToSubmit).forEach(value => {
         if (!value) return;
         if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
@@ -1853,7 +1958,7 @@
         button.innerText = "No special characters allowed in input values";
         button.disabled = true;
         setTimeout(() => {
-          button.innerText = "Submit New Rank";
+          button.innerText = "Submit";
           button.disabled = false;
         }, 2000);
         return;

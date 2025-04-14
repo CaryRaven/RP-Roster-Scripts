@@ -3,6 +3,11 @@ let LIBRARY_SETTINGS = JSON.parse(PropertiesService.getScriptProperties().getPro
 if (RosterService.getSizeInBytes(LIBRARY_SETTINGS) >= 450000) throw new Error("Settings exceeded size limit");
 RosterService.init(LIBRARY_SETTINGS);
 
+// test function - ignore
+function T() {
+  console.log(RosterService.getFirstRankRow("Captain", LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1);
+}
+
 /**
  * Web app entry point. Default google function thus it cannot be used in your project, only defined/declared once
  */
@@ -179,99 +184,9 @@ function loadImageBytes(id) {
 }
 
 /**
- * Currently broken & not used
- * @deprecated
- */
-function ReportError(error) {
-  RosterService.sendDiscordError(error);
-}
-
-/**
  * Returns the current settings for specializations
  * Used to populate config fields when editing an existing specialization
  */
 function ReturnSpecs() {
   return JSON.stringify(LIBRARY_SETTINGS.specializations);
-}
-
-/**
- * Reset the settings of this admin menu
- * Must be done when adding a new option to the settings obj to aling with the library
- * |-> Cannot use library without a full & complete settings obj
- */
-function Set() {
-  // throw new Error("Do not run this function from the editor");
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
-    dataCols: {
-      firstCol: 3,
-      rank: 4,
-      name: 5,
-      steamId: 6,
-      discordId: 7,
-      email: 8,
-      infraction: 10,
-      status: 11,
-      specialization: 12,
-      loaEnd: 14,
-      blacklistEnd: 17,
-      notes: 18,
-      supervisor_name: 1,
-      supervisor_steamId: 1,
-      cooldown: 1,
-      firstReqRow: 6
-    },
-
-    rosterIds: [2063800821, 46188961],
-    firstMemberRow: 6,
-    lastRankChange: 13,
-    spreadsheetId: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
-    backupsbeetId: "1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64",
-    interviewFolderId: "17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB",
-    closedInterviewFolderId: "1Nr4xPCEfMMtynlzJqenrjt7itkCSBfYq",
-    rankchangeId: 789793193,
-    infractionId: 343884184,
-    loaId: 977408594,
-    blId: 1787594911,
-    reqId: 1535565949,
-    loaCooldown: 14,
-    promoCooldown: 14,
-    threshold: 3,
-    thresholdAction: "Suspension",
-    leaderPing: '1186431632647921736',
-    factionName: "Security",
-    adminRanks: ["Security Chief"],
-    folders: [
-      {
-        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE", '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE'],
-        "editorAccess":[]
-      },
-      {
-        "viewerAccess":["1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE", '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE'],
-        "editorAccess":["13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A"]
-      },
-      [
-        '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
-       '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
-       '1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-',
-       '17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB',
-       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE'
-      ]
-    ],
-    ranks: ["Captain","Captain Major","Security Chief","Site Management"],
-    interviewRequired: [true, false, false, false],
-    promoReqs: [[], [], [], []],
-    specializations: [{title: "", desc: ""}, {title: "Security Liaison", desc: "In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs"},{ title: 'Punishment Lead',desc: 'Specialist of the security department\'s policies, in charge of handing out appropriate punishments to security personnel.' }],
-    pings: true,
-    newRowData: [[ // TODO: Add a way to dynamically edit this?
-      "/title/", "/title/", "", "", "", "", "", 
-      `= INFRACTIONS(F/row/, Infractions!E:E, Infractions!H:H, Infractions!I:I, Infractions!C:C)`,
-      `= STATUS(F/row/, G/row/, E/row/, H/row/, 'LOA Logs'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P/row/)`,
-      "",
-      `= LAST_RANKCHANGE(F/row/, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
-      `= LOA_DATE(F/row/, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
-      false,
-      `= REQS_CHECK(F/row/, 'Promotion Progress'!F:F, 'Promotion Progress'!H:L)`,
-      `= BLACKLIST_DATE(F/row/, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
-    ]]
-  }));
 }
