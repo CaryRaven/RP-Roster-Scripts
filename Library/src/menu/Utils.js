@@ -198,7 +198,7 @@ function getAllEmails() {
   LIBRARY_SETTINGS.rosterIds.forEach(rosterId => {
     const sheet = this.getCollect(rosterId);
     sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach(email => {
-      if (!email[0] || email[0].toLowerCase() == "n/a") return;
+      if (!email[0] || email[0].toLowerCase() == "n/a" || !email[0].includes("@")) return;
       emails.push(email[0].toLowerCase());
     });
   });

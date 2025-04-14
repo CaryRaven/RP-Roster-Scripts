@@ -335,6 +335,7 @@ function ToggleReqs() {
   let value = ReturnReqsEnabled();
   console.log(value);
   value = value === "true" ? false : true;
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
 
   if (value) {
     console.log("removing")
@@ -356,7 +357,7 @@ function ToggleReqs() {
       const s = RosterService.getCollect(sheetId);
       s.showSheet();
     });
-
+  
     LIBRARY_SETTINGS.ranks.forEach((rank, i) => {
       if (LIBRARY_SETTINGS.promoReqs[i].length <= 0) return;
       const inputData = {
@@ -370,11 +371,12 @@ function ToggleReqs() {
       };
 
       const reqsEnabled = ReturnReqsEnabled();
-      RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], JSON.parse(PropertiesService.getUserProperties().getProperty("userData")), reqsEnabled, false);
+      RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData, reqsEnabled, false);
     });
   }
 
   PropertiesService.getScriptProperties().setProperty("reqsEnabled", value);
+  RosterService.sendDiscordConfig("reqChange", value, userData);
   return value;
 }
 

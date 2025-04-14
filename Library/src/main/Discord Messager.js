@@ -338,7 +338,7 @@ function sendDiscordPermissionReport(flagArray) {
 
 /**
  * Send config messages, current supported types:
- * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet, rankEdit, folderEdit, cooldownChange
+ * manualEdit, backup, lockdown, restoreType, resetPerms, restoreSpreadSheet, rankEdit, folderEdit, cooldownChange, pingChange, reqChange
  * @param {String} type - The config option that was changed
  * @param {Boolean|String} value - The value that the config option currently has
  * @param {Object} userData
@@ -471,6 +471,12 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       embedTitle = value === true ? `[🛠️] Users will now be pinged for changes regarding themselves.` : `[🛠️] Users will no longer be pinged for anything related to this service.`;
       embedColor = "1143627";
       info = value === true ? `You might be pinged for things like: promotion requirement approvals, rank changes, infractions etc...` : `You will no longer be pinged in this channel for anything, though this doesn't mean that you should stay up to date with your status. Please check the ${LIBRARY_SETTINGS.factionName} roster from time to time to not miss any important changes.`;
+      footerMessage = "";
+      break;
+    case "reqChange":
+      embedTitle = value === true ? `[🛠️] ${LIBRARY_SETTINGS.factionName} Promotion Requirement Disabled.` : `[🛠️] ${LIBRARY_SETTINGS.factionName} Promotion Requirement Enabled.`;
+      embedColor = value === true ? "16497668" : "1143627";
+      info = value === true ? `All promotion requirements for all ranks have been disabled` : `Promotions requirements for ${LIBRARY_SETTINGS.factionName} have been enabled, please check the roster to see what tasks you need to complete in order to be eligible for promotion.`;
       footerMessage = "";
       break;
     default:

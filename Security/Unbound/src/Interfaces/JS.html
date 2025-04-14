@@ -43,6 +43,28 @@
       }).ReturnSpecs();
     };
 
+    // Set the selects for emails
+    window.SetEmailSelects = function () {
+      google.script.run.withSuccessHandler(emails => {
+        if (emails.length <= 0) return console.error("No emails were found on any roster.");
+        emails = JSON.parse(emails);
+
+        ["emailfield", "curremailfield"].forEach(id => {
+
+          const select = document.getElementById(id);
+          select.innerHTML = "<option value=''></option>";
+          emails.forEach(email => {
+            const option = document.createElement("option");
+            option.value = email.toString();
+            option.innerText = email.toString();
+            select.appendChild(option);
+          });
+        });
+      }).GetAllEmails();
+    }
+
+    SetEmailSelects();
+
     window.SetRankSelects = function(forced = false) {
       let initRanks = document.getElementById("ranks")?.innerText;
       let rankSelect = document.getElementById("amdin-role-select");
@@ -1997,6 +2019,7 @@
           }
 
           console.timeEnd("Log Submission Runtime");
+          SetEmailSelects();
 
         }).withFailureHandler(error => {
           

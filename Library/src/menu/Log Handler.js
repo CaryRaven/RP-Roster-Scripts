@@ -221,6 +221,19 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           rowDestination = getFirstRankRow(newStaffDestination);
           if (rowDestination[0] === 0) return `${newStaffDestination} has reached capacity`;
 
+          // Check if the user has been gone for over 2 weeks (minimum cooldown)
+          for (let i = insertLogRow - 1; i >= 7; i--) {
+            const date = sheet.getRange(i, 3).getValue();
+            const steamId = sheet.getRange(i, 5).getValue();
+            const type = sheet.getRange(i, 8).getValue();
+            const timeDiff = new Date().valueOf() - new Date(date.toString()).valueOf();
+
+            if (timeDiff > 1210000000) break;
+            if (type !== "Removal") continue;
+            if (steamId !== targetData.steamId) continue;
+            return `You must wait at least two weeks before rejoining the team`;
+          }
+
           // Check if the person has an open interview
           if (LIBRARY_SETTINGS.interviewRequired[0].toString() !== "false") {
             const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
@@ -235,7 +248,6 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
                 if (wrongRank) continue;
 
-                console.log("Processing Interview");
                 const owner = file.getOwner().getEmail();
                 if (userData.email === owner) {
                   file.setOwner("dontorro208@gmail.com");

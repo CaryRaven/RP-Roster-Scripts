@@ -5,7 +5,6 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() {
-  console.log(RosterService.getFirstRankRow("Captain", LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1);
 }
 
 /**
@@ -14,6 +13,7 @@ function T() {
 function doGet() {
   let user = Session.getActiveUser().getEmail();
   Logger.log(user);
+
   let userProperty = PropertiesService.getUserProperties();
   let userData = RosterService.getUserData(user);
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
@@ -189,4 +189,8 @@ function loadImageBytes(id) {
  */
 function ReturnSpecs() {
   return JSON.stringify(LIBRARY_SETTINGS.specializations);
+}
+
+function GetAllEmails() {
+  return JSON.stringify(RosterService.getAllEmails());
 }

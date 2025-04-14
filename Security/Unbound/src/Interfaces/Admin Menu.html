@@ -459,7 +459,7 @@
               <td>
                 Enable Manual Editing of the roster:
               </td>
-              <td class="config-switch">
+              <td class="config-switch" style="text-align: center;">
                 <label class="switch">
                   <input type="checkbox" id="manualEditingSlider">
                   <span class="slider round"></span>
@@ -470,7 +470,7 @@
               <td>
                 Enable time-based (12h) Backups being made of the roster:
               </td>
-              <td class="config-switch">
+              <td class="config-switch" style="text-align: center;">
                 <label class="switch">
                   <input type="checkbox" id="backupSlider">
                   <span class="slider round"></span>
@@ -481,7 +481,7 @@
               <td>
                 Allow discord pings:<br><span style="font-weight: 200; font-size: 12px;">Enable/Disable people being pinged for things like promotions etc...</span>
               </td>
-              <td class="config-switch">
+              <td class="config-switch" style="text-align: center;">
                 <label class="switch">
                   <input type="checkbox" id="pingSlider">
                   <span class="slider round"></span>
@@ -606,7 +606,9 @@
               <input type="text" placeholder="Name" id='namefield' maxlength="20" style="display: none;" required />
               <input type="text" placeholder="Steam_ID" id='steamidfield' maxlength="25" style="display: none;" required />
               <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
-              <input type="email" placeholder="Email Address" id='emailfield' maxlength="40" required />
+              <select id="emailfield" required/>
+                <option value=''></option>
+              </select>
               <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
               <select id="rctypefield" style='display: block;' required>
                 <option value=''></option>
@@ -647,9 +649,11 @@
                 <option value="Edit Note">Edit Notes</option>
               </select>
               <hr>
-              <label for="curremailfield" id="curremaillabel">Enter the Email address of the member you want to apply an
+              <label for="curremailfield" id="curremaillabel">Select the Email address of the member you want to apply an
                 edit to:</label>
-              <input type="text" placeholder="Enter current Email Address" id="curremailfield" required />
+              <select id="curremailfield" required/>
+                <option value=''></option>
+              </select>
               <hr><br>
               <input type="text" placeholder="Enter new name" id="newnamefield" maxlength="20" required />
               <input type="text" placeholder="Enter new steamID" id="newsteamidfield" style="display: none;"
