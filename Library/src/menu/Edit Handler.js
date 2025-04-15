@@ -1,6 +1,6 @@
 /**
  * Process all submitted edits, currently supports:
- * Edit Name, Edit steamID, Edit discordID, Edit Email, Edit Specialization, Edit Note
+ * Edit Name, Edit playerId, Edit discordID, Edit Email, Edit Specialization, Edit Note
  * 
  * @param {Object} inputData
  * @param {PropertyService.ScriptProperty} allowedStaff
@@ -19,8 +19,8 @@ function processEdit(inputData, allowedStaff, lockdown, userData = {}) {
     case 'Edit Name':
       if (inputData.name != '' && inputData.current_email != '') valid = true;
       break;
-    case 'Edit steamID':
-      if (inputData.steamid != '' && inputData.current_email != '') valid = true;
+    case 'Edit playerId':
+      if (inputData.playerId != '' && inputData.current_email != '') valid = true;
       break;
     case 'Edit discordID':
       if (inputData.discordid != '' && inputData.current_email != '') valid = true;
@@ -52,8 +52,8 @@ function processEdit(inputData, allowedStaff, lockdown, userData = {}) {
     case "Edit Name":
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.name).setValue(inputData.name);
       break;
-    case "Edit steamID":
-      roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.steamId).setValue(inputData.steamid);
+    case "Edit playerId":
+      roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.playerId).setValue(inputData.playerId);
       break;
     case "Edit discordID":
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordid);

@@ -382,7 +382,7 @@ function CheckOverdue() {
           let targetData = {
             name: name,
             discordId: sheet.getRange(j, 7).getValue(),
-            steamId: sheet.getRange(j, 6).getValue(),
+            playerId: sheet.getRange(j, 6).getValue(),
             rank: sheet.getRange(j, 4).getValue()
           };
 
@@ -393,7 +393,7 @@ function CheckOverdue() {
               [
                 new Date(),
                 targetData.name,
-                targetData.steamId,
+                targetData.playerId,
                 targetData.discordId,
                 targetData.rank,
                 "Regular",

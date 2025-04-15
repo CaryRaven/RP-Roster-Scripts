@@ -63,7 +63,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
             valid = true;
             break;
           case "Blacklist":
-            if (inputData.name != '' && inputData.steamid != '' && inputData.discordid != '' && inputData.blacklist_type != '') valid = true;
+            if (inputData.name != '' && inputData.playerId != '' && inputData.discordid != '' && inputData.blacklist_type != '') valid = true;
             break;
         }
       }
@@ -75,7 +75,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       if (Number(inputData.log_id) >= 7) valid = true;
       break;
     case "New Member":
-      if (inputData.email.includes('.') && inputData.email.includes('@') && inputData.steamid.includes("STEAM_") && inputData.reason != '' && inputData.branch != '') valid = true;
+      if (inputData.email.includes('.') && inputData.email.includes('@') && inputData.playerId.length === 5 && inputData.reason != '' && inputData.branch != '') valid = true;
       break;
     default:
       break;
@@ -101,13 +101,15 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     // New Member/BL => data was manually inputted
     if (inputData.type_check == "New Member" || inputData.blacklist_type == "Blacklist") {
       targetData.name = inputData.name;
-      targetData.steamId = inputData.steamid;
+      targetData.playerId = inputData.playerId;
       targetData.discordId = inputData.discordid;
       targetData.rank = ranks[0];
+    } else {
+      if (targetData.status === "Missing Data") return "You cannot perform logs on people with missing data";
     }
 
     // Allow managing yourself if made through a request
-    if (targetData.steamId == userData.steamId) return "You cannot manage yourself";
+    if (targetData.playerId == userData.playerId) return "You cannot manage yourself";
     if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
     if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
     if (ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank) && !allowedStaff.includes(userData.email)) return "You cannot manage people with a higher rank than you.";
@@ -137,6 +139,15 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           if (roster.getRange(targetData.row, 16).getDisplayValue().toLowerCase() == "false") return "This user must complete all their requirements before promotion."; 
           const promotionDestination = ranks[currentRankIndex + 1];
           if (!promotionDestination || currentRankIndex === ranks.length - 3) return "This user cannot be promoted any further";
+
+          // Check if google account exists
+          try {
+            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").addViewer(targetData.email);
+            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").removeViewer(targetData.email);
+          } catch(e) {
+            console.log(e);
+            return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
+          }
 
           // Check cooldown
           const lastRankChange = dateToMilliseconds(roster.getRange(targetData.row, LIBRARY_SETTINGS.lastRankChange).getDisplayValue());
@@ -198,6 +209,15 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           if (rowDestination[0] == 0) return `${demotionDestination} has reached capacity`;
           targetData["newRank"] = demotionDestination;
 
+          // Check if google account exists
+          try {
+            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").addViewer(targetData.email);
+            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").removeViewer(targetData.email);
+          } catch(e) {
+            console.log(e);
+            return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
+          }
+
           moveMember(targetData.row, rowDestination[0]);
           moveMember(firstRankRow[0], targetData.row);
           insertRankChangeLog(inputData, userData, targetData, demotionDestination, insertLogRow);
@@ -221,16 +241,25 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           rowDestination = getFirstRankRow(newStaffDestination);
           if (rowDestination[0] === 0) return `${newStaffDestination} has reached capacity`;
 
+          // Check if google account exists
+          try {
+            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").addViewer(inputData.email);
+            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").removeViewer(inputData.email);
+          } catch(e) {
+            console.log(e);
+            return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
+          }
+
           // Check if the user has been gone for over 2 weeks (minimum cooldown)
           for (let i = insertLogRow - 1; i >= 7; i--) {
             const date = sheet.getRange(i, 3).getValue();
-            const steamId = sheet.getRange(i, 5).getValue();
+            const playerId = sheet.getRange(i, 5).getValue();
             const type = sheet.getRange(i, 8).getValue();
             const timeDiff = new Date().valueOf() - new Date(date.toString()).valueOf();
 
             if (timeDiff > 1210000000) break;
             if (type !== "Removal") continue;
-            if (steamId !== targetData.steamId) continue;
+            if (playerId !== targetData.playerId) continue;
             return `You must wait at least two weeks before rejoining the team`;
           }
 
@@ -268,8 +297,8 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           targetData["newRank"] = newStaffDestination;
 
-          roster.getRange(rowDestination[0], LIBRARY_SETTINGS.dataCols.name, 1, 4).setValues([[targetData.name, targetData.steamId, targetData.discordId, inputData.email]]);
-          const dataToInsert = [[new Date(), targetData.name, targetData.steamId, targetData.discordId, "Member", inputData.rankchangetype, ranks[0], inputData.reason, "", userData.name, userData.steamId, userData.rank]];
+          roster.getRange(rowDestination[0], LIBRARY_SETTINGS.dataCols.name, 1, 4).setValues([[targetData.name, targetData.playerId, targetData.discordId, inputData.email]]);
+          const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "Member", inputData.rankchangetype, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
           sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, dataToInsert[0].length).setValues(dataToInsert);
 
           protectRange("N", sheet, null, insertLogRow);
@@ -288,9 +317,9 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
         insertLogRow = getLastRow(sheet);
         
         // few random checks
-        if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
+        if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
-        sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 12).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.infraction_type, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+        sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 12).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.infraction_type, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
         protectRange("A", sheet, 9, insertLogRow);
         sendDiscordLog(inputData, targetData, userData);
       }
@@ -301,12 +330,12 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       if (timeDiff <= (LIBRARY_SETTINGS.loaCooldown * 86400000)) return `You must wait ${LIBRARY_SETTINGS.loaCooldown} days between LOAs`;
 
       // few random checks
-      if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
+      if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
       sheet = getCollect(LIBRARY_SETTINGS.loaId);
       insertLogRow = getLastRow(sheet);
 
-      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 10).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 10).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
       protectRange("N", sheet, null, insertLogRow);
       break;
     case "Blacklist":
@@ -314,9 +343,9 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       insertLogRow = getLastRow(sheet);
 
       // few random checks
-      if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
+      if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
-      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 13).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 13).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
       protectRange("A", sheet, 10, insertLogRow);
 
       if (inputData.blacklist_type === "Blacklist" && targetData.row) {
@@ -332,7 +361,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       }
       break;
     case "Requirement Log":
-      if (!targetData.name || !targetData.steamId || !targetData.row) return "User not found";
+      if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
       // Check if user completed req yet
       sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
@@ -346,7 +375,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           // Get row where req is located
           for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
-            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.steamId).getValue() === targetData.steamId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
+            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.playerId).getValue() === targetData.playerId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
           }
         }
       }
@@ -355,7 +384,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       insertLogRow = getLastRow(sheet);
 
       // Insert log
-      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 11).setValues([[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.reqName, inputData.reason, "", userData.name, userData.steamId, userData.rank]]);
+      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 11).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.reqName, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
       protectRange("N", sheet, null, insertLogRow);
       break;
     case "Blacklist Appeal":
@@ -370,7 +399,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
             protectRange("S", sheet, 10, Number(inputData.log_id));
 
             targetData["name"] = sheet.getRange(Number(inputData.log_id), 4).getValue();
-            targetData["steamId"] = sheet.getRange(Number(inputData.log_id), 5).getValue();
+            targetData["playerId"] = sheet.getRange(Number(inputData.log_id), 5).getValue();
             targetData["discordId"] = sheet.getRange(Number(inputData.log_id), 6).getValue();
           } else {
             return "You cannot appeal an appealed Blacklist/Suspension";
@@ -393,7 +422,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           protectRange("S", sheet, 9, Number(inputData.log_id));
 
           targetData.name = sheet.getRange(Number(inputData.log_id), 4).getValue();
-          targetData.steamId = sheet.getRange(Number(inputData.log_id), 5).getValue();
+          targetData.playerId = sheet.getRange(Number(inputData.log_id), 5).getValue();
           targetData.discordId = sheet.getRange(Number(inputData.log_id), 6).getValue();
         } else {
           return "You cannot appeal an appealed Infraction";

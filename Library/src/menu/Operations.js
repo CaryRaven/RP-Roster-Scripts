@@ -65,7 +65,7 @@ function insertRankChangeLog(inputData, userData, targetData, newRank, insertLog
   if (!insertLogRow) throw new Error("insertRankChangeLog: no insertLogRow provided");
 
   const sheet = this.getCollect(LIBRARY_SETTINGS.rankchangeId);
-  const dataToInsert = [[new Date(), targetData.name, targetData.steamId, targetData.discordId, targetData.rank, inputData.rankchangetype, newRank, inputData.reason, "", userData.name, userData.steamId, userData.rank]];
+  const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.rankchangetype, newRank, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
   sheet.getRange(insertLogRow, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
 }
 
@@ -98,40 +98,6 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
 
   dataCols.forEach(col => roster.getRange(rowToSearch, col).clearContent().clearNote());
   if (destinationRow && destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i].val).setNote(moveData[i].note));
-}
-
-/**
- * Head Function - Not to be used in other scripts
- * @param {Array} users - All people with access to folder, regardless if they're allowed or not
- * @param {Array} authed - All people who could have access to the folder
- * @param {Array} exemptUsers - Users who should not be checked (owner of folder & Vigil)
- * @param {String} accessType - Type of access to check for: "VIEW" or "EDIT"
- * @return {Array}
- */
-function processPermissions(users, authed, exemptUsers, accessType, folderName, folderId, folderData, ranks) {
-  if (!isInit) throw new Error("Library is not yet initialized");
-  var flagArray = [];
-  users.forEach(user => {
-    const email = user.getEmail().toLowerCase();
-    if (exemptUsers.includes(email)) return "User is exempt";
-
-    if (!authed.includes(email)) return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
-    const userData = getUserData(email.toString());
-
-    if (ranks[ranks.length - 2].includes(userData.rank) || ranks[ranks.length - 1].includes(userData.rank)) return "User is exempt";
-
-    const allowedFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].viewerAccess : folderData[ranks.indexOf(userData.rank)].editorAccess;
-    const wrongFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].editorAccess : folderData[ranks.indexOf(userData.rank)].viewerAccess;
-    if (allowedFolders.includes(folderId)) return;
-
-    if (wrongFolders.includes(folderId)) {
-      return flagArray.push({ email: email, folderName: folderName, expectedPermission: accessType === "VIEW" ? "EDIT" : "VIEW", reason: "Incorrect permissions" });
-    } else {
-      return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
-    }
-
-  });
-  return flagArray;
 }
 
 /**
@@ -201,19 +167,28 @@ function manageRank(inputData, borderPairs, userData, reqsEnabled, discordnotif 
   if (inputData.viewerFolders) {
     inputData.viewerFolders = inputData.viewerFolders.replace(/\s+/g, '');
     viewerFolders = inputData.viewerFolders.split(",");
+    let ss = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId);
     viewerFolders.forEach(folderId => {
       try {
-        DriveApp.getFolderById(folderId.toString());
+        let fo = DriveApp.getFolderById(folderId.toString());
         if (!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folderId)) {
           valid = false;
           message = "Viewerfolder is unrelated to Security";
+        } else if (fo.getOwner().getEmail() !== ss.getOwner().getEmail()) {
+          // TODO: check if folder is owner by me before adding it to a rank
+          valid = false;
+          message = `Viewerfolders must be owned by ${ss.getOwner().getEmail()}`;
         }
       } catch(e) {
         try {
-          DriveApp.getFileById(folderId.toString());
+          let fi = DriveApp.getFileById(folderId.toString());
           if (!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folderId)) {
             valid = false;
             message = "Viewerfile is unrelated to Security";
+          } else if (fo.getOwner().getEmail() !== ss.getOwner().getEmail()) {
+            // TODO: check if folder is owner by me before adding it to a rank
+            valid = false;
+            message = `Viewerfile must be owned by ${ss.getOwner().getEmail()}`;
           }
         } catch(ee) {
           valid = false;

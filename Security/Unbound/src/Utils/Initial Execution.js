@@ -5,6 +5,10 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() {
+  // RosterService.permissionsGuard(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
+  DriveApp.getFolderById("1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc").addViewer("noir.px@hotmail.com")
+  DriveApp.getFolderById("1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc").removeViewer("noir.px@hotmail.com")
+  // console.log(DriveApp.getFileById("1QiBmaUTcKU0iZ1uyEYH30ZGD8cAZfjz5M0LEb5ZceZU").getParents());
 }
 
 /**
@@ -21,13 +25,13 @@ function doGet() {
   // Set different rank for SM & Staff -> Currently only works for the security sm liaison
   if (userData.email == "N/A") {
     userData.name = "N/A";
-    userData.steamId = "N/A";
+    userData.playerId = "N/A";
     userData.discordId = "N/A";
-    userData.rank = "Site Management";
+    userData.rank = "Office of Site Management";
     userData.email = user;
   } else if (allowedStaff.includes(user)) {
     userData.name = "N/A";
-    userData.steamId = "N/A";
+    userData.playerId = "N/A";
     userData.discordId = "N/A";
     userData.rank = "Blackshadow Staff";
     userData.email = user;

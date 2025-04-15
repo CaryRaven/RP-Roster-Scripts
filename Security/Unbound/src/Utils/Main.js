@@ -19,7 +19,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
 
       // More perm checks
       if (!targetDataCheck.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
-      if (targetDataCheck.steamId == userData.steamId) return "You cannot manage yourself";
+      if (targetDataCheck.playerId == userData.playerId) return "You cannot manage yourself";
       if (ranks[ranks.length - 1].includes(targetDataCheck.rank) || ranks[ranks.length - 2].includes(targetDataCheck.rank)) return "You cannot manage Senior CL4 members";
       if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetDataCheck.email)) return "You cannot manage Staff from this menu";
       if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) > ranks.indexOf(userData.rank)) {
@@ -45,7 +45,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
 
           // Get row where req is located
           for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
-            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.steamId).getValue() === targetData.steamId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
+            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.playerId).getValue() === targetData.playerId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
           }
         }
       }
@@ -99,7 +99,7 @@ function ProcessInputEdits(inputData, accessType) {
       let targetDataCheck = RosterService.getUserData(inputData.email);
       let ranks = LIBRARY_SETTINGS.ranks;
       if (!targetDataCheck.row) return "User not found";
-      if (targetDataCheck.steamId == userData.steamId) return "You cannot manage yourself";
+      if (targetDataCheck.playerId == userData.playerId) return "You cannot manage yourself";
       if (ranks[ranks.length - 1].includes(targetDataCheck.rank) || ranks[ranks.length - 2].includes(targetDataCheck.rank)) return "You cannot manage Senior CL4 members";
       if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetDataCheck.email)) return "You cannot manage Staff from this menu";
       if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) > ranks.indexOf(userData.rank)) {
@@ -320,9 +320,21 @@ function ToggleLockdown() {
   value = value === "true" ? false : true;
 
   if (value) {
-    RemoveAllDocAccess();
+    RosterService.removeAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")))
     PropertiesService.getScriptProperties().setProperty("backupEnabled", false);
   } else {
+    const all = RosterService.getAllEmails();
+
+    // Check for any blocked/Deleted google accounts on the roster
+    for (email of all) {
+      try {
+        DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).addViewer(email);
+        DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).removeViewer(email);
+      } catch(e) {
+        return `Unknown: ${email}`;
+      }
+    }
+    
     RosterService.restoreAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
   }
 
@@ -341,7 +353,7 @@ function ToggleReqs() {
     console.log("removing")
     // Remove ranks from promo reqs sheet
     LIBRARY_SETTINGS.ranks.forEach(rank => {
-      if (rank.includes("Security Chief") || rank.includes("Site Management")) return;
+      if (rank.includes("Security Chief") || rank.includes("Office of Site Management")) return;
       RosterService.removeRank(rank, false, LIBRARY_SETTINGS.rosterIds.length - 1, true);
     });
 
@@ -385,8 +397,21 @@ function ReturnReqsEnabled() {
 }
 
 function ResetPermissions() {
-  RemoveAllDocAccess();
-  RosterService.restoreAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
+  const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
+  const all = RosterService.getAllEmails();
+
+  // Check for any blocked/Deleted google accounts on the roster
+  for (email of all) {
+    try {
+      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).addViewer(email);
+      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).removeViewer(email);
+    } catch(e) {
+      return `Unknown: ${email}`;
+    }
+  }
+
+  RosterService.removeAllDocAccess(allowedStaff)
+  RosterService.restoreAllDocAccess(allowedStaff);
   console.log(`${LIBRARY_SETTINGS.factionName} Documentation Permissions reset`);
   RosterService.sendDiscordConfig("resetPerms", null, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
   PermissionsGuard();
@@ -403,14 +428,7 @@ function GetLastBackupTime() {
 }
 
 /**
- * Used when initializing a lockdown, removes all access to all folders
- */
-function RemoveAllDocAccess() {
-  RosterService.removeAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
-}
-
-/**
- * @param {String} inputValue - SteamID that was input into the search bar
+ * @param {String} inputValue - playerId that was input into the search bar
  */
 function GetSpreadsheetData(inputValue) {
   return RosterService.getSpreadsheetData(inputValue);

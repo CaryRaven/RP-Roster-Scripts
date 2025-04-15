@@ -195,6 +195,7 @@
       // document.getElementById('connections').setAttribute('style', 'display: none;');
       document.getElementById('search_panel').setAttribute('style', 'display: none;');
       document.getElementById("requests-panel").setAttribute("style", "display: none;");
+      SetEmailSelects();
       try {
         document.getElementById('config').setAttribute('style', 'display: none;'); 
         clearInterval(configupdate);
@@ -306,7 +307,7 @@
     window.UpdateDiv = function (event) {
       event.preventDefault();
       const inputValue = document.getElementById('inputField').value;
-      if (inputValue === "" || !inputValue.includes("STEAM_")) {
+      if (inputValue === "" || !inputValue.length === 5) {
         Shake();
         return;
       }
@@ -647,11 +648,24 @@
 
       google.script.run.withSuccessHandler((re) => {
         document.getElementById('config-loading').innerHTML = '';
-        button.disabled = false;
-        SetSliders();
+
+        if (re) {
+          button.classList.add("red");
+          button.innerText = re;
+          Shake();
+        } else {
+          SetSliders();
+          button.classList.add("green");
+        }
+
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerText = "Lockdown";
+          button.classList.remove("red");
+          button.classList.remove("green");
+        }, 4000);
       }).withFailureHandler((error) => {
         document.getElementById('config-loading').innerHTML = '';
-        
         button.disabled = false;
       }).ToggleLockdown();
     };
@@ -870,9 +884,23 @@
       button.disabled = true;
       document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
 
-      google.script.run.withSuccessHandler(() => {
-        button.disabled = false;
+      google.script.run.withSuccessHandler(response => {
         document.getElementById('config-loading').innerHTML = '';
+        if (response) {
+          button.classList.add("red");
+          button.innerText = response;
+          Shake();
+          console.log(`${response} has Deleted their account or blocked you. This means we cannot share documents with this account, making resetting permissions impossible`);
+        } else {
+          button.classList.add("green");
+        }
+        
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerText = "Reset";
+          button.classList.remove("red");
+          button.classList.remove("green");
+        }, 4000);
       }).withFailureHandler(error => {
         
         button.disabled = false;
@@ -1091,6 +1119,7 @@
           || response.toLowerCase().includes("already") 
           || response.toLowerCase().includes("invalid")
           || response.toLowerCase().includes("unrelated")
+          || response.toLowerCase().includes("must")
         ) {
           Shake();
           button.classList.add('red');
@@ -1701,7 +1730,7 @@
 
     if (accessType === "visitor") {
       document.getElementById('namefield').setAttribute('style', 'display: none;');
-      document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+      document.getElementById('playerIdfield').setAttribute('style', 'display: none;');
       document.getElementById('discordidfield').setAttribute('style', 'display: none;');
       document.getElementById('emailfield').setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').setAttribute('style', 'display: block;');
@@ -1727,9 +1756,10 @@
 
       // Can be set seperate as they're almost always set to none (apart from New Member)
       document.getElementById('namefield').setAttribute('style', 'display: none;');
-      document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+      document.getElementById('playerIdfield').setAttribute('style', 'display: none;');
       document.getElementById('discordidfield').setAttribute('style', 'display: none;');
       document.getElementById('emailfield').setAttribute('style', 'display: none;');
+      document.getElementById("newMemberEmailField").setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').setAttribute('style', 'display: none;');
       document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
       document.getElementById('infrlabel').setAttribute('style', 'display: none;');
@@ -1784,9 +1814,9 @@
           break;
         case 'New Member':
           document.getElementById('namefield').setAttribute('style', 'display: block;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('playerIdfield').setAttribute('style', 'display: block;');
           document.getElementById('discordidfield').setAttribute('style', 'display: block;');
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById("newMemberEmailField").setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           break;
         case "Requirement Log":
@@ -1887,16 +1917,19 @@
       const button = document.getElementById("loggerSubmitButton");
       button.disabled = true;
 
+      const value = document.getElementById('logTypeList').value;
+
       // Set some data if a New Member was logged so it can use the same script as Rank Change in the logger engine
-      let data_type = document.getElementById('logTypeList').value == "New Member" ? "Rank Change" : document.getElementById('logTypeList').value;
-      let data_rankchangetype = document.getElementById('logTypeList').value == "New Member" ? "Passed Interview" : document.getElementById('rctypefield').value;
-      let data_type_check = document.getElementById('logTypeList').value == "New Member" ? "New Member" : document.getElementById('logTypeList').value;
+      let data_type = value == "New Member" ? "Rank Change" : value;
+      let data_rankchangetype = value == "New Member" ? "Passed Interview" : document.getElementById('rctypefield').value;
+      let data_type_check = value == "New Member" ? "New Member" : value;
+      let data_email = value == "New Member" ? document.getElementById('newMemberEmailField').value : document.getElementById('emailfield').value;
 
       const dataToSubmit = {
         type: data_type,
         type_check: data_type_check,
         name: document.getElementById('namefield').value,
-        steamid: document.getElementById('steamidfield').value,
+        playerId: document.getElementById('playerIdfield').value,
         discordid: document.getElementById('discordidfield').value,
         email: document.getElementById('emailfield').value,
         rankchangetype: data_rankchangetype,
@@ -1931,7 +1964,7 @@
                 valid = true;
                 break;
               case "Blacklist":
-                if (dataToSubmit.name != '' && dataToSubmit.steamid != '' && dataToSubmit.discordid != '' && dataToSubmit.blacklist_type != '') valid = true;
+                if (dataToSubmit.name != '' && dataToSubmit.playerId != '' && dataToSubmit.discordid != '' && dataToSubmit.blacklist_type != '') valid = true;
                 break;
               default:
                 return Shake();
@@ -1945,7 +1978,7 @@
           if (dataToSubmit.log_id >= 7) valid = true;
           break;
         case "New Member":
-          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.steamid.includes("STEAM_") && dataToSubmit.reason != '') valid = true;
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.playerId.length === 5 && dataToSubmit.reason != '') valid = true;
           break;
         case "Requirement Log":
           if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
@@ -2048,7 +2081,7 @@
         const blacklistTypeSelector = document.getElementById('bltypelist');
         if (blacklistTypeSelector.value == "Suspension") {
           document.getElementById('namefield').setAttribute('style', 'display: none;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('playerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('discordidfield').setAttribute('style', 'display: none;');
           document.getElementById('emailfield').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
@@ -2060,7 +2093,7 @@
           document.getElementById('enddatelabelBL').innerText = "Select expiry date of Suspension:";
         } else if (blacklistTypeSelector.value == "Blacklist") {
           document.getElementById('namefield').setAttribute('style', 'display: block;');
-          document.getElementById('steamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('playerIdfield').setAttribute('style', 'display: block;');
           document.getElementById('discordidfield').setAttribute('style', 'display: block;');
           document.getElementById('emailfield').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
@@ -2084,15 +2117,15 @@
       switch (infotype) {
         case 'Edit Name':
           document.getElementById('newnamefield').setAttribute('style', 'display: block;');
-          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
           document.getElementById('newemailfield').setAttribute('style', 'display: none;');
           document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
           document.getElementById('specfield').setAttribute('style', 'display: none;');
           break;
-        case 'Edit steamID':
+        case 'Edit playerId':
           document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newsteamidfield').setAttribute('style', 'display: block;');
+          document.getElementById('newplayerIdfield').setAttribute('style', 'display: block;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
           document.getElementById('newemailfield').setAttribute('style', 'display: none;');
           document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
@@ -2100,7 +2133,7 @@
           break;
         case 'Edit discordID':
           document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: block;');
           document.getElementById('newemailfield').setAttribute('style', 'display: none;');
           document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
@@ -2108,7 +2141,7 @@
           break;
         case 'Edit Email':
           document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
           document.getElementById('newemailfield').setAttribute('style', 'display: block;');
           document.getElementById('newemailfield').maxlength = 70;
@@ -2117,7 +2150,7 @@
           break;
         case 'Edit Specialization':
           document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
           document.getElementById('newemailfield').setAttribute('style', 'display: none;');
           document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
@@ -2125,7 +2158,7 @@
           break;
         case 'Edit Note':
           document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newsteamidfield').setAttribute('style', 'display: none;');
+          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
           document.getElementById('newemailfield').setAttribute('style', 'display: none;');
           document.getElementById('newnotesfield').setAttribute('style', 'display: block;');
@@ -2145,7 +2178,7 @@
         type: document.getElementById('infoTypeList')?.value || '',
         current_email: document.getElementById('curremailfield')?.value || '',
         name: document.getElementById('newnamefield')?.value || '',
-        steamid: document.getElementById('newsteamidfield')?.value || '',
+        playerId: document.getElementById('newplayerIdfield')?.value || '',
         discordid: document.getElementById('newsdiscidfield')?.value || '',
         email: document.getElementById('newemailfield')?.value || '',
         specialization: document.getElementById('specfield')?.value || '',
@@ -2157,8 +2190,8 @@
         case 'Edit Name':
           if (editdata.name != '' && editdata.current_email != '') { validEdit = true; }
           break;
-        case 'Edit steamID':
-          if (editdata.steamid != '' && editdata.current_email != '') { validEdit = true; }
+        case 'Edit playerId':
+          if (editdata.playerId != '' && editdata.current_email != '') { validEdit = true; }
           break;
         case 'Edit dicsordID':
           if (editdata.discordid != '' && editdata.current_email != '') { validEdit = true; }
@@ -2241,7 +2274,7 @@
 
     document.getElementById('curremailfield').addEventListener('change', () => {
       const emailField = document.getElementById('curremailfield');
-      const elements = ["newnamefield", "newsteamidfield", "newsdiscidfield", "newnotesfield"];
+      const elements = ["newnamefield", "newplayerIdfield", "newsdiscidfield", "newnotesfield"];
       const button = document.getElementById('editSubmitButton');
 
       emailField.disabled = true;
@@ -2264,7 +2297,7 @@
           }
 
           document.getElementById(elements[0]).value = targetData.name;
-          document.getElementById(elements[1]).value = targetData.steamId;
+          document.getElementById(elements[1]).value = targetData.playerId;
           document.getElementById(elements[2]).value = targetData.discordId;
           document.getElementById(elements[3]).value = targetData.notes;
 

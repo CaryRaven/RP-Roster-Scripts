@@ -28,7 +28,7 @@ class SettingsTemplate {
       firstCol: 0,
       rank: 0,
       name: 0,
-      steamId: 0,
+      playerId: 0,
       discordId: 0,
       email: 0,
       infraction: 0,
@@ -38,7 +38,7 @@ class SettingsTemplate {
       blacklistEnd: 0,
       notes: 0,
       supervisor_name: 0,
-      supervisor_steamId: 0,
+      supervisor_playerId: 0,
       cooldown: 0
     };
 
@@ -64,6 +64,8 @@ class SettingsTemplate {
     this.backupsbeetId = '';
     this.interviewFolderId = "";
     this.closedInterviewFolderId = "";
+    this.parentFolderId = "";
+    this.publicDocsFolderId = "";
     this.specializations = [];
     this.pings = true;
     this.newRowData = [];

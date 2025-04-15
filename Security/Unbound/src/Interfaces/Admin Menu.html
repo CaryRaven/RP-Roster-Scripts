@@ -143,7 +143,7 @@
                 <p>Select this option if you would like to modify specific information about a <?= factionName ?> member. <br><br>
                   This can include things like: <br><br>
                   Name <br>
-                  Steam ID <br>
+                  Player ID <br>
                   Discord ID <br>
                   Email-address <br>
                   etc...
@@ -261,8 +261,8 @@
               <h3><strong>Name: </strong>
                 <?= data.name; ?>
               </h3><br>
-              <h3><strong>Steam ID: </strong>
-                <?= data.steamId; ?>
+              <h3><strong>Player ID: </strong>
+                <?= data.playerId; ?>
               </h3><br>
               <h3><strong>Discord ID: </strong>
                 <?= data.discordId; ?>
@@ -287,9 +287,9 @@
       <div class="container">
         <div class="textbox">
           <h1>Search Panel</h1><br>
-          <p>Input a Steam ID and you will be shown all logs related to the SteamID.</p><br>
+          <p>Input a Player ID and you will be shown all logs related to this ID.</p><br>
           <form>
-            <label for="inputField">Enter SteamID:</label><br>
+            <label for="inputField">Enter Player ID:</label><br>
             <input type="text" id="inputField" maxlength="25" required />
             <button type="submit" class="submitButton-mini" onclick="UpdateDiv(event)">Submit</button>
           </form>
@@ -328,15 +328,21 @@
           <form id="config-form-adminRanks">
             <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="allowedRanks"><?= adminRanks ?></span>
             </label><br>
-            <select id="amdin-role-select">
+            <select id="amdin-role-select" style="width: 50%;" >
             </select>
             <button id="AdminRankButton" onclick="SaveAdminRanks(event)" type="submit" class="submitButton-mini">Add/Remove</button>
+          </form><br>
+
+          <form id="config-new-folder">
+            <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.</span></label><br>
+            <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folderID">
+            <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button>
           </form><br>
 
           <? if (accessType === "dev") { ?>
           <form id="changelog-form">
             <label for="changes"><strong>Add the change notes, seperated by a comma:</strong></label><br>
-            <input type="message" id="changes" placeholder="Add your changes, seperated by a comma" minlength="20" required></input>
+            <input type="message" id="changes" placeholder="Add your changes, seperated by a comma" minlength="20" style="width: 50%;"  required></input>
             <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
           </form><br>
           <? } ?>
@@ -396,12 +402,6 @@
               <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button" style="width: 7%;">Add</button>
               <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button" style="width: 7%;">Remove</button>
             </form><br><hr><br>
-
-            <form id="config-new-folder">
-              <label for="newFolderId">Enter the ID of the folder/file you want to add/remove<br><span style="font-size: 13px; font-weight: 100;">If your folder is already added, it will be removed instead.</span></label><br>
-              <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folderID">
-              <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button>
-            </form><br>
           </div><br><br>
 
           <button id="manageSpecialization" class="submitButton">Manage Specializations</button>
@@ -604,8 +604,9 @@
                 <option value="No">No</option>
               </select>
               <input type="text" placeholder="Name" id='namefield' maxlength="20" style="display: none;" required />
-              <input type="text" placeholder="Steam_ID" id='steamidfield' maxlength="25" style="display: none;" required />
+              <input type="text" placeholder="5-hex Player ID" id='playerIdfield' maxlength="25" style="display: none;" required />
               <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
+              <input type="text" placeholder="Email Address" id='newMemberEmailField' maxlength="40" style="display: none;" required />
               <select id="emailfield" required/>
                 <option value=''></option>
               </select>
@@ -642,7 +643,7 @@
               <h3>Roster Edit Information</h3>
               <select id="infoTypeList" onchange="InfoHideCheck()">
                 <option value="Edit Name">Edit Name</option>
-                <option value="Edit steamID">Edit Steam_ID</option>
+                <option value="Edit playerId">Edit Player ID</option>
                 <option value="Edit discordID">Edit Discord ID</option>
                 <option value="Edit Email">Edit Email Address</option>
                 <option value="Edit Specialization">Edit Specialization</option>
@@ -656,7 +657,7 @@
               </select>
               <hr><br>
               <input type="text" placeholder="Enter new name" id="newnamefield" maxlength="20" required />
-              <input type="text" placeholder="Enter new steamID" id="newsteamidfield" style="display: none;"
+              <input type="text" placeholder="Enter new Player ID" id="newplayerIdfield" style="display: none;"
                 maxlength="25" required />
               <input type="text" placeholder="Enter new discord ID" id="newsdiscidfield" style="display: none;"
                 maxlength="25" required />

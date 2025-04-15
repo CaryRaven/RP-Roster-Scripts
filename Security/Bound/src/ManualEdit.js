@@ -1,5 +1,3 @@
-// TODO: Add promo reqs. See native formula: https://stackoverflow.com/questions/73399460/google-sheets-check-all-true-per-row-in-boolean-2d-array-with-arrayformula
-
 const LIBRARY_SETTINGS = JSON.parse(PropertiesService.getDocumentProperties().getProperty("settings"));
 RosterService.init(LIBRARY_SETTINGS);
 

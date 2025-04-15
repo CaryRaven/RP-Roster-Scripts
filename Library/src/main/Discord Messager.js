@@ -27,9 +27,9 @@ function sendDiscordLog(inputData, targetData, userData) {
   let reason = inputData.reason;
   let footerMessage = '';
   // let folderChanges = accessFolders.map(folder => ` ${folder.folderName} - ${folder.permission} access /`);
-  let supervisorInfo = `Name: ${userData.name}\nSteamID: ${userData.steamId}\nRank: ${userData.rank}`;
+  let supervisorInfo = `Name: ${userData.name}\nplayerId: ${userData.playerId}\nRank: ${userData.rank}`;
   let date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
-  let appealTo = "Site Management";
+  let appealTo = "the Office of Office of Site Management";
 
   if (LIBRARY_SETTINGS.factionName.includes("Management")) appealTo = "Staff Administration";
 
@@ -41,7 +41,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           embedTitle = `👔 New ${targetData.newRank} 👔`;
           embedColor = '1143627';
           field1Name = 'Please congratulate 🥁...'; // drumrolls
-          info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscord ID: ${targetData.discordId}\nGmail Address: ${inputData.email}`;
+          info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscord ID: ${targetData.discordId}\nGmail Address: ${inputData.email}`;
           footerMessage = `Congratulations - ${LIBRARY_SETTINGS.factionName} Command.`;
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
@@ -49,7 +49,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Demotion ❌`;
           embedColor = '11600386';
           field1Name = 'General Information';
-          info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDemoted from: ${targetData.rank}\nNew Rank: ${targetData.newRank}`;
+          info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDemoted from: ${targetData.rank}\nNew Rank: ${targetData.newRank}`;
           footerMessage = `This may be appealed to ${appealTo}.`;
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
@@ -57,7 +57,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           embedTitle = `👔 New ${LIBRARY_SETTINGS.ranks[0]} 👔`;
           embedColor = '39423';
           field1Name = 'Please Congratulate 🥁...'; // more drumrolls
-          info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}`;
+          info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}`;
           footerMessage = 'Congratulations, welcome to the team!';
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
@@ -65,7 +65,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Removal  ❌`;
           embedColor = '11600386';
           field1Name = 'General Information';
-          info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nRemoved from: ${targetData.rank}`;
+          info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nRemoved from: ${targetData.rank}`;
           footerMessage = `This may be appealed to ${appealTo}.`;
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
@@ -75,7 +75,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedTitle = `❌ ${inputData.infraction_type} Infraction Issued ❌`;
       embedColor = '11600386';
       field1Name = 'Infraction Information';
-      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nRank: ${targetData.rank}`;
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nRank: ${targetData.rank}`;
       footerMessage = `This may be appealed to ${appealTo}.`;
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
@@ -84,7 +84,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedColor = '0';
       field1Name = `${inputData.blacklist_type} Information`;
       inputData.end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
-      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nExpiry Date: ${inputData.end_date}\nAppealable: ${inputData.blacklist_appealable}`;
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nExpiry Date: ${inputData.end_date}\nAppealable: ${inputData.blacklist_appealable}`;
       footerMessage = `This may be appealed to ${appealTo}.`;
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
@@ -93,21 +93,21 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedColor = '12658943';
       field1Name = 'LOA Information';
       inputData.end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
-      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nStart Date: ${date}\nEnd Date: ${inputData.end_date}`;
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nStart Date: ${date}\nEnd Date: ${inputData.end_date}`;
       footerMessage = `Enjoy your time off, ${targetData.name}`;
       break;
     case 'Infraction Appeal':
       embedTitle = '🔄 Infraction Appealed 🔄';
       embedColor = '1143627';
       field1Name = 'Appeal Information';
-      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscordID: ${targetData.discordId}\nAppealed Infraction ID: ${inputData.log_id}`;
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nAppealed Infraction ID: ${inputData.log_id}`;
       footerMessage = 'This infraction is no longer of effect.';
       break;
     case 'Blacklist Appeal':
       embedTitle = `🔄 ${LIBRARY_SETTINGS.factionName} Blacklist/Suspension Appealed 🔄`;
       embedColor = '1143627';
       field1Name = 'Appeal Information';
-      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscordID: ${targetData.discordId}\nAppealed Log ID: ${inputData.log_id}`;
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nAppealed Log ID: ${inputData.log_id}`;
       footerMessage = `This ${LIBRARY_SETTINGS.factionName} blacklist/suspension is no longer of effect.`;
       break;
     case 'Edit Specialization':
@@ -122,7 +122,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedTitle = `✅ ${LIBRARY_SETTINGS.factionName} Requirement Completed ✅`;
       embedColor = '1143627';
       field1Name = 'Requirement Information';
-      info = `Name: ${targetData.name}\nSteamID: ${targetData.steamId}\nDiscordID: ${targetData.discordId}\nRequirement Completed: ${inputData.reqName}`;
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nRequirement Completed: ${inputData.reqName}`;
       footerMessage = `Congratulations on having your requirement completed.`;
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
@@ -157,8 +157,6 @@ function sendDiscordLog(inputData, targetData, userData) {
       footer: { text: footerMessage + '\nLogged on ' + date }
     }]
   });
-
-  console.log(JSON.parse(payload));
 
   let params = {
     headers: {
@@ -284,9 +282,9 @@ function sendDiscordError(error) {
  * @param {Array} flagArray - Array with flagged users, returned by PermissionGuard()
  * @returns {Void}
  */
-function sendDiscordPermissionReport(flagArray) {
+function sendDiscordPermissionReport(flagArray, flaggedDocs) {
   if (!isInit) throw new Error("Library is not yet initialized");
-  if (!Array.isArray(flagArray)) throw new Error("PermissionReport: no valid flag array provided");
+  if (!Array.isArray(flagArray) && !Array.isArray(flaggedDocs) ) throw new Error("PermissionReport: no valid flag array provided");
   
   let webhookURLs;
   switch(LIBRARY_SETTINGS.factionName) {
@@ -302,22 +300,26 @@ function sendDiscordPermissionReport(flagArray) {
 
   // Forge fields
   const fields = flagArray.map((flag) => ({
-    name: `At ${flag.folderName}`,
+    name: `🔸 Perms Leak at ${flag.folderName}`,
     value: `User: ${flag.email}\nWrong Permission: ${flag.currentPermission}\nReason: ${flag.reason}`,
-    inline: true,
-  }));
+    inline: false,
+  })).concat(flaggedDocs.map((doc) => ({
+    name: `🔹 Unregistered ${doc.type}: ${doc.name}`,
+    value: `Owner: ${doc.owner}\n${doc.type} ID: ${doc.id}`,
+    inline: false,
+  })));
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Access Report`,
-    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
+    // content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
     embeds: [
       {
-        title: "Flagged Users",
+        title: "⚠️ Flagged Users & Docs",
         color: "12585482",
         fields: fields,
         footer: {
           text:
-            "This report has been forged so any permission leaks can be spotted and patched in time, please do not ignore this warning. If you are currently unable to deal with the situation, contact a member of Site Management to assist you.\nReport sent on " +
+            "This report has been forged so any permission leaks can be spotted and patched in time, please do not ignore this warning. If you are currently unable to deal with the situation, contact a member of the Office of Site Management to assist you.\nReport sent on " +
             Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
         },
       },
@@ -363,7 +365,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
   }
 
-  let userInfo = `Name: ${userData.name}\nSteamID: ${userData.steamId}\nDiscordID: ${userData.discordId}`;
+  let userInfo = `Name: ${userData.name}\nPlayerID: ${userData.playerId}\nDiscordID: ${userData.discordId}`;
   let embedTitle;
   let embedColor;
   let info;
@@ -418,7 +420,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       embedTitle = `[🛠️] ⚠️ ${LIBRARY_SETTINGS.factionName} Document Permissions Reset ⚠️`;
       embedColor = "16497668";
       info = "All documentation permissions have been wiped & re-added, basically resetting them to get rid of any flaws quickly.";
-      footerMessage = "If anything went wrong during this process, contact a member of Site Management";
+      footerMessage = "If anything went wrong during this process, contact a member of the Office of Site Management";
       break;
     case "restoreSpreadSheet":
       embedTitle = `[🛠️] 🟩 ${LIBRARY_SETTINGS.factionName} Roster Restored 🟩`;
@@ -544,7 +546,7 @@ function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
         fields: [
           {
             name: "Configured by",
-            value: `Name: ${userData.name}\nSteamID: ${userData.steamId}\nDiscord ID: ${userData.discordId}`,
+            value: `Name: ${userData.name}\nplayerId: ${userData.playerId}\nDiscord ID: ${userData.discordId}`,
             inline: false,
           },
         ],
@@ -644,7 +646,7 @@ function sendDiscordChangeLog(notes, url = '') {
 
    let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
-    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
+    // content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [
       {
         title: `⚙️ Admin Menu Update ⚙️`,

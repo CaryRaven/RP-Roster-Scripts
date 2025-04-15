@@ -9,6 +9,7 @@ function addDocAccess(foldersIndex, emailToAdd) {
   if (!emailToAdd) throw new Error("addDocAccess: no email provided");
 
   const folders = LIBRARY_SETTINGS.folders[foldersIndex];
+  console.log(`FolderIndex: ${foldersIndex}, Folders: ${folders}`);
   if (!folders.viewerAccess || !folders.editorAccess) throw new Error("addDocAccess: invalid folders index");
 
   let folder;
@@ -100,8 +101,8 @@ function removeAllDocAccess(allowedStaff) {
   sheet.getRange(6, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;
     i = i + 6;
-    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== "Security Chief" 
-    && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== "Site Management") return;
+    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2] 
+      && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) return;
     
     unaffected.push(email[0].toLowerCase());
   });
@@ -190,6 +191,8 @@ function restoreAllDocAccess(allowedStaff) {
       && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) return;
     unaffected.push(email[0].toLowerCase());
   });
+
+  console.log(unaffected);
 
   allStaff.forEach(email => {
     if (unaffected.includes(email)) return;
