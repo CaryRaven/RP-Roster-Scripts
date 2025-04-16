@@ -32,6 +32,7 @@ class SettingsTemplate {
       discordId: 0,
       email: 0,
       infraction: 0,
+      lastRankChange: 0,
       status: 0,
       specialization: 0,
       loaEnd: 0,
@@ -44,31 +45,37 @@ class SettingsTemplate {
 
     this.rosterIds = [];
     this.firstMemberRow = 0;
-    this.spreadsheetId = "";
+    this.spreadsheetId_main = "";
     this.factionName = "";
-    this.folders = [];
-    this.ranks = [];
-    this.interviewRequired = [];
-    this.adminRanks = [];
-    this.rankchangeId = 0;
-    this.infractionId = 0;
-    this.loaId = 0;
-    this.blId = 0;
-    this.reqId = 0;
-    this.loaCooldown = 0;
-    this.promoCooldown = 0;
-    this.threshold = 0;
-    this.thresholdAction = "";
-    this.lastRankChange = 0;
+    this.colorHex = "";
+    this.sheetId_rankchange = 0;
+    this.sheetId_infraction = 0;
+    this.sheetId_loa = 0;
+    this.sheetId_blacklist = 0;
+    this.sheetId_reqs = 0;
+    this.sheetId_task = 0;
+    this.cooldown_loa = 0;
+    this.cooldown_promotion = 0;
+    this.threshold_num = 0;
+    this.threshold_action = "";
     this.leaderPing = '';
-    this.backupsbeetId = '';
-    this.interviewFolderId = "";
-    this.closedInterviewFolderId = "";
-    this.parentFolderId = "";
-    this.publicDocsFolderId = "";
+    this.spreadsheetId_backup = '';
+    this.folderId_interviews = "";
+    this.folderId_closedInterviews = "";
+    this.folderId_main = "";
+    this.folderId_publicDocs = "";
     this.specializations = [];
     this.pings = true;
     this.newRowData = [];
     this.promoReqs = [];
+    this.folders = [];
+    this.ranks = [];
+    this.interviewRequired = [];
+    this.modRanks = [];
+    this.adminRanks = [];
+    this.backupEnabled = true;
+    this.lockdownEnabled = true;
+    this.manualEnabled = true;
+    this.reqsDisabled = true;
   }
 }

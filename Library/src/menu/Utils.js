@@ -9,7 +9,7 @@ function getCollect(sheet_id, spreadsheetId = null) {
   if (typeof sheet_id != "number") throw new Error("No valid sheet id provided");
 
   if (!sheet_id) sheet_id = LIBRARY_SETTINGS.rosterIds[0];
-  const wb = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
+  const wb = spreadsheetId ? SpreadsheetApp.openById(spreadsheetId) : SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId_main);
   return wb.getSheets().find(sheet => sheet.getSheetId() === sheet_id);
 }
 
@@ -51,7 +51,7 @@ function getUserData(query, colToSearch = null, stringify = false) {
           blacklistEnd: s.getRange(i, LIBRARY_SETTINGS.dataCols.blacklistEnd).getDisplayValue(),
           notes: s.getRange(i, LIBRARY_SETTINGS.dataCols.notes).getValue(),
 
-          // Only used on security roster
+          // Only used on certain rosters
           specialization: s.getRange(i, LIBRARY_SETTINGS.dataCols.specialization).getValue(),
 
           // Only used on staff roster
@@ -211,7 +211,7 @@ function getAllEmails() {
  * @returns {JSON.String[]}
  */
 function getAllowedStaff() {
-  // if (!isInit) throw new Error("Library is not yet initialized");
+  if (!isInit) throw new Error("Library is not yet initialized");
 
   const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
   let rows = staffAdminRoster.getMaxRows();
@@ -267,168 +267,6 @@ function loadImageBytes(id){
 }
 
 /**
- * Checks all current staff Folders for unwanted access & reports it
- * @param {Array} exempt
- */
-function permissionsGuard(exempt) {
-  if (!isInit) throw new Error("Library is not yet initialized");
-
-  let authed = getAllEmails();
-  let folders = LIBRARY_SETTINGS.folders;
-  exempt.push("micheal.labus@gmail.com");
-  let flagArray = [];
-
-  authed.forEach(email => {
-    // Check if google account still exists / blocked me
-    try {
-      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).addViewer(email);
-      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).removeViewer(email);
-    } catch(e) {
-      const user = getUserData(email);
-      flagArray.push({ email: email, folderName: `${LIBRARY_SETTINGS.factionName} Documentation Drive`, currentPermission: user.rank, reason: "Deleted/Blocked Google Account" });
-    }
-  });
-
-  // Check registered folders
-  folders[folders.length - 1].forEach(folderId => {
-    if (!folderId) return;
-    let folder;
-
-    try {
-      folder = DriveApp.getFolderById(folderId);
-    } catch (e) {
-      try {
-        folder = DriveApp.getFileById(folderId);
-      } catch(ee) {
-        return console.log(`Error found at ${folderId}`);
-      }
-    }
-
-    const folderName = folder.getName();
-    const viewers = folder.getViewers();
-    const editors = folder.getEditors();
-
-    flagArray = flagArray.concat(processPermissions(viewers, authed, exempt, "VIEW", folderName, folderId, folders));
-    flagArray = flagArray.concat(processPermissions(editors, authed, exempt, "EDIT", folderName, folderId, folders));
-
-  });
-
-  // Going through all docs checking for unregistered
-  const parentFolder = DriveApp.getFolderById(LIBRARY_SETTINGS.parentFolderId);
-  const flaggedDocs = [];
-  collectUnregisteredDocs(parentFolder, flaggedDocs);
-
-  if (flagArray.length > 0 || flaggedDocs.length > 0) sendDiscordPermissionReport(flagArray, flaggedDocs);
-}
-
-/**
- * Head Function - Not to be used in other scripts
- * @param {Array} users - All people with access to folder, regardless if they're allowed or not
- * @param {Array} authed - All people who could have access to the folder
- * @param {Array} exemptUsers - Users who should not be checked (owner of folder & Vigil)
- * @param {String} accessType - Type of access to check for: "VIEW" or "EDIT"
- * @return {Array}
- */
-function processPermissions(users, authed, exemptUsers, accessType, folderName, folderId, folderData) {
-  if (!isInit) throw new Error("Library is not yet initialized");
-  let flagArray = [];
-  const ranks = LIBRARY_SETTINGS.ranks;
-
-  users.forEach(user => {
-    const email = user.getEmail().toLowerCase();
-    if (exemptUsers.includes(email)) return "User is exempt";
-
-    // Check if google account still exists / blocked me
-    try {
-      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).addViewer(email);
-      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).removeViewer(email);
-    } catch(e) {
-      flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Deleted/Blocked Google Account" });
-    }
-
-    if (!authed.includes(email)) return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
-
-    const userData = getUserData(email.toString());
-
-    if (ranks[ranks.length - 2].includes(userData.rank) || ranks[ranks.length - 1].includes(userData.rank)) return "User is exempt";
-
-    const allowedFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].viewerAccess : folderData[ranks.indexOf(userData.rank)].editorAccess;
-    const wrongFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].editorAccess : folderData[ranks.indexOf(userData.rank)].viewerAccess;
-
-    // Allow users to have access to files if they have access to a parent folder.
-    // TODO: testing required
-    let parents;
-    try {
-      parents = DriveApp.getFolderById(folderId).getParents();
-      while (parents.hasNext()) {
-        const parent = parents.next();
-        const parentId = parent.getId();
-        if (allowedFolders.includes(parentId)) return;
-      }
-    } catch(e) {
-      try {
-        parents = DriveApp.getFileById(folderId).getParents();
-        while (parents.hasNext()) {
-          const parent = parents.next();
-          const parentId = parent.getId();
-          if (allowedFolders.includes(parentId)) return;
-        }
-      } catch(ee) { }
-    }
-
-    if (allowedFolders.includes(folderId)) return;
-
-    if (wrongFolders.includes(folderId)) {
-      return flagArray.push({ email: email, folderName: folderName, expectedPermission: accessType === "VIEW" ? "EDIT" : "VIEW", reason: "Incorrect permissions" });
-    } else {
-      return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
-    }
-
-  });
-  return flagArray;
-}
-
-/**
- * Recursive function to check through all docs under a parent folder
- */
-function collectUnregisteredDocs(folder, itemsArray) {
-  // Folder
-  if (
-    !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folder.getId())
-    && !folder.getName().includes("Interview")) {
-    itemsArray.push({
-      type: "folder",
-      name: folder.getName(),
-      id: folder.getId(),
-      owner: getOwnerEmail(folder)
-    });
-  }
-
-  // Files
-  const files = folder.getFiles();
-  while (files.hasNext()) {
-    const file = files.next();
-    if (
-      !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(file.getId())
-      && !file.getName().includes("Interview")) {
-      itemsArray.push({
-        type: "file",
-        name: file.getName(),
-        id: file.getId(),
-        owner: getOwnerEmail(file)
-      });
-    }
-  }
-
-  // Move to next folder if possible
-  const subfolders = folder.getFolders();
-  while (subfolders.hasNext()) {
-    const subfolder = subfolders.next();
-    collectUnregisteredDocs(subfolder, itemsArray);
-  }
-}
-
-/**
  * Helper to collectUnregisteredDocs
  */
 function getOwnerEmail(fileOrFolder) {
@@ -443,15 +281,15 @@ function getOwnerEmail(fileOrFolder) {
  * Time-based function (every 12h) to create a full roster backup, can be manually disabled through web app config
  * Head Function - Not to be used in other scripts
  */
-function backupSheet(backupEnabled, manualEnabled) {
+function backupSheet() {
   if (!isInit) throw new Error("Library is not yet initialized");
-  if (backupEnabled == "false") return;
+  if (LIBRARY_SETTINGS.backupEnabled == "false") return;
 
-  const wbBackup = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
-  const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId);
+  const wbBackup = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId_backup);
+  const wb = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId_main);
   const s = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
-  s.getRange(10, 1).setValue(manualEnabled);
+  s.getRange(10, 1).setValue(LIBRARY_SETTINGS.manualEnabled.toString());
 
   wbBackup.getSheets().forEach(sheet => {
     const sheetId = sheet.getSheetId();
@@ -511,10 +349,10 @@ function getSpreadsheetData(inputValue) {
 
   // Always Checks Column 8 => might make this configurable in the future
   const sheets = [
-    { id: LIBRARY_SETTINGS.rankchangeId, label: "Rank Change" },
-    { id: LIBRARY_SETTINGS.infractionId, label: "Infraction" },
-    { id: LIBRARY_SETTINGS.loaId, label: "LOA Log" },
-    { id: LIBRARY_SETTINGS.blId, label: "Suspension / Blacklist Log" },
+    { id: LIBRARY_SETTINGS.sheetId_rankchange, label: "Rank Change" },
+    { id: LIBRARY_SETTINGS.sheetId_infraction, label: "Infraction" },
+    { id: LIBRARY_SETTINGS.sheetId_loa, label: "LOA Log" },
+    { id: LIBRARY_SETTINGS.sheetId_blacklist, label: "Suspension / Blacklist Log" },
   ];
 
   const results = [];
@@ -556,4 +394,23 @@ function getSpreadsheetData(inputValue) {
   });
 
   return JSON.stringify(results);
+}
+
+/**
+ * Gets the webhook url based on faction name
+ */
+function getDiscordWebhookUrls(authInput) {
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  if (authInput !== authKey) throw new Error("Incorrect Auth Key");
+
+  switch(LIBRARY_SETTINGS.factionName) {
+    case "Security":
+      return JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
+    case "Staff":
+      return JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
+    case "MTF O-45":
+      return JSON.parse(PropertiesService.getScriptProperties().getProperty("O-45WebhookURL"));
+    default:
+      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
+  }
 }

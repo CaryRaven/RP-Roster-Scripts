@@ -1,14 +1,43 @@
 <style>
     /* I regret not using a framework */
     * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: Lexend;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Lexend;
     }
 
     body {
-        background-color: #152e48;
+      background-color: #152e48;
+    }
+
+    #afkBanner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100vw;
+      height: 20vh;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column; 
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      opacity: 0.85;
+    }
+
+    .hazard-background {
+      height: 30px;
+      color: white;
+      padding: 5px;
+      background-image: repeating-linear-gradient(
+        -55deg,
+        #000,
+        #000 20px,
+        #ffb101 20px,
+        #ffb101 40px
+      );
     }
 
     ::-webkit-scrollbar {
@@ -762,4 +791,36 @@
       box-shadow: 0 0.5rem 0.8rem black;
       position: relative;
     }
+
+    /* Shimmer Animation, classList.add("light") - source: https://codepen.io/Amarjit/pen/mrbjNy */
+    .light{
+      background: -moz-linear-gradient(-45deg,  red 0%, red 40%, #ffffff 50%, red 60%, red 100%);
+      background: -webkit-gradient(linear, left top, right bottom, color-stop(0%,red), color-stop(40%,red), color-stop(50%,#ffffff), color-stop(60%,red), color-stop(100%,red));
+      background: -webkit-linear-gradient(-45deg,  red 0%,red 40%,#ffffff 50%,red 60%,red 100%);
+      background: -o-linear-gradient(-45deg,  red 0%,red 40%,#ffffff 50%,red 60%,red 100%);
+      background: -ms-linear-gradient(-45deg,  red 0%,red 40%,#ffffff 50%,red 60%,red 100%);
+      background: linear-gradient(135deg,  red 0%,red 40%,#ffffff 50%,red 60%,red 100%);
+      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='red', endColorstr='red',GradientType=1 );
+      background-repeat: no-repeat;  
+      background-position:0px;
+      background-size:300%;  
+    }
+
+    .light:hover{
+      animation:light 1s;
+        -webkit-animation:light 1s;
+      
+    }
+
+    @keyframes light {
+      0% { background-position:-350px; }
+      100% { background-position:0px; }
+    }
+            
+    @-webkit-keyframes light {
+      0% { background-position:-350px; }
+      100% { background-position:0px; }
+    }
+
+    /* ************************************************************************************ */
 </style>

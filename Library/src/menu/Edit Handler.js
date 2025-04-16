@@ -4,15 +4,13 @@
  * 
  * @param {Object} inputData
  * @param {PropertyService.ScriptProperty} allowedStaff
- * @param {PropertyService.ScriptProperty} lockdown
  * @param {PropertyService.UserProperty} userData (optional: only for Specialization)
  * @returns {String}
  */
-function processEdit(inputData, allowedStaff, lockdown, userData = {}) {
+function processEdit(inputData, allowedStaff, userData = {}) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData || typeof inputData !== "object") throw new Error("Do not run this function from the editor");
   if (!allowedStaff) throw new Error("No allowed staff list provided");
-  if (!lockdown) throw new Error("No valid lockdown time provided");
 
   let valid = false;
   switch (inputData.type) {
@@ -59,10 +57,20 @@ function processEdit(inputData, allowedStaff, lockdown, userData = {}) {
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordid);
       break;
     case "Edit Email":
-      if (lockdown === "false") {
+      if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
         removeDocAccess(inputData.current_email);
         addDocAccess(ranks.indexOf(targetData.rank), inputData.email);
       }
+
+      // Check if google account exists
+      try {
+        DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(targetData.email);
+        DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(targetData.email);
+      } catch(e) {
+        console.log(e);
+        return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
+      }
+
       roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.email).setValue(inputData.email);
       break;
     case "Edit Specialization":

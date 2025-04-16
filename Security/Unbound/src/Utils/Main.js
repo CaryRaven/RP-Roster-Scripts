@@ -1,15 +1,14 @@
 function ProcessLog(inputData, threshold = false, accessType) {
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
   const filter = RosterService.filterQuotes(inputData);
   if (!filter) return "No special characters allowed";
 
   if (accessType === "admin" || accessType === "dev") {
     // Normal log
-    return RosterService.processLog(inputData, userData, allowedStaff, lockdown, threshold);
+    return RosterService.processLog(inputData, userData, allowedStaff, threshold);
   } else {
-    // Permission Checks
+    // Permission Checks for making a request
     if (accessType === "visitor") inputData.email = Session.getActiveUser().getEmail();
     if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
 
@@ -84,14 +83,13 @@ function ProcessLog(inputData, threshold = false, accessType) {
 
 function ProcessInputEdits(inputData, accessType) {
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   const filter = RosterService.filterQuotes(inputData);
   if (!filter) return "No special characters allowed";
 
   if (accessType === "admin" || accessType === "dev") {
     // Normal log
-    return RosterService.processEdit(inputData, allowedStaff, lockdown, userData);
+    return RosterService.processEdit(inputData, allowedStaff, userData);
   } else {
     // Permission Checks
     if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
@@ -143,7 +141,6 @@ function ManageRequests(action, id) {
       if (request.id != id) return;
       
       const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
-      const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
       const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
 
       // If a dev is accepting request (not on roster)
@@ -153,9 +150,9 @@ function ManageRequests(action, id) {
       request.inputData.reqName = request.reqName;
 
       if (request.type.includes("Edit")) {
-        returnVal = RosterService.processEdit(request.inputData, allowedStaff, lockdown, request.userData);
+        returnVal = RosterService.processEdit(request.inputData, allowedStaff, request.userData);
       } else {
-        returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, lockdown, false);
+        returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, false);
       }
 
       try { returnVal = JSON.parse(returnVal); } catch(e) {}
@@ -216,8 +213,7 @@ function AddNewRank(inputData) {
   if (!valid) return "No special characters allowed";
 
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const reqsEnabled = ReturnReqsEnabled();
-  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData, reqsEnabled);
+  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData);
 
   if (typeof returnVal === "string") {
     return returnVal;
@@ -279,57 +275,64 @@ function ReturnTerminalSetting() {
 
 function ToggleManualEditing(value) {
   value = value == true ? false : true;
-  PropertiesService.getScriptProperties().setProperty("manualEnabled", value);
+  LIBRARY_SETTINGS.manualEnabled = Boolean(value);
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+
   const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   sheet.getRange(10, 1).setValue(value);
   RosterService.sendDiscordConfig("manualEdit", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
 function ReturnSliders() {
-  let properties = PropertiesService.getScriptProperties();
-  let manualValue = properties.getProperty("manualEnabled");
-  let backupValue = properties.getProperty("backupEnabled");
-  let lockdownValue = properties.getProperty("lockdownEnabled");
+  let manualValue = LIBRARY_SETTINGS.manualEnabled.toString();
+  let backupValue = LIBRARY_SETTINGS.backupEnabled.toString();
+  let lockdownValue = LIBRARY_SETTINGS.lockdownEnabled.toString();
 
   return JSON.stringify([manualValue, LIBRARY_SETTINGS.pings.toString(), backupValue, lockdownValue]);
 }
 
 function ReturnCooldown() {
-  return JSON.stringify([LIBRARY_SETTINGS.loaCooldown, LIBRARY_SETTINGS.promoCooldown]);
+  return JSON.stringify([LIBRARY_SETTINGS.cooldown_loa, LIBRARY_SETTINGS.cooldown_promotion]);
 }
 
 function ReturnThreshold() {
-  return JSON.stringify([LIBRARY_SETTINGS.threshold, LIBRARY_SETTINGS.thresholdAction]);
+  return JSON.stringify([LIBRARY_SETTINGS.threshold_num, LIBRARY_SETTINGS.threshold_action]);
 }
 
 function ToggleBackup(value) {
-  PropertiesService.getScriptProperties().setProperty("backupEnabled", value);
+
+  // Edit settings
+  LIBRARY_SETTINGS.backupEnabled = Boolean(value);
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+
   RosterService.sendDiscordConfig("backup", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
 function TogglePings(value) {
   LIBRARY_SETTINGS.pings = Boolean(value);
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
   RosterService.init(LIBRARY_SETTINGS);
-  Utilities.sleep(500);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
   RosterService.sendDiscordConfig("pingChange", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
 function ToggleLockdown() {
-  let value = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
+  let value = LIBRARY_SETTINGS.lockdownEnabled.toString();
   value = value === "true" ? false : true;
 
   if (value) {
+    
     RosterService.removeAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")))
-    PropertiesService.getScriptProperties().setProperty("backupEnabled", false);
+    LIBRARY_SETTINGS.backupEnabled = false;
   } else {
     const all = RosterService.getAllEmails();
 
     // Check for any blocked/Deleted google accounts on the roster
     for (email of all) {
       try {
-        DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).addViewer(email);
-        DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).removeViewer(email);
+        DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(email);
+        DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(email);
       } catch(e) {
         return `Unknown: ${email}`;
       }
@@ -338,13 +341,17 @@ function ToggleLockdown() {
     RosterService.restoreAllDocAccess(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
   }
 
-  PropertiesService.getScriptProperties().setProperty("lockdownEnabled", value);
+  // Edit Settings
+  LIBRARY_SETTINGS.lockdownEnabled = value;
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+
   RosterService.sendDiscordConfig("lockdown", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
   return value;
 }
 
 function ToggleReqs() {
-  let value = ReturnReqsEnabled();
+  let value = ReturnReqsDisabled();
   console.log(value);
   value = value === "true" ? false : true;
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
@@ -382,18 +389,21 @@ function ToggleReqs() {
         promoReqs: LIBRARY_SETTINGS.promoReqs[i]
       };
 
-      const reqsEnabled = ReturnReqsEnabled();
-      RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData, reqsEnabled, false);
+      const reqsDisabled = ReturnReqsDisabled();
+      RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData, false);
     });
   }
 
-  PropertiesService.getScriptProperties().setProperty("reqsEnabled", value);
+  LIBRARY_SETTINGS.reqsDisabled = value
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+
   RosterService.sendDiscordConfig("reqChange", value, userData);
   return value;
 }
 
-function ReturnReqsEnabled() {
-  return PropertiesService.getScriptProperties().getProperty("reqsEnabled");
+function ReturnReqsDisabled() {
+  return LIBRARY_SETTINGS.reqsDisabled.toString();
 }
 
 function ResetPermissions() {
@@ -403,8 +413,8 @@ function ResetPermissions() {
   // Check for any blocked/Deleted google accounts on the roster
   for (email of all) {
     try {
-      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).addViewer(email);
-      DriveApp.getFolderById(LIBRARY_SETTINGS.publicDocsFolderId).removeViewer(email);
+      DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(email);
+      DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(email);
     } catch(e) {
       return `Unknown: ${email}`;
     }
@@ -544,8 +554,9 @@ function AddFolder(id) {
     userData.title = folder.getName();
     RosterService.sendDiscordConfig("folderEdit", true, userData);
   }
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+
   RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
   return message;
 }
 
@@ -556,9 +567,9 @@ function ChangeLOACooldown(days) {
   days = Number(days);
   if (!days || days > 60 || days < 0) return "no";
 
-  LIBRARY_SETTINGS.loaCooldown = days;
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  LIBRARY_SETTINGS.cooldown_loa = days;
   RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   userData.days = days;
@@ -573,9 +584,9 @@ function ChangePromoCooldown(days) {
   days = Number(days);
   if (!days || days > 60 || days < 0) return "no";
 
-  LIBRARY_SETTINGS.promoCooldown = days;
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  LIBRARY_SETTINGS.cooldown_promotion = days;
   RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   userData.days = days;
@@ -588,10 +599,10 @@ function ManageThreshold(threshold, action) {
   if (Number(threshold) > 10 || Number(threshold) < 1 || !threshold) return "No valid threshold provided";
   if (!action) return "No action provided";
 
-  LIBRARY_SETTINGS.threshold = threshold;
-  LIBRARY_SETTINGS.thresholdAction = action.toString();
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  LIBRARY_SETTINGS.threshold_num = threshold;
+  LIBRARY_SETTINGS.threshold_action = action.toString();
   RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 
   return "Infraction Threshold Edited";
 }

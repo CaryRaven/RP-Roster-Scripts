@@ -421,7 +421,7 @@ function getHtmlTaskManager() {
     </form>
   <? } else if (type == "Assign") { ?>
     <h1>Assign</h1>
-    <p>Fill out all of the below questions in order to assign or unassign a member of security command to this task.<br>
+    <p>Fill out all of the below questions in order to assign or unassign a member to this task.<br>
     If the assigned member was to be removed, they will be unassigned automatically.<br>
     If the task would not be completed by the deadline, all assigned members will receive a "normal" infraction.</p>
     <hr>
@@ -1319,7 +1319,7 @@ function getHtmlRetroTerminal() {
             "It appears you are accessing this Admin Menu without the proper authorization.",
             "This is not allowed, your interaction with this application has been reported.",
             "       ",
-            "Please contact a Security Chief to explain how you were able to open this application in order to resolve any issues.",
+            "Please contact a Senior CL4 member to explain how you were able to open this application in order to resolve any issues.",
             "  ",
             "Kind regards",
             "                   ",
@@ -1766,7 +1766,7 @@ function getHtmlInterview() {
 <body>
     <h1>Generate Interview Document</h1>
     <p>Fill out all of the below questions in order to properly generate an Interview Document.<br>
-    This script will use the template to automatically create a usable document in order for you to swiftly conduct a Security Interview.<br><br>
+    This script will use the template to automatically create a usable document in order for you to swiftly conduct an Interview.<br><br>
     It will fill out the information that you provide below and it will randomly select 10 questions from a list of predfined questions, which the applicant will need to answer.</p><span id="patience"></span>
     <hr>
     <form id="docForm">

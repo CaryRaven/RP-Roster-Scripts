@@ -65,6 +65,9 @@
 
     SetEmailSelects();
 
+    // Make the lockdown button shimmer (idk looks cool)
+    document.getElementById('lockdownButton').classList.add("light");
+
     window.SetRankSelects = function(forced = false) {
       let initRanks = document.getElementById("ranks")?.innerText;
       let rankSelect = document.getElementById("amdin-role-select");
@@ -129,8 +132,10 @@
 
     let configupdate;
 
-    window.SetSliders = function() {
+    window.SetSliders = function(atOpen = false) {
+      if (document.getElementById("config-loading").innerHTML !== "" && !atOpen) return;
       google.script.run.withSuccessHandler(r => {
+        if (document.getElementById("config-loading").innerHTML !== "" && !atOpen) return;
         r = JSON.parse(r);
         document.getElementById('manualEditingSlider').checked = !(r[0] === "true");
         document.getElementById('pingSlider').checked = (r[1] === "true");
@@ -168,6 +173,20 @@
         changeLogList.innerHTML = "<li>Something went wrong while loading the changelogs</li>"
       }).GetChangeNotes();
     }
+
+    // Function to handle people going AFK (since there is a limit of 30 active members on web apps)
+    let afkTimer = window.setTimeout(() => {
+      document.getElementById("afkBanner").style.display = "";
+    }, 300000);
+
+    document.addEventListener("click", () => {
+      // TODO
+      window.clearTimeout(afkTimer);
+      document.getElementById("afkBanner").style.display = "none";
+      afkTimer = window.setTimeout(() => {
+        document.getElementById("afkBanner").style.display = "";
+      }, 300000);
+    });
 
     /*
     **************************************************************************************************
@@ -332,7 +351,7 @@
       outputDiv.innerHTML = '';
 
       if (!data || data.length === 0) {
-        document.getElementById("loading-search").innerText = "No matching data was found, please try another steam ID.";
+        document.getElementById("loading-search").innerText = "No matching data was found, please try another Player ID.";
         document.getElementById("searchLoading").setAttribute("style", "display: none;");
         return;
       }
@@ -607,7 +626,7 @@
         }, 1000);
       }).GetLastBackupTime();
 
-      SetSliders();
+      SetSliders(true);
       SetRankSelects(true);
     } catch (e) {  }
 
@@ -1637,8 +1656,7 @@
 
     // CONFIG ENABLING/DISABLING REQUIREMENTS ******************************
 
-    // TODO
-    window.ToggleReqsEnabled = function (event) {
+    window.ToggleReqsDisabled = function (event) {
       event.preventDefault();
       const button = document.getElementById("toggleReqsButton");
       const configLoading = document.getElementById("config-loading");
@@ -1722,7 +1740,7 @@
     // At opening of web app -> ensure req visibility is set
     google.script.run.withSuccessHandler(value => {
       SetReqVis(value, true)
-    }).ReturnReqsEnabled();
+    }).ReturnReqsDisabled();
 
     // ******************************************************************************************************
 
@@ -1931,7 +1949,7 @@
         name: document.getElementById('namefield').value,
         playerId: document.getElementById('playerIdfield').value,
         discordid: document.getElementById('discordidfield').value,
-        email: document.getElementById('emailfield').value,
+        email: data_email,
         rankchangetype: data_rankchangetype,
         reason: document.getElementById('reasonfield').value,
         infraction_type: document.getElementById('infrtypelist').value,

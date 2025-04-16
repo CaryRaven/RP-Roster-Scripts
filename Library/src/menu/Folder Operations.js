@@ -101,8 +101,7 @@ function removeAllDocAccess(allowedStaff) {
   sheet.getRange(6, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;
     i = i + 6;
-    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2] 
-      && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) return;
+    if (LIBRARY_SETTINGS.adminRanks.includes(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue())) return;
     
     unaffected.push(email[0].toLowerCase());
   });
@@ -157,7 +156,7 @@ function updateAccess(rankToAdd, currentRank) {
   if (LIBRARY_SETTINGS.ranks.indexOf(rankToAdd) >= LIBRARY_SETTINGS.ranks.indexOf(currentRank) && currentRank !== "Blackshadow Staff") return "";
 
   // Get array of current allowed ranks
-  const adminRankArray = LIBRARY_SETTINGS.adminRanks;
+  const adminRankArray = LIBRARY_SETTINGS.modRanks;
 
   if (adminRankArray.indexOf(rankToAdd) >= 0) {
     // If rank is already in array => remove them
@@ -167,7 +166,7 @@ function updateAccess(rankToAdd, currentRank) {
     adminRankArray.push(rankToAdd);
   }
 
-  LIBRARY_SETTINGS.adminRanks = adminRankArray;
+  LIBRARY_SETTINGS.modRanks = adminRankArray;
   
   Logger.log(adminRankArray);
   return [JSON.stringify(adminRankArray), LIBRARY_SETTINGS];
@@ -187,8 +186,7 @@ function restoreAllDocAccess(allowedStaff) {
   sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach((email, i) => {
     if (!email[0] || !email[0].includes("@")) return;
     i = i + 6;
-    if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2] 
-      && sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() !== LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) return;
+    if (LIBRARY_SETTINGS.adminRanks.includes(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue())) return;
     unaffected.push(email[0].toLowerCase());
   });
 

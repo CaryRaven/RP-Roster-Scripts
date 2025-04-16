@@ -4,11 +4,8 @@ if (RosterService.getSizeInBytes(LIBRARY_SETTINGS) >= 450000) throw new Error("S
 RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
-function T() {
-  // RosterService.permissionsGuard(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
-  DriveApp.getFolderById("1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc").addViewer("noir.px@hotmail.com")
-  DriveApp.getFolderById("1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc").removeViewer("noir.px@hotmail.com")
-  // console.log(DriveApp.getFileById("1QiBmaUTcKU0iZ1uyEYH30ZGD8cAZfjz5M0LEb5ZceZU").getParents());
+function T() { 
+  DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).removeViewer("noir.px@hotmail.com");
 }
 
 /**
@@ -41,9 +38,8 @@ function doGet() {
   userProperty.setProperty("userData", JSON.stringify(userData));
 
   // If lockdown is enabled & not in the Admin Ranks or allowedStaff -> Show terminal animation & decline access
-  const lockdown = PropertiesService.getScriptProperties().getProperty("lockdownEnabled");
-  if (lockdown === "true") {
-    if (!LIBRARY_SETTINGS.adminRanks.includes(userData.rank) && !allowedStaff.includes(user)) {
+  if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "true") {
+    if (!LIBRARY_SETTINGS.modRanks.includes(userData.rank) && !allowedStaff.includes(user)) {
       const lockdownFile = RosterService.getHtmlRetroTerminal();
       const lockdownPage = HtmlService.createTemplate(lockdownFile);
       lockdownPage.type = "lockdown";
@@ -85,16 +81,26 @@ function doGet() {
     const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
     template.user = user;
     template.ranks = LIBRARY_SETTINGS.ranks;
-    template.adminRanks = LIBRARY_SETTINGS.adminRanks;
+    template.adminRanks = LIBRARY_SETTINGS.modRanks;
     template.allowedStaff = allowedStaff;
     template.factionName = LIBRARY_SETTINGS.factionName;
 
     // Set which access the user gets
     if (allowedStaff.includes(user)) {
+
+      // Check if user is owner/editor
+      if (!DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().includes(Session.getActiveUser()) 
+        && !DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getOwner().getEmail().includes(userData.email)) return HtmlService.createHtmlOutput("<h1>You do not have sufficient permissions to edit the roster.</h1>");
+
       template.accessType = "dev";
-    } else if (LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2].includes(userData.rank)) {
-      template.accessType = "admin";
     } else if (LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) {
+
+      // Check if user is owner/editor
+      if (!DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().includes(Session.getActiveUser()) 
+        && !DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getOwner().getEmail().includes(userData.email)) return HtmlService.createHtmlOutput("<h1>You do not have sufficient permissions to edit the roster.</h1>");
+
+      template.accessType = "admin";
+    } else if (LIBRARY_SETTINGS.modRanks.includes(userData.rank)) {
       template.accessType = "mod";
     } else {
       template.accessType = "visitor";
@@ -117,9 +123,8 @@ function doGet() {
     }
 
     // Store the manualEnabled property on the roster so it can be accessed by the bound script
-    const value = PropertiesService.getScriptProperties().getProperty("manualEnabled");
     const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
-    sheet.getRange(10, 1).setValue(value);
+    sheet.getRange(10, 1).setValue(LIBRARY_SETTINGS.manualEnabled.toString());
 
     userProperty.setProperty("lastOpenMenu", new Date().valueOf());
     return template.evaluate();
@@ -153,13 +158,14 @@ function GetScriptUrl() {
 function AddRankRow(rank, num = 1, discordnotif = true) {
   console.log(rank);
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  const reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
   const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   
-  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0) {
+  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0 && reqsDisabled.toString() === "false") {
     RosterService.addReqRow(rank.toString(), num, undefined, LIBRARY_SETTINGS.promoReqs[rankIndex]);
   }
 
-  const returnVal = RosterService.addRankRow(rank, userData, num, discordnotif); // Actual func
+  const returnVal = RosterService.addRankRow(rank, userData, num, discordnotif, undefined); // Actual func
   return returnVal; // Only returns something if no proper rank was given
 }
 

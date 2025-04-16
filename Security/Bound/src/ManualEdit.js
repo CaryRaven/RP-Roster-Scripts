@@ -1,16 +1,6 @@
 const LIBRARY_SETTINGS = JSON.parse(PropertiesService.getDocumentProperties().getProperty("settings"));
 RosterService.init(LIBRARY_SETTINGS);
 
-function F() {
-  // throw new Error("Do not run this function from the editor");
-  const data = {};
-  PropertiesService.getDocumentProperties().setProperty("settings", JSON.stringify(data));
-}
-
-function t() {
-  console.log(RosterService.getLastTaskRow(RosterService.getCollect(1504741049), "Completed"));
-}
-
 function ManualEdit(e) {
   if (!e) throw new Error("Do not run this function from the editor");
   const sheet = e.source.getActiveSheet();
@@ -22,7 +12,7 @@ function ManualEdit(e) {
   console.log(manualEnabled);
   if (manualEnabled == false) return;
 
-  const backupSpreadsheet = SpreadsheetApp.openById(LIBRARY_SETTINGS.backupsbeetId);
+  const backupSpreadsheet = SpreadsheetApp.openById(LIBRARY_SETTINGS.spreadsheetId_backup);
   const backupSheet = backupSpreadsheet.getSheetById(sheetID);
 
   if (!backupSheet) return;

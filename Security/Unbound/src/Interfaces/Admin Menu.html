@@ -16,6 +16,10 @@
   <div id="actionBanner" style="display: none;">
     <h3>Request <span id="requestType"></span></h3>
   </div>
+  <div id="afkBanner" class="hazard-background" style="display: none;">
+    <h1>AFK Warning</h1><br>
+    <h3>Please do not open the admin menu if you do not need to be here.</h3>
+  </div>
   <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
   <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
 
@@ -85,7 +89,7 @@
         <? if (accessType === "admin" || accessType === "dev") { ?>
         <li>
           <button onclick="ShowConfig()">
-            <i class='bx bx-shield-quarter bx-tada-hover'></i>
+            <i class='bx bxs-cog bx-tada-hover'></i>
             <span class="tooltip">Config</span>
           </button>
         </li>
@@ -109,8 +113,8 @@
     <div class="main-content" id="dashboard">
       <div class="container">
         <div class="textbox">
-          <h1>Admin Menu</h1><br>
-          <h3>This menu is only to be accessed by individuals authorized to edit the <?= factionName ?> Roster.<br>
+          <h1><i class="bx bxs-dashboard"></i> Dashboard</h1><br>
+          <h3>This menu is only to be accessed by authorized individuals.<br>
             If you are here unauthorized, no function will work.
           </h3><br>
           <hr><br>
@@ -118,7 +122,7 @@
             your superior for help.<br>
             This page is where all <?= factionName ?> roster edits are made, our systems do everything automatically so do not worry
             about handling permissions or such.</p><br><br>
-          <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the Admin Menu
+          <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the <?= factionName ?> Admin Menu
           </p>
           <div class="box-container">
             <button class="option-box" onclick="OpenLogForm()">
@@ -154,7 +158,7 @@
           </div>
           <table class="config-switches" style="margin-top: 30px; display: none;" id="terminalConfig">
               <td>
-                Enabled/Disable terminal animation when opening admin menu:
+                Enable/Disable terminal animation when opening admin menu:
               </td>
               <td class="config-switch">
                 <label class="switch">
@@ -286,12 +290,12 @@
     <div class="main-content" id="search_panel" style="display: none;">
       <div class="container">
         <div class="textbox">
-          <h1>Search Panel</h1><br>
+          <h1><i class='bx bx-search-alt-2'></i> Search Panel</h1><br>
           <p>Input a Player ID and you will be shown all logs related to this ID.</p><br>
           <form>
             <label for="inputField">Enter Player ID:</label><br>
-            <input type="text" id="inputField" maxlength="25" required />
-            <button type="submit" class="submitButton-mini" onclick="UpdateDiv(event)">Submit</button>
+            <input type="text" id="inputField" maxlength="25" required style="width: 20%;" />
+            <button type="submit" class="submitButton-mini-mini" onclick="UpdateDiv(event)">Submit</button>
           </form>
           <p id="loading-search"></p><br>
           <div class="loader" id="searchLoading"></div>
@@ -306,7 +310,7 @@
     <div class="main-content" id="requests-panel" style="display: none;">
       <div class="container">
         <div class="textbox">
-          <h1>Requests Overview</h1><br>
+          <h1><i class='bx bx-calendar-check'></i> Requests Overview</h1><br>
           <p>From here you can manage incoming requests made by roster moderators.<br>They need your authorization in order to perform an action, you may accept/decline these requests here. They will be notified of your verdict.</p><br>
           <div id="mainDiv">
             <!-- Request output goes here -->
@@ -319,7 +323,7 @@
     <div class="main-content" id="config" style="display: none;">
       <div class="container">
         <div class="textbox" id="config-textbox" style="display: none;">
-          <h1>Config Panel</h1><br>
+          <h1> <i class='bx bxs-cog'></i> Config Panel</h1><br>
           <p>Configure all sorts of aspects of the <?= factionName ?> Roster here!<br>When changing something in this menu, wait for
             the loading animation at the bottom of the page to stop before performing another operation.</p>
           <br>
@@ -335,7 +339,7 @@
 
           <form id="config-new-folder">
             <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.</span></label><br>
-            <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folderID">
+            <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folder or file ID (one at a time)">
             <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button>
           </form><br>
 
@@ -359,9 +363,9 @@
               <select id="new-rank-before-select">
               </select><br>
               <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
-              <input type="text" id="newRankViewFolders" placeholder="Add the folders seperated by a comma"><br>
+              <input type="text" id="newRankViewFolders" placeholder="Add the file & folder IDs seperated by a comma"><br>
               <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
-              <input type="text" id="newRankEditFolders" placeholder="Add the folders seperated by a comma">
+              <input type="text" id="newRankEditFolders" placeholder="Add the file & folder IDs seperated by a comma">
               <table class="config-switches">
                 <tr>
                   <td>
@@ -401,7 +405,7 @@
               <input type="number" id="rankRowAmount" style="width: 8%;" placeholder="#">
               <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button" style="width: 7%;">Add</button>
               <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button" style="width: 7%;">Remove</button>
-            </form><br><hr><br>
+            </form><br>
           </div><br><br>
 
           <button id="manageSpecialization" class="submitButton">Manage Specializations</button>
@@ -510,10 +514,10 @@
             
             <tr>
               <td>
-                <span id="reqIdentifier"></span> <?= factionName ?> Promotion Requirements:<br><span id="backupTime" style="font-weight: 200; font-size: 12px;">Disabling this will hide sheets/inputs regarding promotion requirements</span>
+                <span id="reqIdentifier"></span> <?= factionName ?> Promotion Requirements:<br><span style="font-weight: 200; font-size: 12px;">Disabling this will hide sheets/inputs regarding promotion requirements</span>
               </td>
               <td class="config-switch">
-                <button class="submitButton-mini-mini" id="toggleReqsButton" onclick="ToggleReqsEnabled(event)">Requirements</button>
+                <button class="submitButton-mini-mini" id="toggleReqsButton" onclick="ToggleReqsDisabled(event)">Requirements</button>
               </td>
             </tr>
             <tr>
@@ -529,7 +533,7 @@
                 <span id="lockdownIdentifier"></span> a full Lockdown of all <?= factionName ?> Documentation:
               </td>
               <td class="config-switch">
-                <button class="submitButton-mini-mini" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
+                <button class="submitButton-mini-mini" style="background-color: red;" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
               </td>
             </tr>
           </table>
@@ -569,8 +573,8 @@
                 <option value="Blacklist">Blacklist / Suspension</option>
                 <? } ?>
                 <? if (accessType === "dev") { ?>
-                <option value="Infraction Appeal">Appeal Infraction [SM+]</option>
-                <option value="Blacklist Appeal">Appeal Blacklist [SM+]</option>
+                <option value="Infraction Appeal">Appeal Infraction [OSM+]</option>
+                <option value="Blacklist Appeal">Appeal Blacklist [OSM+]</option>
                 <? } ?>
               </select>
               <hr><br>

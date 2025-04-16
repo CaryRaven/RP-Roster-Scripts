@@ -1,6 +1,6 @@
 function GenInterviewUI() {
   try {
-    DriveApp.getFolderById("17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB");
+    DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_interviews);
     const interviewFile = RosterService.getHtmlInterview();
     return SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(interviewFile).setWidth(700).setHeight(900), "Generate Interview Doc");
   } catch(e) {
@@ -18,7 +18,7 @@ function GenerateInterview(email, name, rank) {
   docNum = Number(docNum) ? Number(docNum) + 1 : 1;
   PropertiesService.getDocumentProperties().setProperty("docNum", docNum);
 
-  const destination = DriveApp.getFolderById("17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB");
+  const destination = DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_interviews);
   const template = DriveApp.getFileById("1tS2ae6_tnfBCfLaaNTnQQD7qBb7uz9uahvEZjlkZkAQ");
   let userData = RosterService.getUserData(email);
 

@@ -5,21 +5,19 @@
  * @param {Object} inputData - Data input by the user
  * @param {PropertyService.UserProperty} userData
  * @param {PropertyService.ScriptProperty} allowedStaff
- * @param {PropertyService.ScriptProperty} lockdown
  * @param {Boolean} threshold (optional) - Is this function run because of the threshold?
  * @returns {String}
  */
-function processLog(inputData, userData, allowedStaff, lockdown, threshold = false) {
+function processLog(inputData, userData, allowedStaff, threshold = false) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData || typeof inputData !== "object") throw new Error("Do not run this function from the editor");
   if (!userData) throw new Error("No userdata provided");
   if (!allowedStaff) throw new Error("No allowed staff list provided");
-  if (!lockdown) throw new Error("No valid lockdown time provided");
 
   // If this was called due to a threshold
   if (threshold === true) {
     inputData.reason = "Exceeded Infraction Threshold";
-    switch (LIBRARY_SETTINGS.thresholdAction) {
+    switch (LIBRARY_SETTINGS.threshold_action) {
       case "Suspension":
         inputData.type_check = "Blacklist";
         inputData.type = "Blacklist";
@@ -110,7 +108,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
     // Allow managing yourself if made through a request
     if (targetData.playerId == userData.playerId) return "You cannot manage yourself";
-    if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
+    if (LIBRARY_SETTINGS.adminRanks.includes(targetData.rank)) return "You cannot manage Senior CL4 members from this menu";
     if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
     if (ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank) && !allowedStaff.includes(userData.email)) return "You cannot manage people with a higher rank than you.";
 
@@ -126,7 +124,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     case "Rank Change":
       let rowDestination;
       let currentRankIndex = ranks.indexOf(targetData.rank);
-      sheet = getCollect(LIBRARY_SETTINGS.rankchangeId);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
       const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
       insertLogRow = getLastRow(sheet);
 
@@ -142,21 +140,21 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           // Check if google account exists
           try {
-            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").addViewer(targetData.email);
-            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").removeViewer(targetData.email);
+            DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(targetData.email);
+            DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(targetData.email);
           } catch(e) {
             console.log(e);
             return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
           }
 
           // Check cooldown
-          const lastRankChange = dateToMilliseconds(roster.getRange(targetData.row, LIBRARY_SETTINGS.lastRankChange).getDisplayValue());
+          const lastRankChange = dateToMilliseconds(roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.lastRankChange).getDisplayValue());
           const timeDiff = new Date().valueOf() - lastRankChange;
-          if (timeDiff <= (LIBRARY_SETTINGS.promoCooldown * 86400000)) return `You must wait ${LIBRARY_SETTINGS.promoCooldown} days between Promotions`;
+          if (timeDiff <= (LIBRARY_SETTINGS.cooldown_promotion * 86400000)) return `You must wait ${LIBRARY_SETTINGS.cooldown_promotion} days between Promotions`;
 
           // Check if the person has an open interview
           if (LIBRARY_SETTINGS.interviewRequired[currentRankIndex + 1].toString() !== "false") {
-            const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
+            const files = DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_interviews).getFiles();
             let hasInterview = false;
             while (files.hasNext() && !hasInterview) {
               const file = files.next();
@@ -179,7 +177,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
                   if (!editors.includes(userData.email)) continue;
                 }
                 try { 
-                  file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+                  file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_closedInterviews));
                   hasInterview = true;
                 } catch(e) { continue }
               }
@@ -196,7 +194,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           insertRankChangeLog(inputData, userData, targetData, promotionDestination, insertLogRow);
           protectRange("N", sheet, null, insertLogRow);
 
-          if (lockdown === "false") {
+          if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
             removeDocAccess(targetData.email);
             addDocAccess(currentRankIndex + 1, targetData.email);
           }
@@ -211,8 +209,8 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           // Check if google account exists
           try {
-            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").addViewer(targetData.email);
-            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").removeViewer(targetData.email);
+            DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(targetData.email);
+            DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(targetData.email);
           } catch(e) {
             console.log(e);
             return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
@@ -224,7 +222,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
           protectRange("N", sheet, null, insertLogRow);
 
           // Only add doc access if no lockdown
-          if (lockdown === "false") {
+          if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
             removeDocAccess(targetData.email);
             addDocAccess(currentRankIndex - 1, targetData.email);
           }
@@ -243,8 +241,8 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           // Check if google account exists
           try {
-            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").addViewer(inputData.email);
-            DriveApp.getFolderById("13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A").removeViewer(inputData.email);
+            DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(inputData.email);
+            DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(inputData.email);
           } catch(e) {
             console.log(e);
             return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
@@ -265,7 +263,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           // Check if the person has an open interview
           if (LIBRARY_SETTINGS.interviewRequired[0].toString() !== "false") {
-            const files = DriveApp.getFolderById(LIBRARY_SETTINGS.interviewFolderId).getFiles();
+            const files = DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_interviews).getFiles();
             let hasInterview = false;
             while (files.hasNext() && !hasInterview) {
               const file = files.next();
@@ -287,7 +285,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
                   if (!editors.includes(userData.email)) continue;
                 }
                 try { 
-                  file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.closedInterviewFolderId));
+                  file.moveTo(DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_closedInterviews));
                   hasInterview = true;
                 } catch(e) { continue }
               }
@@ -303,7 +301,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
 
           protectRange("N", sheet, null, insertLogRow);
 
-          if (lockdown === "false") {
+          if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
             removeDocAccess(inputData.email);
             addDocAccess(0, inputData.email);
           }
@@ -313,7 +311,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     case "Infraction Log":
       if (threshold === false) {
         if (targetData.status == "Suspended") return "You cannot strike suspended members, consider a removal/blacklist";
-        sheet = getCollect(LIBRARY_SETTINGS.infractionId);
+        sheet = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
         insertLogRow = getLastRow(sheet);
         
         // few random checks
@@ -327,19 +325,19 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
     case "LOA Log":
       const timeDiff = new Date().valueOf() - dateToMilliseconds(targetData.loaEnd);
       if (timeDiff < 0) return "This user is already on LOA, you cannot log another one";
-      if (timeDiff <= (LIBRARY_SETTINGS.loaCooldown * 86400000)) return `You must wait ${LIBRARY_SETTINGS.loaCooldown} days between LOAs`;
+      if (timeDiff <= (LIBRARY_SETTINGS.cooldown_loa * 86400000)) return `You must wait ${LIBRARY_SETTINGS.cooldown_loa} days between LOAs`;
 
       // few random checks
       if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
-      sheet = getCollect(LIBRARY_SETTINGS.loaId);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_loa);
       insertLogRow = getLastRow(sheet);
 
       sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 10).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
       protectRange("N", sheet, null, insertLogRow);
       break;
     case "Blacklist":
-      sheet = getCollect(LIBRARY_SETTINGS.blId);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
       insertLogRow = getLastRow(sheet);
 
       // few random checks
@@ -349,7 +347,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       protectRange("A", sheet, 10, insertLogRow);
 
       if (inputData.blacklist_type === "Blacklist" && targetData.row) {
-        sheet = getCollect(LIBRARY_SETTINGS.rankchangeId);
+        sheet = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
         moveMember(targetData.row);
         inputData.rankchangetype = "Blacklisted";
         insertLogRow = getLastRow(sheet);
@@ -380,7 +378,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
         }
       }
 
-      sheet = getCollect(LIBRARY_SETTINGS.reqId);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_reqs);
       insertLogRow = getLastRow(sheet);
 
       // Insert log
@@ -388,7 +386,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       protectRange("N", sheet, null, insertLogRow);
       break;
     case "Blacklist Appeal":
-      sheet = getCollect(LIBRARY_SETTINGS.blId);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
       // Check if the given id corresponds to a log
       if (sheet.getRange(Number(inputData.log_id), 8).getValue() != '') {
         if (sheet.getRange(Number(inputData.log_id), 9).getValue() == true) {
@@ -412,7 +410,7 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       }
       break;
     case "Infraction Appeal":
-      sheet = getCollect(LIBRARY_SETTINGS.infractionId);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
       // Check if the given id corresponds to a log
       if (sheet.getRange(Number(inputData.log_id), 8).getValue() != '') {
         // Check if log is not appealed yet
@@ -433,5 +431,5 @@ function processLog(inputData, userData, allowedStaff, lockdown, threshold = fal
       break;
   }
   if (inputData.type !== "Infraction Log") sendDiscordLog(inputData, targetData, userData);
-  return JSON.stringify(["Log submitted", Number(targetData.infractions) + 1, LIBRARY_SETTINGS.threshold, LIBRARY_SETTINGS.thresholdAction]);
+  return JSON.stringify(["Log submitted", Number(targetData.infractions) + 1, LIBRARY_SETTINGS.threshold_num, LIBRARY_SETTINGS.threshold_action]);
 }

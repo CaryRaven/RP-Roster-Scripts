@@ -167,17 +167,8 @@ function sendDiscordLog(inputData, targetData, userData) {
     muteHttpExceptions: true
   };
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-      break;
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   // Send message
   const response = webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
@@ -192,17 +183,9 @@ function sendDiscordLog(inputData, targetData, userData) {
 function sendDiscordUnauthed() {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-      break;
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
+
   let user = Session.getActiveUser().getEmail();
 
   let payload = JSON.stringify({
@@ -240,6 +223,7 @@ function sendDiscordUnauthed() {
 /**
  * Send an error report to Staff Administration
  * @param {String} error - the error message
+ * @deprecated
  */
 function sendDiscordError(error) {
   if (!isInit) throw new Error("Library is not yet initialized");
@@ -286,17 +270,8 @@ function sendDiscordPermissionReport(flagArray, flaggedDocs) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!Array.isArray(flagArray) && !Array.isArray(flaggedDocs) ) throw new Error("PermissionReport: no valid flag array provided");
   
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      webhookURLs.concat(JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL")));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   // Forge fields
   const fields = flagArray.map((flag) => ({
@@ -353,17 +328,8 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
   if (!userData || typeof userData != "object") throw new Error("DiscordConfig: no valid user data provided");
   if (typeof timeSinceBackup != 'number') throw new Error("DiscordConfig: no valid time since backup provided");
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-      break;
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   let userInfo = `Name: ${userData.name}\nPlayerID: ${userData.playerId}\nDiscordID: ${userData.discordId}`;
   let embedTitle;
@@ -404,7 +370,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       embedColor = value === true ? "11600386" : "1143627";
       info =
         value === true
-          ? `During the lockdown, only ${LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 2]} and ${LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]} will be allowed to access the ${LIBRARY_SETTINGS.factionName} Admin Menu. Please wait while they resolve the situation.`
+          ? `During the lockdown, only ${LIBRARY_SETTINGS.adminRanks} will be allowed to access the ${LIBRARY_SETTINGS.factionName} Admin Menu. Please wait while they resolve the situation.`
           : `The ${LIBRARY_SETTINGS.factionName} Admin Menu can be used as normal again.`;
       footerMessage = "Thank you for your patience.";
       break;
@@ -476,7 +442,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       footerMessage = "";
       break;
     case "reqChange":
-      embedTitle = value === true ? `[🛠️] ${LIBRARY_SETTINGS.factionName} Promotion Requirement Disabled.` : `[🛠️] ${LIBRARY_SETTINGS.factionName} Promotion Requirement Enabled.`;
+      embedTitle = value === true ? `[🛠️] ${LIBRARY_SETTINGS.factionName} Promotion Requirements Disabled.` : `[🛠️] ${LIBRARY_SETTINGS.factionName} Promotion Requirements Enabled.`;
       embedColor = value === true ? "16497668" : "1143627";
       info = value === true ? `All promotion requirements for all ranks have been disabled` : `Promotions requirements for ${LIBRARY_SETTINGS.factionName} have been enabled, please check the roster to see what tasks you need to complete in order to be eligible for promotion.`;
       footerMessage = "";
@@ -568,16 +534,8 @@ function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
     muteHttpExceptions: true,
   };
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
 }
@@ -622,16 +580,8 @@ function sendDiscordNewRank(rank, added = true) {
     muteHttpExceptions: true,
   };
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
 }
@@ -646,7 +596,7 @@ function sendDiscordChangeLog(notes, url = '') {
 
    let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
-    // content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
+    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [
       {
         title: `⚙️ Admin Menu Update ⚙️`,
@@ -676,16 +626,8 @@ function sendDiscordChangeLog(notes, url = '') {
     muteHttpExceptions: true,
   };
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
 }
@@ -723,16 +665,8 @@ function sendDiscordManualEdit(range) {
     muteHttpExceptions: true,
   };
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
 }
@@ -777,16 +711,8 @@ function sendDiscordRequestDenied(data, userData) {
     muteHttpExceptions: true,
   };
 
-  let webhookURLs;
-  switch(LIBRARY_SETTINGS.factionName) {
-    case "Security":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
-      break;
-    case "Staff":
-      webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-    default:
-      throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
-  }
+  const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
+  const webhookURLs = getDiscordWebhookUrls(authKey);
 
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
 }

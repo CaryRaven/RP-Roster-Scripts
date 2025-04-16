@@ -12,9 +12,7 @@ function GetAllowedStaff() {
  * @deprecated
  */
 function BackupSheet() {
-  const be = PropertiesService.getScriptProperties().getProperty("backupEnabled");
-  const me = PropertiesService.getScriptProperties().getProperty("manualEnabled");
-  RosterService.backupSheet(be, me);
+  RosterService.backupSheet();
   PropertiesService.getScriptProperties().setProperty("backupTime", JSON.stringify(new Date()));
 }
 
