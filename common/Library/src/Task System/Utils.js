@@ -35,7 +35,7 @@ function task_add(inputData) {
  * @param {Object} range - range object, has to be provided on spreadsheet side
  * @returns {String|Void|Array[4]}
  */ 
-function task_manager(sheet, range) {
+function task_manager(sheet, range, oldValue) {
   const col = range.getColumn();
   const row = range.getRow();
   const sheetID = sheet.getSheetId();
@@ -50,7 +50,7 @@ function task_manager(sheet, range) {
     range.clearContent();
     return "This is not a task";
   }
-  if (sheet.getRange(row, 5).getValue() == "") {
+  if (sheet.getRange(row, 3).getValue() == "") {
     range.setValue(false);
     return "This task is empty";
   }
@@ -63,27 +63,48 @@ function task_manager(sheet, range) {
   const title = sheet.getRange(row, 5).getValue();
 
   switch (col) {
-    case 10:
+    case 5: // Editing title
+      if (range.getValue().length > 30 || range.getValue() === "") {
+        range.setValue(oldValue);
+        return "Invalid Title";
+      }
+
+      return "Title Edited";
+
+    case 6: // Editing description
+      if (range.getValue().length > 1500 || range.getValue() === "") {
+        range.setValue(oldValue);
+        return "Invalid Description";
+      }
+
+      return "Description Edited";
+
+    case 10: // Assigning
       range.setValue(false);
       return ["Assign", row, col, title];
-    case 11:
+
+    case 11: // Cycling status
       const r = task_cycleStatus(row);
 
       if (r) return r;
       return;
-    case 12:
+
+    case 12: // Postponing
       range.setValue(false);
       return ["Postpone", row, col, title];
-    case 13:
+
+    case 13: // Changing priority
       range.setValue(false);
       return ["Priority", row, col, title];
-    case 14:
+
+    case 14: // Deleting
       const inputData = task_delete(row);
       if (typeof inputData !== "object") return inputData.toString();
 
       task_sendDiscordMessage("Delete", inputData);
       task_isAssigned();
       return;
+
     default:
       return;
   }
@@ -396,7 +417,7 @@ function task_cycleStatus(row) {
   console.log(`Loc: ${newLoc}\nEndLoc: ${endLoc}`);
 
   const data = s.getRange(row, 3, 1, 6).getValues();
-  DeleteTask(row, 11);
+  task_delete(row, 11);
   console.log(`Data: ${data}`)
 
   // If there are no more free slots in a type
@@ -428,7 +449,10 @@ function task_cycleStatus(row) {
 
   s.getRange(newLoc, 3, 1, 6).setValues(data);
   s.getRange(newLoc, 2).setValue(type);
-  if (type === "Completed") protectRange("N", s, null, newLoc);
+  if (type === "Completed") {
+    s.getRange(newLoc, 4).setValue(new Date());
+    protectRange("N", s, null, newLoc);
+  }
   task_sendDiscordMessage("Status", inputData);
 }
 

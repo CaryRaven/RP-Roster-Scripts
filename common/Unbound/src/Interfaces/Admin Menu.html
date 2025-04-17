@@ -329,26 +329,38 @@
           <br>
           <hr><br>
 
-          <form id="config-form-adminRanks">
-            <label for="amdin-role-select"><strong>Select Rank to add/remove access to the Admin Menu</strong> <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="allowedRanks"><?= adminRanks ?></span>
+          <form id="config-form-modRanks">
+            <label for="mod-role-select"><strong>Select Rank to add/remove Mod access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Mod" access means that the person won't get acess to requests or config and all logs/edits they make via this menu will need to be approved by a manager, though they are able to perform operations on their subordinates.</span>
+            <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="modRanks"><?= modRanks.join(", ") ?></span><br>
             </label><br>
-            <select id="amdin-role-select" style="width: 50%;" >
+            <select id="mod-role-select" style="width: 50%;" >
             </select>
-            <button id="AdminRankButton" onclick="SaveAdminRanks(event)" type="submit" class="submitButton-mini">Add/Remove</button>
-          </form><br>
+            <button id="ModRankButton" onclick="SaveRanks(event, true)" type="submit" class="submitButton-mini">Add/Remove</button>
+          </form><br><hr><br>
+
+          <form id="config-form-managerRanks">
+            <label for="manager-role-select"><strong>Select Rank to add/remove Manager access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Manager" access means that the person won't get acess to the config but they will be able to accept/deny requests made by their subordinates & also manage their subordinates themselves without needing to make a request.</span>
+            <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="managerRanks"><?= managerRanks.join(", ") ?></span><br>
+            </label><br>
+            <select id="manager-role-select" style="width: 50%;" >
+            </select>
+            <button id="ManagerRankButton" onclick="SaveRanks(event, false)" type="submit" class="submitButton-mini">Add/Remove</button>
+          </form><br><hr><br>
 
           <form id="config-new-folder">
             <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.</span></label><br>
             <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folder or file ID (one at a time)">
-            <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button>
-          </form><br>
+            <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button><br>
+            <button type="button" class="submitButton" id="registeredListButton" style="width: 40%;">Registered List</button><br>
+            <div id="registeredListContent" class="container" style="width: 40%;"></div>
+          </form><br><hr><br><br>
 
           <? if (accessType === "dev") { ?>
           <form id="changelog-form">
             <label for="changes"><strong>Add the change notes, seperated by a comma:</strong></label><br>
             <input type="message" id="changes" placeholder="Add your changes, seperated by a comma" minlength="20" style="width: 50%;"  required></input>
             <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
-          </form><br>
+          </form><br><hr><br>
           <? } ?>
 
           <button id="manageRank" class="submitButton">Manage Ranks</button>
@@ -362,9 +374,9 @@
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:<br><span style="font-size: 13px; font-weight: 100;">Optional, default: at the top of the hierarchy (below the Chiefs)</span></label><br>
               <select id="new-rank-before-select">
               </select><br>
-              <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
+              <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the file & folder IDs seperated by a comma"><br>
-              <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related folders ONLY</span></label><br>
+              <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the file & folder IDs seperated by a comma">
               <table class="config-switches">
                 <tr>

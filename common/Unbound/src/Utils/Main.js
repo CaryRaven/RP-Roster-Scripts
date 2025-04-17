@@ -4,7 +4,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
   const filter = RosterService.filterQuotes(inputData);
   if (!filter) return "No special characters allowed";
 
-  if (accessType === "admin" || accessType === "dev") {
+  if (accessType === "manager" || accessType === "admin" || accessType === "dev") {
     // Normal log
     return RosterService.processLog(inputData, userData, allowedStaff, threshold);
   } else {
@@ -448,15 +448,16 @@ function GetSpreadsheetData(inputValue) {
  * @param {String} rankToAdd
  * @param {String} currentRank
  */
-function UpdateAccess(rankToAdd, currentRank) {
-  const returnVal = RosterService.updateAccess(rankToAdd, currentRank);
+function UpdateAccess(rankToAdd, currentRank, mod) {
+  const returnVal = RosterService.updateAccess(rankToAdd, currentRank, mod);
 
   if (typeof returnVal === "string") {
+    console.log(returnVal);
     return returnVal;
   } else if (Array.isArray(returnVal)) {
-    PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
-    RosterService.init(returnVal[1]);
-    return returnVal[0]
+    RosterService.init(returnVal[0]);
+    PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[0]));
+    return JSON.stringify([returnVal[0].modRanks, returnVal[0].managerRanks]);
   }
 }
 
@@ -542,6 +543,8 @@ function AddFolder(id) {
     }
   }
 
+  if (folder.getOwner().getEmail() !== "dontorro208@gmail.com") return "Wrong Ownership";
+
   let message;
   if (LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id) >= 0) {
     LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].splice(LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id), 1);
@@ -622,4 +625,40 @@ function GetReqs(rank, email = null) {
   const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   if (rankIndex < 0) return;
   return JSON.stringify(LIBRARY_SETTINGS.promoReqs[rankIndex]);
+}
+
+/**
+ * Return all registered files/folders and their names
+ * @returns {JSON.Array[Object]}
+ */
+function ReturnRegistered() {
+  const ids = LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1];
+  let returnArray = [];
+
+  ids.forEach(id => {
+    let data = {
+      id: id.toString()
+    }
+
+    let doc;
+    try {
+      doc = DriveApp.getFolderById(id);
+      data.title = doc.getName();
+      data.type = "Folder";
+    } catch(e) {
+      try {
+        doc = DriveApp.getFileById(id);
+        data.title = doc.getName();
+        data.type = "File";
+      } catch(ee) {
+        data.title = "Unknown";
+        data.type = "Unknown";
+      }
+    }
+
+    if (!data.id || !data.title || !data.type) throw new Error("Invalid id");
+    return returnArray.push(data);
+  });
+
+  return JSON.stringify(returnArray);
 }

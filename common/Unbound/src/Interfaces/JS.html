@@ -70,7 +70,8 @@
 
     window.SetRankSelects = function(forced = false) {
       let initRanks = document.getElementById("ranks")?.innerText;
-      let rankSelect = document.getElementById("amdin-role-select");
+      let rankSelect = document.getElementById("mod-role-select");
+      let managerRankSelect = document.getElementById("manager-role-select");
       let rankRowSelect = document.getElementById("new-rank-select");
       let addRankSelect = document.getElementById("new-rank-before-select");
       let removeRankSelect = document.getElementById("remove-rank-select");
@@ -83,13 +84,15 @@
       }
 
       if (rankSelect.value === "" || forced === true) rankSelect.innerHTML = '<option value=""></option>';
+      if (managerRankSelect.value === "" || forced === true) managerRankSelect.innerHTML = '<option value=""></option>';
       if (rankRowSelect.value === "" || forced === true) rankRowSelect.innerHTML = '<option value=""></option>';
       if (removeRankSelect.value === "" || forced === true) removeRankSelect.innerHTML = '<option value=""></option>';
       if (addRankSelect.value === "" || forced === true) addRankSelect.innerHTML = '<option value=""></option>';
       if (editRankSelect.value === "" || forced === true) editRankSelect.innerHTML = '<option value=""></option>';
 
       initRanks.forEach(rankName => {
-
+        
+        // TODO: fix this statement
         if (!rankName.includes("Site") && !rankName.includes("Chief")) {
 
           if (rankSelect.value === "" || forced === true) {
@@ -97,6 +100,13 @@
             rankOption.value = rankName;
             rankOption.innerText = rankName;
             rankSelect.appendChild(rankOption); 
+          }
+
+          if (managerRankSelect.value === "" || forced === true) {
+            const rankOption = document.createElement("option");
+            rankOption.value = rankName;
+            rankOption.innerText = rankName;
+            managerRankSelect.appendChild(rankOption); 
           }
 
           if (rankRowSelect.value === "" || forced === true) {
@@ -927,11 +937,21 @@
       }).ResetPermissions();
     }
 
-    window.SaveAdminRanks = function () {
+    window.SaveRanks = function (event, mod = true) {
       event.preventDefault();
-      const button = document.getElementById('AdminRankButton');
+
+      let button;
+      let accessRank;
+
+      if (mod) {
+        button = document.getElementById('ModRankButton');
+        accessRank = document.getElementById("mod-role-select").value;
+      } else {
+        button = document.getElementById('ManagerRankButton');
+        accessRank = document.getElementById("manager-role-select").value;
+      }
+
       button.disabled = true;
-      let accessRank = document.getElementById("amdin-role-select").value;
       let rank = document.getElementById("rank").innerText;
       let ranks = document.getElementById("ranks")?.innerText;
       ranks = ranks.split(",");
@@ -957,23 +977,44 @@
             button.classList.remove("red");
             button.innerText = "Add/Remove";
             button.disabled = false;
-            document.getElementById("config-form-adminRanks").reset();
+
+            if (mod) {
+              document.getElementById("config-form-modRanks").reset();
+            } else {
+              document.getElementById("config-form-managerRanks").reset();
+            }
           }, 2000);
         } else {
-          InsertRanks(updatedarray);
+          InsertRanks(updatedarray, mod);
         }
       }).withFailureHandler(error => {
         
         button.disabled = false;
-      }).UpdateAccess(accessRank, rank);
+      }).UpdateAccess(accessRank, rank, mod);
     };
 
-    window.InsertRanks = function (ranks) {
-      const button = document.getElementById('AdminRankButton');
+    window.InsertRanks = function (ranks, mod) {
       ranks = JSON.parse(ranks);
-      document.getElementById("allowedRanks").innerText = ranks;
-      button.disabled = false;
-      document.getElementById("config-form-adminRanks").reset();
+
+      ranks.forEach((rankArray, i) => {
+        let button;
+        let form;
+        let ranksElement;
+
+        if (i === 0) {
+          button = document.getElementById('ModRankButton');
+          form = document.getElementById("config-form-modRanks");
+          ranksElement = document.getElementById("modRanks");
+        } else {
+          button = document.getElementById('ManagerRankButton');
+          form = document.getElementById("config-form-managerRanks");
+          ranksElement = document.getElementById("managerRanks");
+        }
+
+        ranksElement.innerText = rankArray.join(", ");
+        button.disabled = false;
+        form.reset();
+      });
     };
 
     window.SubmitChangelog = function(event) {
@@ -1053,6 +1094,42 @@
         document.getElementById("threshold").value = r[0];
         document.getElementById("thresholdActionSelect").value = r[1];
       }).ReturnThreshold();
+    });
+
+    let coll5 = document.getElementById("registeredListButton");
+
+    coll5.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("registeredListContent");
+      content.innerHTML = '<div class="loader"></div>';
+
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+
+      google.script.run.withSuccessHandler(r => {
+        r = JSON.parse(r);
+        
+        content.innerHTML = "";
+        r.forEach(doc => {
+          const docElement = document.createElement("div");
+
+          docElement.innerHTML = `<p><strong>${doc.title}</strong></p>
+            <br><p>ID: ${doc.id}</p>
+            <br><p>Type: ${doc.type}</p>`;
+          docElement.style.marginBottom = "10px";
+          docElement.style.borderRadius = "10px";
+          docElement.style.color = "whitesmoke";
+          docElement.style.backgroundColor = "#222222"
+          docElement.style.width = "70%";
+          docElement.style.textAlign = "center";
+          docElement.style.justifySelf = "center";
+
+          content.appendChild(docElement)
+        })
+      }).ReturnRegistered();
     });
 
     // **********************************************
@@ -1604,6 +1681,8 @@
     document.getElementById("manageCooldownContent").classList.add("collapseContent");
     document.getElementById("manageThreshold").classList.add("collapsible");
     document.getElementById("manageThresholdContent").classList.add("collapseContent");
+    document.getElementById("registeredListButton").classList.add("collapsible");
+    document.getElementById("registeredListContent").classList.add("collapseContent");
 
     // Promotion Req Manager
     let reqCount = 0;

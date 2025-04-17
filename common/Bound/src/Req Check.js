@@ -7,7 +7,7 @@
 function CheckReqs() {
   // Loop through ranks
   LIBRARY_SETTINGS.ranks.forEach(rank => {
-    let sheet = RosterService.getCollect(LIBRARY_SETTINGS.sheetId_reqs);
+    let sheet = RosterService.getCollect(46188961);
     let hasReqs = false;
     const reqTitleRow = RosterService.getFirstRankRow(rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
 
@@ -18,7 +18,7 @@ function CheckReqs() {
       }
     }
 
-    sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+    sheet = RosterService.getCollect(2063800821);
     const firstRankRow = RosterService.getFirstRankRow(rank, 0)[0];
     // Check if rank needs changing (optimization)
     try { if (sheet.getRange(firstRankRow, 16).getDataValidation() && hasReqs) return } catch(e) { }

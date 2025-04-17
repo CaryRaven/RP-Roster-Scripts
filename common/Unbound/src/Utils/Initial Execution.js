@@ -5,7 +5,7 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() { 
-  DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).removeViewer("noir.px@hotmail.com");
+  console.log(LIBRARY_SETTINGS.modRanks)
 }
 
 /**
@@ -13,6 +13,7 @@ function T() {
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
+  // user = "fritzgeraldroomba@gmail.com";
   Logger.log(user);
 
   let userProperty = PropertiesService.getUserProperties();
@@ -81,25 +82,31 @@ function doGet() {
     const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
     template.user = user;
     template.ranks = LIBRARY_SETTINGS.ranks;
-    template.adminRanks = LIBRARY_SETTINGS.modRanks;
+    template.modRanks = LIBRARY_SETTINGS.modRanks;
+    template.managerRanks = LIBRARY_SETTINGS.managerRanks;
     template.allowedStaff = allowedStaff;
     template.factionName = LIBRARY_SETTINGS.factionName;
+
+    const ssEditors = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().map(editor => editor.getEmail())
 
     // Set which access the user gets
     if (allowedStaff.includes(user)) {
 
       // Check if user is owner/editor
-      if (!DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().includes(Session.getActiveUser()) 
+      if (!ssEditors.includes(user)
         && !DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getOwner().getEmail().includes(userData.email)) return HtmlService.createHtmlOutput("<h1>You do not have sufficient permissions to edit the roster.</h1>");
 
       template.accessType = "dev";
     } else if (LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) {
 
       // Check if user is owner/editor
-      if (!DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().includes(Session.getActiveUser()) 
+      if (!ssEditors.includes(user)
         && !DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getOwner().getEmail().includes(userData.email)) return HtmlService.createHtmlOutput("<h1>You do not have sufficient permissions to edit the roster.</h1>");
 
       template.accessType = "admin";
+    } else if (LIBRARY_SETTINGS.managerRanks.includes(userData.rank)) {
+      if (!ssEditors.includes(user)) return HtmlService.createHtmlOutput("<h1>You do not have sufficient permissions to edit the roster.</h1>");
+      template.accessType = "manager";
     } else if (LIBRARY_SETTINGS.modRanks.includes(userData.rank)) {
       template.accessType = "mod";
     } else {

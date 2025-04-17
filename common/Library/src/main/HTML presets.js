@@ -658,7 +658,7 @@ function getHtmlAddTask() {
       const priority = document.getElementById("priority").value;
       const button = document.getElementById("taskButton");
 
-      if (!title || !description || !deadline || description.length > 250 || !priority) {
+      if (!title || !description || !deadline || description.length > 1500 || !priority) {
         document.body.classList.add("shake");
         setTimeout(() => {
           document.body.classList.remove("shake");
@@ -686,10 +686,10 @@ function getHtmlAddTask() {
             button.disabled = false;
             if (response.includes("Added")) {
               button.classList.remove("green");
+              google.script.host.close();
             } else {
               button.classList.remove("red");
             }
-            google.script.host.close();
           }, 2000);
         }
       }).withFailureHandler(() => {
@@ -703,7 +703,7 @@ function getHtmlAddTask() {
             button.innerHTML = "";
             button.innerText = "Submit";
           }, 2000);
-      }).SubmitTask(data)
+      }).SubmitTask(data);
     }
   </script>
 </head>
@@ -716,7 +716,7 @@ function getHtmlAddTask() {
     <label for="title">Title:</label>
     <input type="text" id="title" placeholder="Add a title to your task" maxlength="25" required>
     <label for="description">Description:</label>
-    <textarea type="message" id="description" placeholder="Add a description to your task" maxlength="250" required></textarea>
+    <textarea type="message" id="description" placeholder="Add a description to your task" maxlength="1500" required></textarea>
     <label for="deadline">Deadline:</label>
     <input type="date" id="deadline" placeholder="Select a deadline for the task" required>
     <label for="priority">Select a Priority Level:</label>

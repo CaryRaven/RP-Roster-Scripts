@@ -163,6 +163,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   if (valid !== true) return "Invalid data";
   if (LIBRARY_SETTINGS.ranks.indexOf(inputData.title) >= 0 && inputData.editRank === "" && !reqsBeingEnabled) return "Rank Already exists";
 
+  // Folder Operations ************************************************************
+
   // Get viewer folders & files from a string to an array
   if (inputData.viewerFolders) {
     inputData.viewerFolders = inputData.viewerFolders.replace(/\s+/g, '');
@@ -230,6 +232,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     if (valid !== true) return message;
   } else { editorFolders = []; }
 
+  // **************************************************************
+
   // if no rankBefore => add it at the top (before Sr CL4)
   let rankBeforeTop;
   if (!inputData.rankBefore) {
@@ -278,6 +282,10 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
           s.getRange(firstRankRow, LIBRARY_SETTINGS.dataCols.firstCol).setValue(inputData.title);
           for (let j = firstRankRow; j <= lastRankRow; j++) {
             s.getRange(j ,LIBRARY_SETTINGS.dataCols.rank).setValue(inputData.title);
+          }
+          
+          if (LIBRARY_SETTINGS.modRanks.includes(inputData.title)) {
+            LIBRARY_SETTINGS.modRanks.splice(LIBRARY_SETTINGS.modRanks.indexOf(inputData.editRank), 1, inputData.title);
           }
         }
       }
@@ -418,6 +426,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   // Don't add empty 2D array to promoReqs if no reqs were added
   inputData.promoReqs = inputData.promoReqs.length > 0 ? inputData.promoReqs : [];
 
+  // Setting Operations ***************************************************************
+
   // Prepare settings
   if (hierarchyChange || inputData.editRank === "") {
     // Settings if hierarchy changed => remove & add new
@@ -444,6 +454,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
       LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title); // Always change last
     }
   }
+
+  // ********************************************************************************
 
   // Send discord message
   if (inputData.editRank == "") {
@@ -743,6 +755,11 @@ function removeRank(rank, discordnotif = true, branch = 0, override = false) {
     LIBRARY_SETTINGS.folders.splice(rankIndex, 1);
     LIBRARY_SETTINGS.interviewRequired.splice(rankIndex, 1);
     LIBRARY_SETTINGS.promoReqs.splice(rankIndex, 1);
+
+    if (LIBRARY_SETTINGS.modRanks.includes(rank)) {
+      rankIndex = LIBRARY_SETTINGS.modRanks.indexOf(rank);
+      LIBRARY_SETTINGS.modRanks.splice(rankIndex, 1);
+    }
 
     // Normal removal
     sheet = getCollect(LIBRARY_SETTINGS.rosterIds[branch]);

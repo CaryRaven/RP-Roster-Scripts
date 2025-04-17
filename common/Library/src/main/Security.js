@@ -2,22 +2,23 @@
  * Get all files in a certain folder
  * @param {String} folderId
  */
-function getAllFilesInFolder(folderId) {
+function getAllDocsInFolder(folderId) {
   const folder = DriveApp.getFolderById(folderId);
-  const files = [];
+  const docs = [];
 
   const folderFiles = folder.getFiles();
   while (folderFiles.hasNext()) {
-    files.push(folderFiles.next().getId());
+    docs.push(folderFiles.next().getId());
   }
 
   const subfolders = folder.getFolders();
   while (subfolders.hasNext()) {
     const subfolder = subfolders.next();
-    files.push(...getAllFilesInFolder(subfolder.getId()));
+    docs.push(subfolder.getId());
+    docs.push(...getAllDocsInFolder(subfolder.getId()));
   }
 
-  return files;
+  return docs;
 }
 
 /**
