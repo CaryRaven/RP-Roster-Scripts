@@ -5,20 +5,28 @@
   This does mean that there will be a delay between when you re-add promo reqs to a rank and when the roster will be updated, but it shouldn't be too bad.
 */
 function CheckReqs() {
-  // Loop through ranks
-  LIBRARY_SETTINGS.ranks.forEach(rank => {
-    let sheet = RosterService.getCollect(46188961);
+  // Get ranks from roster
+  const roster = RosterService.getCollect(2063800821);
+  const rows = roster.getMaxRows();
+  let ranks = [];
+
+  for (let k = 5; k <= rows; k++) {
+    let rankName = roster.getRange(k, LIBRARY_SETTINGS.dataCols.rank).getDisplayValue();
+    if (rankName !== "" && !ranks.includes(rankName)) {
+      ranks.push(rankName)
+    }
+  }
+
+  // Loop through ranks from roster
+  ranks.forEach(rank => {
+    let sheet = RosterService.getCollect(LIBRARY_SETTINGS.sheetId_reqs);
     let hasReqs = false;
     const reqTitleRow = RosterService.getFirstRankRow(rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
 
     // Check if rank exist on req roster
-    if (reqTitleRow > 0) {
-      for (let i = 8; i < sheet.getMaxColumns(); i++) {
-        if (sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue() === rank) hasReqs = true;
-      }
-    }
+    if (reqTitleRow > 6) hasReqs = true;
 
-    sheet = RosterService.getCollect(2063800821);
+    sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
     const firstRankRow = RosterService.getFirstRankRow(rank, 0)[0];
     // Check if rank needs changing (optimization)
     try { if (sheet.getRange(firstRankRow, 16).getDataValidation() && hasReqs) return } catch(e) { }

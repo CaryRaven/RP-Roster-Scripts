@@ -30,7 +30,7 @@ function getUserData(query, colToSearch = null, stringify = false) {
 
   LIBRARY_SETTINGS.rosterIds.forEach((rosterId, index) => {
 
-    const s = this.getCollect(rosterId);
+    const s = getCollect(rosterId);
     const r = s.getRange(LIBRARY_SETTINGS.firstMemberRow, colToSearch ? colToSearch : LIBRARY_SETTINGS.dataCols.email, s.getMaxRows(), 1).getValues();
 
     r.forEach((email, i) => {
@@ -81,7 +81,7 @@ function getLastRankRow(rank, branch = 0) {
   branch = branch == 4 ? 0 : branch;
   if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
 
-  const sheet = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
   const total_rows = sheet.getMaxRows();
   
   for (let i = 2; i <= total_rows; i++) {
@@ -102,7 +102,7 @@ function getStartRankRow(rank, branch = 0) {
   branch = branch == 4 ? 0 : branch;
   if ((branch - 1) > LIBRARY_SETTINGS.rosterIds.length) branch = LIBRARY_SETTINGS.rosterIds.length - 1;
 
-  const sheet = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
+  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(Number(branch))]);
   const total_rows = sheet.getMaxRows();
 
   for (let i = 1; i <= total_rows; i++) {
@@ -159,7 +159,7 @@ function getLastRow(sheetObject = null, sheetId = 0) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (typeof sheetId != "number") throw new Error("No valid sheet id: sheetId has to be an integer");
 
-  const sheet = sheetObject ? sheetObject : this.getCollect(sheetId);
+  const sheet = sheetObject ? sheetObject : getCollect(sheetId);
   for (let r = 6; r <= sheet.getMaxRows(); r++) {
     if (sheet.getRange(r, 3).getValue() == '') {
       return r;
@@ -196,7 +196,7 @@ function getAllEmails() {
   let emails = [];
 
   LIBRARY_SETTINGS.rosterIds.forEach(rosterId => {
-    const sheet = this.getCollect(rosterId);
+    const sheet = getCollect(rosterId);
     sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach(email => {
       if (!email[0] || email[0].toLowerCase() == "n/a" || !email[0].includes("@")) return;
       emails.push(email[0].toLowerCase());
@@ -213,27 +213,31 @@ function getAllEmails() {
 function getAllowedStaff() {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
-  let rows = staffAdminRoster.getMaxRows();
-  let emails = [];
+  try {
+    const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
+    let rows = staffAdminRoster.getMaxRows();
+    let emails = [];
 
-  staffAdminRoster.getRange(8, 8, rows, 1).getValues().forEach(row => {
+    staffAdminRoster.getRange(8, 8, rows, 1).getValues().forEach(row => {
+        const email = row[0];
+        if (!email) return;
+        emails.push(email);
+    });
+
+    const seniorsRoster = SpreadsheetApp.openById('1H_7iso49sh1IfVQGEuUGAymPcAuoUdSygX7_sOM1wWw').getSheetById(675133232);
+    rows = seniorsRoster.getMaxRows();
+    
+    seniorsRoster.getRange(8, 8, rows, 1).getValues().forEach((row, i) => {
       const email = row[0];
       if (!email) return;
-      emails.push(email);
-  });
+      if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
+    });
 
-  const seniorsRoster = SpreadsheetApp.openById('1H_7iso49sh1IfVQGEuUGAymPcAuoUdSygX7_sOM1wWw').getSheetById(675133232);
-  rows = seniorsRoster.getMaxRows();
-  
-  seniorsRoster.getRange(8, 8, rows, 1).getValues().forEach((row, i) => {
-    const email = row[0];
-    if (!email) return;
-    if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
-  });
-  
-  console.log(emails);
-  return JSON.stringify(emails);
+    console.log(emails);
+    return JSON.stringify(emails);
+  } catch(e) {
+    return;
+  }
 }
 
 /**

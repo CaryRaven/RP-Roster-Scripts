@@ -5,7 +5,7 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() { 
-  console.log(LIBRARY_SETTINGS.modRanks)
+  console.log(DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getName())
 }
 
 /**
@@ -13,7 +13,6 @@ function T() {
  */
 function doGet() {
   let user = Session.getActiveUser().getEmail();
-  // user = "fritzgeraldroomba@gmail.com";
   Logger.log(user);
 
   let userProperty = PropertiesService.getUserProperties();
@@ -80,14 +79,22 @@ function doGet() {
 
     // Load the Admin Menu
     const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
+
     template.user = user;
     template.ranks = LIBRARY_SETTINGS.ranks;
     template.modRanks = LIBRARY_SETTINGS.modRanks;
     template.managerRanks = LIBRARY_SETTINGS.managerRanks;
+    template.adminRanks = LIBRARY_SETTINGS.adminRanks;
     template.allowedStaff = allowedStaff;
     template.factionName = LIBRARY_SETTINGS.factionName;
 
-    const ssEditors = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().map(editor => editor.getEmail())
+    let ssEditors;
+
+    try {
+      ssEditors = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().map(editor => editor.getEmail())
+    } catch(e) {
+      return HtmlService.createHtmlOutput("<h1>You must have opened the Security Roster at least once before being able to access this Admin Menu, please do so and refresh this page after.</h1>");
+    }
 
     // Set which access the user gets
     if (allowedStaff.includes(user)) {
@@ -128,10 +135,6 @@ function doGet() {
       template.viewChange = false;
       template.changeDate = null;
     }
-
-    // Store the manualEnabled property on the roster so it can be accessed by the bound script
-    const sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
-    sheet.getRange(10, 1).setValue(LIBRARY_SETTINGS.manualEnabled.toString());
 
     userProperty.setProperty("lastOpenMenu", new Date().valueOf());
     return template.evaluate();

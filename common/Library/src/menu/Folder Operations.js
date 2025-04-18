@@ -181,9 +181,10 @@ function updateAccess(rankToAdd, currentRank, mod = true) {
 
     let parentIds = [];
     while (rosterParents.hasNext()) {
-      parentIds.push(rosterParents.getId());
+      let parent = rosterParents.next();
+      parentIds.push(parent.getId());
     }
-    
+
     if ((!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.ranks.indexOf(rankToAdd)].editorAccess.includes(ssId) || parentIds.includes(ssId))
       && !mod ) return "Needs Roster Editor";
       

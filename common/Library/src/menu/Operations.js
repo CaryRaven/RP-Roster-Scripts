@@ -158,6 +158,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   let viewerFolders = [];
   let editorFolders = [];
   let reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
+  const editingRank =  inputData.editRank !== "" ? true : false;
   valid = filterQuotes(inputData);
 
   if (valid !== true) return "Invalid data";
@@ -229,6 +230,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
         }
       }
     });
+
     if (valid !== true) return message;
   } else { editorFolders = []; }
 
@@ -242,21 +244,22 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   }
 
   // If Editing => check if hierarchy changed => remove previous rank location
-  const hierarchyChange = (LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank) + 1 !== LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore) && inputData.editRank != "");
+  const hierarchyChange = (LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank) + 1 !== LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore) && editingRank);
 
   // Check if rank still has active members
   let rownum = 0;
   if (hierarchyChange) {
     rownum = getLastRankRow(inputData.editRank) - getStartRankRow(inputData.editRank);
     valid = removeRank(inputData.editRank, false);
-    if (!Array.isArray(valid)) return "Cannot move a rank with active members";
+    if (!Array.isArray(valid)) return "Cannot move a rank with active members (yet, stay tuned)";
+    removeRank(inputData.editRank, false, 1, true);
   }
 
   let editReq = inputData.promoReqs.length > 0 ? 1 : 0;
 
   // Make sure that if promo reqs were all removed, it still registers it as a change in reqs
   try {
-    if (editReq === 0 && inputData.editRank !== "" && reqsDisabled.toString() === "false") {
+    if (editReq === 0 && editingRank && reqsDisabled.toString() === "false") {
       editReq = LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank)].length > 0 ? 1 : editReq;
     }
   } catch(e) {
@@ -267,25 +270,29 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   editReq = reqsBeingEnabled === true ? 1 : editReq;
   console.log(editReq);
 
+  let firstRankRow;
+  let lastRankRow;
+
+  if (editingRank) {
+    firstRankRow = getStartRankRow(inputData.editRank);
+    lastRankRow = getLastRankRow(inputData.editRank);
+  }
+
   for (let i = 0; i <= editReq; i++) {
     const s = getCollect(LIBRARY_SETTINGS.rosterIds[i]);
 
     // Operations if no hierarchy change
-    if (!hierarchyChange && inputData.editRank !== "") {
-      let firstRankRow = getStartRankRow(inputData.editRank, i);
-      let lastRankRow = getLastRankRow(inputData.editRank, i);
+    if (!hierarchyChange && editingRank) {
 
       // Only do this if the rank rows were found
-      if (firstRankRow && lastRankRow) {
+      // On main roster
+      if (firstRankRow && lastRankRow &&  i === 0) {
         // title changed without hierarchy change?
         if (inputData.title !== inputData.editRank) {
+
           s.getRange(firstRankRow, LIBRARY_SETTINGS.dataCols.firstCol).setValue(inputData.title);
           for (let j = firstRankRow; j <= lastRankRow; j++) {
             s.getRange(j ,LIBRARY_SETTINGS.dataCols.rank).setValue(inputData.title);
-          }
-          
-          if (LIBRARY_SETTINGS.modRanks.includes(inputData.title)) {
-            LIBRARY_SETTINGS.modRanks.splice(LIBRARY_SETTINGS.modRanks.indexOf(inputData.editRank), 1, inputData.title);
           }
         }
       }
@@ -321,7 +328,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
             r.setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
 
             // Set styling for promo req page
-            if (i === 1 && cellpair[0] === 8) {
+            if (cellpair[0] === 8) {
               addFirstReqRow(s, insertRow_2, inputData.promoReqs, cellpair, numcols);
               insertRow_2++;
             }
@@ -337,14 +344,19 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
           /* Adding req rows if rank already had multiple slots
             So if a rank already had 5 slots, it will also add those 4 extra slots to the req roster
+
+             If no rank row was found, use the new title instead
+             The sixes here are random
           */
-          firstRankRow = getStartRankRow(inputData.editRank);
-          lastRankRow = getLastRankRow(inputData.editRank);
+          if (firstRankRow < 6 || lastRankRow < 6 || !firstRankRow || !lastRankRow) {
+            firstRankRow = getStartRankRow(inputData.title);
+            lastRankRow = getLastRankRow(inputData.title);
+          }
 
           let reqRowNum = lastRankRow - firstRankRow;
           // If the rank only has one row, no extra slots need to be added
           reqRowNum = reqRowNum === 1 ? 0 : reqRowNum;
-          addReqRow(inputData.editRank, reqRowNum, borderPairs, inputData.promoReqs);
+          addReqRow(inputData.title, reqRowNum, [[3, 3], [5, 6]], inputData.promoReqs);
 
           // Only set this formula after as it can cause unwanted rows to be added
           s.getRange(insertRow_2, 5).setValue(`= IFERROR(FILTER('${LIBRARY_SETTINGS.factionName} Roster'!E:F, '${LIBRARY_SETTINGS.factionName} Roster'!D:D=D${insertRow_2}), "Rank Not found")`);
@@ -355,7 +367,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     let g_insertRow;
 
     // Insert into roster if new rank or hierarchy change
-    if (hierarchyChange || inputData.editRank === "") {
+    if (hierarchyChange) {
 
       let lastBeforeRow = rankBeforeTop ? getLastRankRow(rankBeforeTop, i) : getLastRankRow(inputData.rankBefore, i);
       if (!lastBeforeRow) lastBeforeRow = LIBRARY_SETTINGS.dataCols.firstReqRow;
@@ -403,23 +415,27 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
             return value;
           })
         );
+
+        // Insert data
+        s.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
+
+        // Add rows
+        addRankRow(inputData.title, userData, rownum, false);
       } else {
         const reqFormulas = inputData.promoReqs.map((_, i) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow}, 'Requirement Logs'!G:G, D${insertRow}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + i)}$${insertRow - 1}, 'Requirement Logs'!C:C)`);
         const preData = [[inputData.title, inputData.title, "", "", ""]];
         insertData = [preData[0].concat(reqFormulas)];
         g_insertRow = insertRow;
+
+        // Insert data
+        s.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
+
+        // Add rows
+        if (!reqsDisabled) addReqRow(inputData.title, rownum - 1, borderPairs, inputData.promoReqs);
       }
-
-      // insert formulas
-      s.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
-    }
-
-    // Add all ranks slots back to new loc
-    if (hierarchyChange) {
-      addRankRow(inputData.title, userData, rownum, false);
-
+      
       // Only set this formula after as it can cause extra rows to be added
-      if (g_insertRow) s.getRange(g_insertRow, 5).setValue(`= IFERROR(FILTER('${LIBRARY_SETTINGS.factionName} Roster'!E:F, '${LIBRARY_SETTINGS.factionName} Roster'!D:D=D${insertRow}), "Rank Not found")`);
+      if (g_insertRow) s.getRange(g_insertRow, 5).setValue(`= IFERROR(FILTER('${LIBRARY_SETTINGS.factionName} Roster'!E:F, '${LIBRARY_SETTINGS.factionName} Roster'!D:D=D${g_insertRow}), "Rank Not found")`);
     }
   }
 
@@ -450,8 +466,19 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     LIBRARY_SETTINGS.interviewRequired.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.interviewRequired);
     LIBRARY_SETTINGS.promoReqs.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.promoReqs);
     
-    if (!hierarchyChange && inputData.title !== inputData.editRank && inputData.editRank !== "") {
+    if (!hierarchyChange && inputData.title !== inputData.editRank && editingRank) {
       LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title); // Always change last
+    }
+  }
+
+  // Change in mod/manager ranks
+  if (editingRank) {
+    if (LIBRARY_SETTINGS.modRanks.includes(inputData.editRank)) {
+      LIBRARY_SETTINGS.modRanks.splice(LIBRARY_SETTINGS.modRanks.indexOf(inputData.editRank), 1, inputData.title);
+    }
+
+    if (LIBRARY_SETTINGS.managerRanks.includes(inputData.editRank)) {
+      LIBRARY_SETTINGS.managerRanks.splice(LIBRARY_SETTINGS.managerRanks.indexOf(inputData.editRank), 1, inputData.title);
     }
   }
 
@@ -467,6 +494,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     userData.viewerAccess = viewerFolders;
     userData.editorAccess = editorFolders;
     userData.interviewRequired = inputData.interviewRequired;
+    userData.promoReqs = inputData.promoReqs;
+    userData.reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
     
     if (discordnotif) sendDiscordConfig("rankEdit", false, userData);
   }
@@ -556,6 +585,16 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
     let rowData = getFirstRankRow(rank);
     let lastRankRow = getLastRankRow(rank);
     let startMergedRange = getStartRankRow(rank);
+    let reps = 0;
+
+    do {
+      if (reps > 0) Utilities.sleep(1000);
+      
+      lastRankRow = getLastRankRow(rank);
+
+      if (!lastRankRow && reps > 10) throw new Error(`Could not find start or end row: ${startRow}, ${endRow}`);
+    } while (!lastRankRow)
+
     let insertRow = lastRankRow + 1;
     let sheet = rowData[1];
 
@@ -610,16 +649,6 @@ function removeRankRow(rank, userData, num = 1, borderPairs = [[5, 8], [10, 16],
     if (rowData[0] == 0) return "Remove Rank Instead";
     if (startRankRow === lastRankRow || sheet.getRange(lastRankRow, LIBRARY_SETTINGS.dataCols.name, 1, 1).getDisplayValue() !== "") return "Population";
 
-    // Determine if you're inserting a row at the bottom (different borders & clamp)
-    // TODO: Rethink 'specialRow', not really needed
-    // if ((rowData[0] + 1) >= Number(lastRankRow)) {
-    //   rowData[0] = rowData[0] - 1;
-    //   specialRow = true;
-    // } else if (rowData[0] == 0) {
-    //   rowData[0] = lastRankRow;
-    //   specialRow = true;
-    // }
-
     sheet.deleteRow(lastRankRow);
 
     borderPairs.forEach(cellpair => {
@@ -652,19 +681,28 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
     const rankCol = LIBRARY_SETTINGS.dataCols.rank;
     let startRow;
     let endRow;
+    let reps = 0;
 
     // Get start & end rows of the rank (for reference)
-    for (let i = 8; i <= rows; i++) {
-      if (sheet.getRange(i, rankCol).getValue() === rank && !startRow) {
-        startRow = i;
+    do {
+      if (reps > 0) Utilities.sleep(500);
+
+      for (let i = 8; i <= rows; i++) {
+        if (sheet.getRange(i, rankCol).getValue() === rank && !startRow) {
+          startRow = i;
+        }
+
+        if (sheet.getRange(i, rankCol).getValue() !== rank && sheet.getRange(i - 1, rankCol).getValue() === rank && !endRow) {
+          endRow = i;
+        }
       }
 
-      if (sheet.getRange(i, rankCol).getValue() !== rank && sheet.getRange(i - 1, rankCol).getValue() === rank && !endRow) {
-        endRow = i;
-      }
-    }
+      if ((!startRow || !endRow) && reps > 50) throw new Error(`Could not find start or end row: ${startRow}, ${endRow}`);
+    } while (!startRow || !endRow)
 
     let insertRow = startRow + 1;
+
+    console.log(`startrow: ${startRow}`);
 
     // Insert row
     sheet.insertRowAfter(startRow);
@@ -738,7 +776,7 @@ function removeReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]]) {
  * @returns {String|Array}
  */
 function removeRank(rank, discordnotif = true, branch = 0, override = false) {
-  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
+  let rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   if (!rank || rankIndex < 0) return "Invalid rank";
 
   let firstRankRow = getFirstRankRow(rank, branch);

@@ -543,7 +543,7 @@ function AddFolder(id) {
     }
   }
 
-  if (folder.getOwner().getEmail() !== "dontorro208@gmail.com") return "Wrong Ownership";
+  if (folder.getOwner().getEmail() !== "dontorro208@gmail.com") return "Invalid Ownership";
 
   let message;
   if (LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].indexOf(id) >= 0) {
@@ -621,6 +621,7 @@ function GetReqs(rank, email = null) {
     let data = RosterService.getUserData(email);
     rank = data.rank;
   }
+  
   if (!rank) return rank;
   const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   if (rankIndex < 0) return;
@@ -661,4 +662,13 @@ function ReturnRegistered() {
   });
 
   return JSON.stringify(returnArray);
+}
+
+/**
+ * Return the total amount of slots a rank currently has based on its name.
+ * @param {String} rank - rank to get slots of
+ * @returns {Number}
+ */
+function ReturnTotalSlots(rank) {
+  return (RosterService.getLastRankRow(rank) - RosterService.getStartRankRow(rank)) + 1;
 }

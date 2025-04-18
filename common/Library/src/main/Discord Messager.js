@@ -190,7 +190,7 @@ function sendDiscordUnauthed() {
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
-    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
+    content: LIBRARY_SETTINGS.pings.toString() === "true" ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [{
       title: "Unauthed Access",
       color: "11600386",
@@ -286,7 +286,7 @@ function sendDiscordPermissionReport(flagArray, flaggedDocs) {
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Access Report`,
-    // content: `<@&${LIBRARY_SETTINGS.leaderPing}>`,
+    content: LIBRARY_SETTINGS.pings.toString() === "true" ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [
       {
         title: "⚠️ Flagged Users & Docs",
@@ -420,7 +420,14 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
         return `"${f.getName()}" `;
       });
 
-      info = `Title: ${userData.title}\nHierarchy Position: before ${userData.rankBefore}\nViewer Access to: ${userData.viewerAccess}\nEditor Access to: ${userData.editorAccess}\nInterview Required?: ${userData.interviewRequired.toString() === "true" ? "Yes" : "No"}`;
+      userData.promoReqs = userData.promoReqs.map(req => req.title);
+
+      info = `Title: ${userData.title}
+        Hierarchy Position: before ${userData.rankBefore}
+        Viewer Access to: ${userData.viewerAccess}
+        Editor Access to: ${userData.editorAccess}
+        Interview Required?: ${userData.interviewRequired.toString() === "true" ? "Yes" : "No"}
+        ${userData.reqsDisabled.toString() === "true" ? "" : `Requirements: ${userData.promoReqs}`}`;
       footerMessage = "Not all change info listen above is necessarily new";
       break;
     case "folderEdit":
@@ -596,7 +603,7 @@ function sendDiscordChangeLog(notes, url = '') {
 
    let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
-    content: LIBRARY_SETTINGS.pings == true ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
+    content: LIBRARY_SETTINGS.pings.toString() === "true" ? `<@&${LIBRARY_SETTINGS.leaderPing}>` : "",
     embeds: [
       {
         title: `⚙️ Admin Menu Update ⚙️`,
@@ -610,6 +617,7 @@ function sendDiscordChangeLog(notes, url = '') {
         ],
         footer: {
           text:
+            "Please ping a member of Community Leadership if you find any bugs with the current version or if you have suggestions for future versions.\n" +
             "Logged on " +
             Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
         },

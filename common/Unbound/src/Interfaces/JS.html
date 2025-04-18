@@ -68,6 +68,10 @@
     // Make the lockdown button shimmer (idk looks cool)
     document.getElementById('lockdownButton').classList.add("light");
 
+    // Get admin ranks
+    const adminRanks = document.getElementById("adminRanks").innerText;
+    document.getElementById("adminRanks").innerText = "";
+
     window.SetRankSelects = function(forced = false) {
       let initRanks = document.getElementById("ranks")?.innerText;
       let rankSelect = document.getElementById("mod-role-select");
@@ -77,11 +81,7 @@
       let removeRankSelect = document.getElementById("remove-rank-select");
       const editRankSelect = document.getElementById("editRankSelect");
 
-      if (initRanks) {
-        initRanks = initRanks.split(",");
-      } else {
-        initRanks = [];
-      }
+      initRanks = initRanks ? initRanks.split(",") : [];
 
       if (rankSelect.value === "" || forced === true) rankSelect.innerHTML = '<option value=""></option>';
       if (managerRankSelect.value === "" || forced === true) managerRankSelect.innerHTML = '<option value=""></option>';
@@ -93,7 +93,7 @@
       initRanks.forEach(rankName => {
         
         // TODO: fix this statement
-        if (!rankName.includes("Site") && !rankName.includes("Chief")) {
+        if (!adminRanks.includes(rankName)) {
 
           if (rankSelect.value === "" || forced === true) {
             const rankOption = document.createElement("option");
@@ -196,6 +196,18 @@
       afkTimer = window.setTimeout(() => {
         document.getElementById("afkBanner").style.display = "";
       }, 300000);
+    });
+
+    // Display how many slots a rank has when adding/removing a row: QoL
+    document.getElementById("new-rank-select").addEventListener("change", () => {
+      let rank = document.getElementById("new-rank-select").value;
+      document.getElementById("currentSlotsName").innerText = rank;
+      document.getElementById("currentSlotsNum").innerText = " ";
+
+      if (!rank) return;
+      google.script.run.withSuccessHandler(slots => {
+        document.getElementById("currentSlotsNum").innerText = Number(slots);
+      }).ReturnTotalSlots(rank);
     });
 
     /*
@@ -887,7 +899,7 @@
           button.disabled = false;
           button.classList.add("red");
           setTimeout(() => button.classList.remove("red"), 2000);
-        }).BackupSheet();
+        }).Trigger_BackupSheet();
       } catch(e) {
         document.getElementById('config-loading').innerHTML = '';
         document.getElementById('backupButton').disabled = false;
@@ -970,9 +982,10 @@
       }
 
       google.script.run.withSuccessHandler((updatedarray) => {
-        if (!updatedarray) {
+        if (updatedarray.includes("Invalid") || updatedarray.includes("Roster")) {
+          Shake();
           button.classList.add("red");
-          button.innerText = "No Permissions";
+          button.innerText = updatedarray;
           setTimeout(() => {
             button.classList.remove("red");
             button.innerText = "Add/Remove";
@@ -986,6 +999,10 @@
           }, 2000);
         } else {
           InsertRanks(updatedarray, mod);
+          button.classList.add("green");
+          setTimeout(() => {
+            button.classList.remove("green")
+          }, 2000);
         }
       }).withFailureHandler(error => {
         

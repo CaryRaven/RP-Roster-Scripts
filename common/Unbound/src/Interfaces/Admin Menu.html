@@ -20,8 +20,10 @@
     <h1>AFK Warning</h1><br>
     <h3>Please do not open the admin menu if you do not need to be here.</h3>
   </div>
+
   <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
   <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
+  <p id="adminRanks" style="font-size: 0px;"><?= adminRanks ?></p>
 
   <div class="loader" id="changeLoader"></div>
   <div id="update-popup" class="main-content" style="display: none;">
@@ -348,7 +350,7 @@
           </form><br><hr><br>
 
           <form id="config-new-folder">
-            <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.</span></label><br>
+            <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.<br>In order to register a file/folder, it must be owned by "dontorro208@gmail.com".</span></label><br>
             <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folder or file ID (one at a time)">
             <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button><br>
             <button type="button" class="submitButton" id="registeredListButton" style="width: 40%;">Registered List</button><br>
@@ -411,7 +413,7 @@
             </form><br><hr><br>
 
             <form id="config-form-rankRow">
-              <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong></label><br>
+              <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong><p style="font-weight: 200; font-size: 12px;">Current # of <span id="currentSlotsName"></span> Slots: <span id="currentSlotsNum"></span></p></label><br>
               <select id="new-rank-select" style="width: 38%;">
               </select>
               <input type="number" id="rankRowAmount" style="width: 8%;" placeholder="#">
