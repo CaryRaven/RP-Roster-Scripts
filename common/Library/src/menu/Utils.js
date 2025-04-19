@@ -336,7 +336,8 @@ function getRankContent(title) {
         LIBRARY_SETTINGS.folders[i].viewerAccess,
         LIBRARY_SETTINGS.folders[i].editorAccess,
         LIBRARY_SETTINGS.interviewRequired[i].toString(),
-        LIBRARY_SETTINGS.promoReqs[i]
+        LIBRARY_SETTINGS.promoReqs[i],
+        LIBRARY_SETTINGS.group[i]
       ];
     }
   });

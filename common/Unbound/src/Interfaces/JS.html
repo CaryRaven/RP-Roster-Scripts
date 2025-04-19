@@ -74,14 +74,23 @@
 
     window.SetRankSelects = function(forced = false) {
       let initRanks = document.getElementById("ranks")?.innerText;
+      let groups = document.getElementById("groups")?.innerText;
       let rankSelect = document.getElementById("mod-role-select");
       let managerRankSelect = document.getElementById("manager-role-select");
       let rankRowSelect = document.getElementById("new-rank-select");
       let addRankSelect = document.getElementById("new-rank-before-select");
+      let groupSelect = document.getElementById("new-rank-group-select");
       let removeRankSelect = document.getElementById("remove-rank-select");
       const editRankSelect = document.getElementById("editRankSelect");
 
       initRanks = initRanks ? initRanks.split(",") : [];
+
+      if (groups) {
+        groups = groups.split(",");
+        groups = groups.filter(onlyUnique);
+      } else {
+        groups = [];
+      }
 
       if (rankSelect.value === "" || forced === true) rankSelect.innerHTML = '<option value=""></option>';
       if (managerRankSelect.value === "" || forced === true) managerRankSelect.innerHTML = '<option value=""></option>';
@@ -89,6 +98,7 @@
       if (removeRankSelect.value === "" || forced === true) removeRankSelect.innerHTML = '<option value=""></option>';
       if (addRankSelect.value === "" || forced === true) addRankSelect.innerHTML = '<option value=""></option>';
       if (editRankSelect.value === "" || forced === true) editRankSelect.innerHTML = '<option value=""></option>';
+      if (groupSelect.value === "" || forced === true) groupSelect.innerHTML = '<option value=""></option>';
 
       initRanks.forEach(rankName => {
         
@@ -138,6 +148,19 @@
           }
         }
       });
+
+      groups.forEach(group => {
+        if ((groupSelect.value === "" || forced === true) && group !== "Sr CL4") {
+          const groupOption = document.createElement("option");
+          groupOption.value = group;
+          groupOption.innerText = group;
+          groupSelect.appendChild(groupOption);
+        }
+      });
+    };
+
+    window.onlyUnique = function(value, index, array) {
+      return array.indexOf(value) === index;
     };
 
     let configupdate;
@@ -1184,10 +1207,11 @@
         editorFolders: document.getElementById("newRankEditFolders").value,
         editRank: document.getElementById("editRankSelect").value,
         interviewRequired: document.getElementById("interviewNeeded").checked,
-        promoReqs: reqs
+        promoReqs: reqs,
+        group: document.getElementById("new-rank-group-select").value
       }
 
-      if (!data.title) return Shake();
+      if (!data.title || !data.group) return Shake();
 
       // Permission check
       if (hierarchySelect.value == data.editRank && data.editRank !== "") {
@@ -1226,7 +1250,11 @@
       button.disabled = true;
       button.innerHTML = '<div class="loader"></div>';
 
-      google.script.run.withSuccessHandler((response) => {
+      google.script.run.withSuccessHandler((returnVal) => {
+        returnVal = JSON.parse(returnVal);
+        const response = returnVal[0];
+        const settings = returnVal[1];
+
         if (
           response.toLowerCase().includes("not") 
           || response.toLowerCase().includes("already") 
@@ -1241,6 +1269,10 @@
           document.getElementById("newrankForm").reset();
           document.getElementById("reqs").innerHTML = "";
           reqCount = 0;
+
+          // Change mod/manager ranks (only really needed when title changed)
+          document.getElementById("modRanks").innerText = settings.modRanks.join(", ");
+          document.getElementById("managerRanks").innerText = settings.managerRanks.join(", ");
         }
 
         button.innerHTML = "";
@@ -1447,6 +1479,7 @@
       const select = document.getElementById("editRankSelect");
       const titleInput = document.getElementById("newRankTitle");
       const hierarchySelect = document.getElementById("new-rank-before-select");
+      const groupSelect = document.getElementById("new-rank-group-select");
       const viewFoldersInput = document.getElementById("newRankViewFolders");
       const editFoldersInput = document.getElementById("newRankEditFolders");
       const hasInterviewSlider = document.getElementById("interviewNeeded");
@@ -1468,7 +1501,7 @@
 
       google.script.run.withSuccessHandler(content => {
         content = JSON.parse(content);
-        if (content.length !== 6) {
+        if (content.length !== 7) {
           button.innerText = "Rank not found";
           button.classList.add("red");
           return setTimeout(() => {
@@ -1482,6 +1515,7 @@
 
         titleInput.value = content[0];
         hierarchySelect.value = content[1];
+        groupSelect.value = content[6];
 
         /* Map for better styling & user experience (if not, it's just a series of bunched up characters)
           It's literally just one space, but it makes a difference
@@ -2133,6 +2167,28 @@
         return;
       }
 
+      let proceed;
+
+      // Make sure that the user has 2FA enabled on their account (there is no way to verify this with a script, so we'll have to trust the logger)
+      if (dataToSubmit.type_check === "New Member") {
+        proceed = confirm(`Are you sure that ${dataToSubmit.email} has 2-step verification enabled on their google account?
+          \nIf you are unsure of this, please confirm with the user that their account has 2-step verification to ensure security of your faction's documentation and prevent any account hacks from causing issues
+          \nIf you are sure they have 2-step verification enabled on ${dataToSubmit.email}, you can press OK.`);
+        
+        if (proceed == true) {
+          console.log("Proceeding");
+        } else {
+          Shake();
+          button.innerText = `Make sure ${dataToSubmit.email} has 2-Step verification enabled.`;
+          button.disabled = true;
+          setTimeout(() => {
+            button.innerText = "Submit";
+            button.disabled = false;
+          }, 2000);
+          return;
+        }
+      }
+
       // Actually submitting data
       if (valid === true) {
         button.innerText = "";
@@ -2141,7 +2197,7 @@
           try {
             response = JSON.parse(response);
             if (Number(response[1]) >= Number(response[2]) && dataToSubmit.type == "Infraction Log") {
-              const proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
+              proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
               if (proceed == true) {
                 google.script.run.withSuccessHandler(() => {
                   ResetUI(button, response[0]);

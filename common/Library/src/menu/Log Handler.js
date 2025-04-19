@@ -245,7 +245,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
             DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(inputData.email);
           } catch(e) {
             console.log(e);
-            return "This user has blocked you or has deleted their google account.\nPlease try another Gmail address";
+            return "This user has blocked you or has not linked the Email to a google account.\nPlease try another Gmail address";
           }
 
           // Check if the user has been gone for over 2 weeks (minimum cooldown)
@@ -296,7 +296,11 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           targetData["newRank"] = newStaffDestination;
 
           roster.getRange(rowDestination[0], LIBRARY_SETTINGS.dataCols.name, 1, 4).setValues([[targetData.name, targetData.playerId, targetData.discordId, inputData.email]]);
-          const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "Member", inputData.rankchangetype, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+
+          // For MTFs, say "Passed Tryout" and not "Passed Interview"
+          let passed = "Passed Interview";
+          if (LIBRARY_SETTINGS.factionName.includes("MTF")) passed = "Passed Tryout";
+          const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "Member", passed, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
           sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, dataToInsert[0].length).setValues(dataToInsert);
 
           protectRange("N", sheet, null, insertLogRow);

@@ -87,6 +87,7 @@ function doGet() {
     template.adminRanks = LIBRARY_SETTINGS.adminRanks;
     template.allowedStaff = allowedStaff;
     template.factionName = LIBRARY_SETTINGS.factionName;
+    template.groups = LIBRARY_SETTINGS.group;
 
     let ssEditors;
 
@@ -213,4 +214,101 @@ function ReturnSpecs() {
 
 function GetAllEmails() {
   return JSON.stringify(RosterService.getAllEmails());
+}
+
+/**
+ * Reset the settings of this admin menu
+ * Must be done when adding a new option to the settings obj to aling with the library
+ * |-> Cannot use library without a full & complete settings obj
+ */
+function Set() {
+  // throw new Error("Do not run this function from the editor");
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
+    dataCols: {
+      firstCol: 3,
+      rank: 4,
+      name: 5,
+      playerId: 6,
+      discordId: 7,
+      email: 8,
+      infraction: 10,
+      status: 11,
+      specialization: 12,
+      lastRankChange: 13,
+      loaEnd: 14,
+      blacklistEnd: 17,
+      notes: 18,
+      supervisor_name: 1,
+      supervisor_playerId: 1,
+      cooldown: 1,
+      firstReqRow: 6
+    },
+
+    rosterIds: [2063800821, 46188961],
+    firstMemberRow: 6,
+    spreadsheetId_main: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
+    spreadsheetId_backup: "1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64",
+    folderId_interviews: "17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB",
+    folderId_closedInterviews: "1Nr4xPCEfMMtynlzJqenrjt7itkCSBfYq",
+    folderId_main: "1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc",
+    folderId_publicDocs: "13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A",
+    sheetId_rankchange: 789793193,
+    sheetId_infraction: 343884184,
+    sheetId_loa: 977408594,
+    sheetId_blacklist: 1787594911,
+    sheetId_reqs: 46188961,
+    sheetId_task: 1504741049,
+    cooldown_loa: 14,
+    cooldown_promotion: 14,
+    threshold_num: 3,
+    threshold_action: "Suspension",
+    leaderPing: '1186431632647921736',
+    factionName: "Security",
+    colorHex: "#2b547e",
+    modRanks: [],
+    managerRanks: [],
+    adminRanks: ["Security Chief", "Office of Site Management"],
+    folders: [ { viewerAccess: 
+     [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
+       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE' ],
+    editorAccess: [] },
+  { viewerAccess: 
+     [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
+       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE' ],
+    editorAccess: [] },
+  [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
+    '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
+    '1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-',
+    '17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB',
+    '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE',
+    '1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc',
+    '1PPQsskt8pohBTmfAvniXebwzVt0XIOfuSco4xlOha8iqJj6OZgCJS5uJ',
+    '1MbMChbevrX1mx5gHGGL74SQ8cbABt_kQMdcwbLWXnC8',
+    '1QiBmaUTcKU0iZ1uyEYH30ZGD8cAZfjz5M0LEb5ZceZU',
+    '1Hor8B4_cxYYtjmkNtsVcBWBaR2rWRfDV',
+    '1IQvMVAE6xS93NbOwaS60IqCAfVMKqFPg1tmvifT8bYg',
+    '1zQnOxsHb3BVEQTLn9ySSj8myKrNCclNUWSWQMOkRJpk',
+    '10RmXJBe6IWA5DMQtfrQFaeXy5u7UEtzkQ1jjRngsVow' ] ],
+    ranks: ["Captain","Captain Major","Security Chief","Office of Site Management"],
+    interviewRequired: [true, false, false, false],
+    promoReqs: [[], [], [], []],
+    group: ["Security","Security","Sr CL4","Sr CL4"],
+    specializations: [{title: "", desc: ""}, {title: "Security Liaison", desc: "In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs"},{ title: 'Punishment Lead',desc: 'Specialist of the security department\'s policies, in charge of handing out appropriate punishments to security personnel.' }],
+    pings: true,
+    backupEnabled: true,
+    lockdownEnabled: false,
+    manualEnabled: false,
+    reqsDisabled: true,
+    newRowData: [[ // TODO: Add a way to dynamically edit this?
+      "/title/", "/title/", "", "", "", "", "", 
+      `= INFRACTIONS(F/row/, Infractions!E:E, Infractions!H:H, Infractions!I:I, Infractions!C:C)`,
+      `= STATUS(F/row/, G/row/, E/row/, H/row/, 'LOA Logs'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P/row/)`,
+      "",
+      `= LAST_RANKCHANGE(F/row/, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
+      `= LOA_DATE(F/row/, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
+      false,
+      `= REQS_CHECK(F/row/, 'Promotion Progress'!F:F, 'Promotion Progress'!H:L)`,
+      `= BLACKLIST_DATE(F/row/, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
+    ]]
+  }));
 }

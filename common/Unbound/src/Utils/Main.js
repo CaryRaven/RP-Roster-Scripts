@@ -216,10 +216,10 @@ function AddNewRank(inputData) {
   const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData);
 
   if (typeof returnVal === "string") {
-    return returnVal;
-  } else if (Array.isArray(returnVal)) {
+    return JSON.stringify([returnVal, ""]);
+  } else if (Array.isArray(returnVal) && returnVal.length === 2) {
     PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
-    return returnVal[0];
+    return JSON.stringify(returnVal);
   }
 }
 

@@ -24,6 +24,7 @@
   <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
   <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
   <p id="adminRanks" style="font-size: 0px;"><?= adminRanks ?></p>
+  <p id="groups" style="font-size: 0px;"><?= groups ?></p>
 
   <div class="loader" id="changeLoader"></div>
   <div id="update-popup" class="main-content" style="display: none;">
@@ -375,6 +376,9 @@
               <input id="newRankTitle" type="text" placeholder="Add rank Title" required><br>
               <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:<br><span style="font-size: 13px; font-weight: 100;">Optional, default: at the top of the hierarchy (below the Chiefs)</span></label><br>
               <select id="new-rank-before-select">
+              </select><br>
+              <label for="new-rank-group-select">Add your rank to this group:</label><br>
+              <select id="new-rank-group-select" required>
               </select><br>
               <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the file & folder IDs seperated by a comma"><br>
