@@ -29,13 +29,13 @@ function CheckReqs() {
     sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
     const firstRankRow = RosterService.getFirstRankRow(rank, 0)[0];
     // Check if rank needs changing (optimization)
-    try { if (sheet.getRange(firstRankRow, 16).getDataValidation() && hasReqs) return } catch(e) { }
-    try { if (!sheet.getRange(firstRankRow, 16).getDataValidation() && !hasReqs) return } catch(e) { }
+    try { if (sheet.getRange(firstRankRow, 17).getDataValidation() && hasReqs) return } catch(e) { }
+    try { if (!sheet.getRange(firstRankRow, 17).getDataValidation() && !hasReqs) return } catch(e) { }
 
     // Loop through rank slots on roster
     for (let j = 6; j <= sheet.getMaxRows(); j++) {
       if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.rank).getValue() === rank) {
-        const cell = sheet.getRange(j, 16);
+        const cell = sheet.getRange(j, 17);
 
         // Insert data (formula or N/A)
         if (hasReqs) {

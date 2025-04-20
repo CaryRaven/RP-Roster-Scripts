@@ -126,6 +126,13 @@ function sendDiscordLog(inputData, targetData, userData) {
       footerMessage = `Congratulations on having your requirement completed.`;
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
+    case "Merit Log":
+      embedTitle = `🟩 ${inputData.meritCount} Merits Allocated 🟩`;
+      embedColor = '1143627';
+      field1Name = 'Merit Log Information';
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nMerit Action Completed: ${inputData.meritAction}\nMerits Allocated: ${inputData.meritCount}`;
+      footerMessage = `Congratulations on earning extra merit score.`;
+      break;
     default:
       throw new Error(`Type ${inputData.type} not supported`);
   }

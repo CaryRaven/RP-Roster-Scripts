@@ -1,19 +1,19 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     /* ******** UTILITIES *******************************************************/
-    window.CloseChangelog =  function(event) {
+    window.CloseChangelog =  function (event) {
       try { event.preventDefault(); } catch(e) { }
       document.getElementById("update-popup").setAttribute("style", "display: none;");
       document.getElementById("changeLoader").setAttribute("style", "display: none;");
       document.getElementById("admin-menu").setAttribute("style", "display: block;");
     }
 
-    window.Shake = function() {
+    window.Shake = function () {
       document.body.classList.add('shake');
       setTimeout(() => document.body.classList.remove('shake'), 200);
     };
 
-    window.SetSpecSelects = function() {
+    window.SetSpecSelects = function () {
       google.script.run.withSuccessHandler(specs => {
         const specField = document.getElementById("specfield").value;
         document.getElementById("removeSpec").innerHTML = "";
@@ -83,7 +83,11 @@
       let removeRankSelect = document.getElementById("remove-rank-select");
       const editRankSelect = document.getElementById("editRankSelect");
 
-      initRanks = initRanks ? initRanks.split(",") : [];
+      if (initRanks) {
+        initRanks = initRanks.split(",");
+      } else {
+        initRanks = [];
+      }
 
       if (groups) {
         groups = groups.split(",");
@@ -165,10 +169,8 @@
 
     let configupdate;
 
-    window.SetSliders = function(atOpen = false) {
-      if (document.getElementById("config-loading").innerHTML !== "" && !atOpen) return;
+    window.SetSliders = function() {
       google.script.run.withSuccessHandler(r => {
-        if (document.getElementById("config-loading").innerHTML !== "" && !atOpen) return;
         r = JSON.parse(r);
         document.getElementById('manualEditingSlider').checked = !(r[0] === "true");
         document.getElementById('pingSlider').checked = (r[1] === "true");
@@ -213,24 +215,11 @@
     }, 300000);
 
     document.addEventListener("click", () => {
-      // TODO
       window.clearTimeout(afkTimer);
       document.getElementById("afkBanner").style.display = "none";
       afkTimer = window.setTimeout(() => {
         document.getElementById("afkBanner").style.display = "";
       }, 300000);
-    });
-
-    // Display how many slots a rank has when adding/removing a row: QoL
-    document.getElementById("new-rank-select").addEventListener("change", () => {
-      let rank = document.getElementById("new-rank-select").value;
-      document.getElementById("currentSlotsName").innerText = rank;
-      document.getElementById("currentSlotsNum").innerText = " ";
-
-      if (!rank) return;
-      google.script.run.withSuccessHandler(slots => {
-        document.getElementById("currentSlotsNum").innerText = Number(slots);
-      }).ReturnTotalSlots(rank);
     });
 
     /*
@@ -671,7 +660,7 @@
         }, 1000);
       }).GetLastBackupTime();
 
-      SetSliders(true);
+      SetSliders();
       SetRankSelects(true);
     } catch (e) {  }
 
@@ -1076,6 +1065,17 @@
       }).SubmitChange(changelog);
     };
 
+    document.getElementById("new-rank-select").addEventListener("change", () => {
+      let rank = document.getElementById("new-rank-select").value;
+      document.getElementById("currentSlotsName").innerText = rank;
+      document.getElementById("currentSlotsNum").innerText = " ";
+
+      if (!rank) return;
+      google.script.run.withSuccessHandler(slots => {
+        document.getElementById("currentSlotsNum").innerText = Number(slots);
+      }).ReturnTotalSlots(rank);
+    });
+
     // *********** DROPDOWN HANDLERS ************
 
     let coll = document.getElementById("manageRank");
@@ -1171,6 +1171,37 @@
         })
       }).ReturnRegistered();
     });
+
+    let coll6 = document.getElementById("generalConfig");
+
+    coll6.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("generalConfigContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    });
+
+    let coll7 = document.getElementById("manageMerits");
+
+    coll7.addEventListener("click", function() {
+      this.classList.toggle("active");
+      var content = document.getElementById("manageMeritsContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    });
+
+    const meritSlider = document.getElementById("meritActionPoints");
+    const meritSliderOutput = document.getElementById("meritSliderOutput");
+
+    meritSlider.oninput = function() {
+      meritSliderOutput.innerText = this.value;
+    }
 
     // **********************************************
 
@@ -1562,6 +1593,33 @@
       }).GetRankContent(select.value);
     };
 
+    window.FillMeritAction = function () {
+      const button = document.getElementById("meritAction-button");
+      const action = document.getElementById("editMeritActionSelect").value;
+      const title = document.getElementById("meritActionTitle");
+      const desc = document.getElementById("meritActionDesc");
+      const meritCount = document.getElementById("meritActionPoints");
+      const meritOutput = document.getElementById("meritSliderOutput");
+
+      if (!action || action === "") return;
+
+      button.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(response => {
+        response = JSON.parse(response);
+
+        title.value = response[0];
+        desc.value = response[1];
+        meritCount.value = response[2];
+        meritOutput.innerText = response[2];
+
+        button.disabled = false;
+        button.innerHTML = "";
+        button.innerText = "Submit";
+      }).FillMerit(action);
+    }
+
     window.ManageAllFolders = function(event) {
       event.preventDefault();
       let id = document.getElementById("newFolderId").value;
@@ -1722,6 +1780,91 @@
       }).ManageThreshold(infractions.value, action.value);
     };
 
+    window.ManageMeritActions = function (event) {
+      event.preventDefault();
+      const button = document.getElementById("meritAction-button");
+      const editTitle = document.getElementById("editMeritActionSelect").value;
+      const title = document.getElementById("meritActionTitle").value;
+      const desc = document.getElementById("meritActionDesc").value;
+      let meritCount = document.getElementById("meritActionPoints").value;
+
+      meritCount = Number(meritCount);
+
+      if (!title || !desc || !meritCount) return Shake();
+      if (meritCount > 5 || meritCount < 1) return Shake();
+      if (title.length > 60 || desc.length > 200) return Shake();
+
+      button.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(response => {
+        button.innerHTML = "";
+        button.innerText = response;
+        if (!response.includes("already")
+          || !response.includes("Invalid")
+          || !response.includes("Nothing")) {
+          button.classList.add("green");
+          GetMeritTitles();
+          document.getElementById("manageMerit-form").reset();
+
+          setTimeout(() => {
+            button.classList.remove("green");
+            button.innerText = "Submit";
+            button.disabled = false;
+          }, 3000);
+        } else {
+          button.classList.add("red");
+
+          setTimeout(() => {
+            button.classList.remove("red");
+            button.innerText = "Submit";
+            button.disabled = false;
+          }, 3000);
+        }
+      }).withFailureHandler(() => {
+        button.classList.add("red");
+        button.innerText = "Something went wrong";
+        setTimeout(() => {
+          button.classList.remove("red");
+          button.innerText = "Submit";
+          button.disabled = false;
+        }, 3000);
+      }).ManageMeritAction(title, desc, meritCount, editTitle);
+      // TODO
+    };
+
+    window.RemoveMeritAction = function(event) {
+      event.preventDefault();
+      const title = document.getElementById("removeMerit").value;
+      const form = document.getElementById("removeMeritAction-form");
+      const button = document.getElementById("removemerit-button");
+
+      if (!title || title === "") return Shake();
+
+      button.disabled = true;
+
+      google.script.run.withSuccessHandler(response => {
+        button.innerText = response;
+
+        if (!response.includes("Invalid")) {
+          button.classList.add("green");
+          form.reset();
+          GetMeritTitles();
+        } else {
+          button.classList.add("red");
+        }
+
+        setTimeout(() => {
+          button.classList.remove('red');
+          button.classList.remove("green");
+          button.innerText = "Remove";
+          button.disabled = false;
+        }, 3000);
+      }).withFailureHandler(error => {
+
+      }).RemoveMeritAction(title)
+    }
+
     // Give the collapsible menus their functionality
     document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
     document.getElementById("newRankContent").classList.add("collapseContent");
@@ -1734,6 +1877,10 @@
     document.getElementById("manageThresholdContent").classList.add("collapseContent");
     document.getElementById("registeredListButton").classList.add("collapsible");
     document.getElementById("registeredListContent").classList.add("collapseContent");
+    document.getElementById("generalConfig").classList.add("collapsible");
+    document.getElementById("generalConfigContent").classList.add("collapseContent");
+    document.getElementById("manageMerits").classList.add("collapsible");
+    document.getElementById("manageMeritsContent").classList.add("collapseContent");
 
     // Promotion Req Manager
     let reqCount = 0;
@@ -1924,6 +2071,9 @@
       document.getElementById('bltypelist').setAttribute('style', 'display: none;');
       document.getElementById('reqfield').setAttribute('style', 'display: none;');
       document.getElementById('reqfieldlabel').setAttribute('style', 'display: none;');
+      document.getElementById('meritfield').setAttribute('style', 'display: none;');
+      document.getElementById('meritfieldlabel').setAttribute('style', 'display: none;');
+      document.getElementById("meritinfofield").setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').placeholder = "Provide a reason for this log.";
 
       switch (logtype) {
@@ -1977,6 +2127,17 @@
           // Get reqs of user's rank
           GetReqTitles();
           break;
+        case "Merit Log":
+          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').setAttribute('style', 'display: block;');
+          document.getElementById('meritfield').setAttribute('style', 'display: block;');
+          document.getElementById('meritfieldlabel').setAttribute('style', 'display: block;');
+          document.getElementById("meritinfofield").setAttribute('style', 'display: block;');
+          document.getElementById('reasonfield').placeholder = "Provide a visual (working image link) proof of completion.";
+
+          // Get merit actions
+          GetMeritTitles();
+          break;
       }
       
       // Visitors don't have to input their email as they can only manage themselves
@@ -2012,6 +2173,52 @@
         }
       }).GetReqs(rank, email);
     }
+
+    document.getElementById("meritfield").addEventListener("change", () => {
+      const value = document.getElementById("meritfield").value;
+
+      if (value === "") {
+        document.getElementById("meritInfoDesc").innerText = "";
+        document.getElementById("meritInfoCount").innerText = "";
+        return;
+      }
+
+      google.script.run.withSuccessHandler(response => {
+        response = JSON.parse(response);
+
+        document.getElementById("meritInfoDesc").innerText = response[1];
+        document.getElementById("meritInfoCount").innerText = response[2];
+      }).FillMerit(value);
+    });
+
+    // Get all current registered merit actions
+    window.GetMeritTitles = function() {
+      google.script.run.withSuccessHandler(response => {
+        response = JSON.parse(response);
+        if (typeof response === "string") return "Returned";
+        
+        try {
+          const meritField = document.getElementById("meritfield");
+          const meritEditSelect = document.getElementById("editMeritActionSelect");
+          const removeMeritSelect = document.getElementById("removeMerit");
+
+          [meritField, meritEditSelect, removeMeritSelect].forEach(select => {
+            select.innerHTML = "<option value=''></option>";
+            response.forEach(action => {
+              const meritOption = document.createElement("option");
+              meritOption.value = action;
+              meritOption.innerText = action;
+              select.appendChild(meritOption);
+            });
+          });
+        } catch(e) {
+          console.log("Getting merit action titles failed: " + e);
+        }
+      }).GetMeritActions();
+    }
+
+    // Set them immediately
+    GetMeritTitles();
 
     // Prefill req field when loading web app
     GetReqTitles();
@@ -2087,7 +2294,8 @@
         blacklist_appealable: document.getElementById('appealable').value,
         log_id: document.getElementById('idfield').value,
         blacklist_type: document.getElementById('bltypelist').value,
-        reqName: document.getElementById("reqfield").value
+        reqName: document.getElementById("reqfield").value,
+        meritAction: document.getElementById("meritfield").value
       };
 
       // Data validation -> check if correct data has been inputted
@@ -2134,12 +2342,20 @@
           // Don't check email for visitors as they can't input it
           if (accessType === "visitor" && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
           break;
+        case "Merit Log":
+          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.reason.length > 10 && dataToSubmit.meritAction != '') valid = true;
+
+          // Don't check email for visitors as they can't input it
+          if (accessType === "visitor" && dataToSubmit.reason.length > 10 && dataToSubmit.meritAction != '') valid = true;
+          break;
         default:
+          button.disabled = false;
           return Shake();
       }
 
       if (!valid) {
         Shake();
+        console.log(dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.playerId.length === 5 && dataToSubmit.reason != '')
         button.innerText = "Invalid Input";
         button.disabled = true;
         setTimeout(() => {

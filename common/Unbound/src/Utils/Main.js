@@ -8,7 +8,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
     // Normal log
     return RosterService.processLog(inputData, userData, allowedStaff, threshold);
   } else {
-    // Permission Checks for making a request
+    // Permission Checks
     if (accessType === "visitor") inputData.email = Session.getActiveUser().getEmail();
     if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
 
@@ -199,7 +199,17 @@ function GetChangeNotes() {
 }
 
 function GetRequests() {
-  return PropertiesService.getScriptProperties().getProperty("requests");
+  const requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  let filteredRequests = requests;
+
+  if (!requests) return;
+
+  if (userData.rank !== "Blackshadow Staff") {
+    filteredRequests = requests.filter(request => LIBRARY_SETTINGS.ranks.indexOf(request.userData.rank) < LIBRARY_SETTINGS.ranks.indexOf(userData.rank));
+  }
+
+  return JSON.stringify(filteredRequests);
 }
 
 // Get the current ranks
@@ -213,7 +223,13 @@ function AddNewRank(inputData) {
   if (!valid) return "No special characters allowed";
 
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const returnVal = RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData);
+  const borderPairs = [
+    [3, 3],
+    [5, 8], 
+    [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
+    [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
+  ];
+  const returnVal = RosterService.manageRank(inputData, borderPairs, userData);
 
   if (typeof returnVal === "string") {
     return JSON.stringify([returnVal, ""]);
@@ -314,6 +330,7 @@ function TogglePings(value) {
   LIBRARY_SETTINGS.pings = Boolean(value);
   RosterService.init(LIBRARY_SETTINGS);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  Utilities.sleep(500);
   RosterService.sendDiscordConfig("pingChange", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
@@ -360,19 +377,19 @@ function ToggleReqs() {
     console.log("removing")
     // Remove ranks from promo reqs sheet
     LIBRARY_SETTINGS.ranks.forEach(rank => {
-      if (rank.includes("Security Chief") || rank.includes("Office of Site Management")) return;
+      if (LIBRARY_SETTINGS.adminRanks.includes(rank)) return;
       RosterService.removeRank(rank, false, LIBRARY_SETTINGS.rosterIds.length - 1, true);
     });
 
     // Hide sheets related to promo reqs
-    [46188961, 1535565949].forEach(sheetId => {
+    [LIBRARY_SETTINGS.sheetId_reqs, LIBRARY_SETTINGS.sheetId_reqlogs].forEach(sheetId => {
       const s = RosterService.getCollect(sheetId);
       s.hideSheet();
     });
   } else {
     console.log("re-adding");
     // Show sheets related to promo reqs
-    [46188961, 1535565949].forEach(sheetId => {
+    [LIBRARY_SETTINGS.sheetId_reqs, LIBRARY_SETTINGS.sheetId_reqlogs].forEach(sheetId => {
       const s = RosterService.getCollect(sheetId);
       s.showSheet();
     });
@@ -389,8 +406,14 @@ function ToggleReqs() {
         promoReqs: LIBRARY_SETTINGS.promoReqs[i]
       };
 
-      const reqsDisabled = ReturnReqsDisabled();
-      RosterService.manageRank(inputData, [[3, 3], [5, 8], [10, 16], [18, 18]], userData, false);
+      const borderPairs = [
+        [3, 3],
+        [5, 8], 
+        [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
+        [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
+      ];
+
+      RosterService.manageRank(inputData, borderPairs, userData, false, true);
     });
   }
 
@@ -447,6 +470,7 @@ function GetSpreadsheetData(inputValue) {
 /**
  * @param {String} rankToAdd
  * @param {String} currentRank
+ * @returns {Array}
  */
 function UpdateAccess(rankToAdd, currentRank, mod) {
   const returnVal = RosterService.updateAccess(rankToAdd, currentRank, mod);
@@ -621,7 +645,7 @@ function GetReqs(rank, email = null) {
     let data = RosterService.getUserData(email);
     rank = data.rank;
   }
-  
+
   if (!rank) return rank;
   const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   if (rankIndex < 0) return;
@@ -671,4 +695,56 @@ function ReturnRegistered() {
  */
 function ReturnTotalSlots(rank) {
   return (RosterService.getLastRankRow(rank) - RosterService.getStartRankRow(rank)) + 1;
+}
+
+/**
+ * Get the current merit actions from the server
+ */
+function GetMeritActions() {
+  let meritActions = [];
+  for (action of LIBRARY_SETTINGS.meritActions) {
+    meritActions.push(action.title);
+  }
+
+  return JSON.stringify(meritActions);
+}
+
+/**
+ * Add/Edit a merit action
+ * @returns {String}
+ */
+function ManageMeritAction(title, desc, meritCount, editTitle) {
+  const returnVal = RosterService.merit_manageAction(title, desc, meritCount, editTitle);
+
+  if (!Array.isArray(returnVal)) return returnVal;
+
+  RosterService.init(returnVal[1]);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
+
+  return returnVal[0];
+}
+
+/**
+ * Remove a merit action completely
+ * @param {String} title - title of the action to remove
+ */
+function RemoveMeritAction(title) {
+  const returnVal = RosterService.merit_removeAction(title);
+
+  if (!Array.isArray(returnVal)) return returnVal;
+
+  RosterService.init(returnVal[1]);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
+
+  return returnVal[0]
+}
+
+function FillMerit(title) {
+  for (action of LIBRARY_SETTINGS.meritActions) {
+    if (action.title === title) {
+      return JSON.stringify([action.title, action.desc, action.meritCount]);
+    }
+  }
+
+  return JSON.stringify(["", "", 0]);
 }

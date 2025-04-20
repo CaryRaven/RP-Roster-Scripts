@@ -54,6 +54,7 @@ class SettingsTemplate {
     this.sheetId_blacklist = 0;
     this.sheetId_reqs = 0;
     this.sheetId_task = 0;
+    this.sheetId_merit = 0;
     this.cooldown_loa = 0;
     this.cooldown_promotion = 0;
     this.threshold_num = 0;
@@ -73,6 +74,8 @@ class SettingsTemplate {
     this.interviewRequired = [];
     this.modRanks = [];
     this.adminRanks = [];
+    this.meritActions = [];
+    this.group = [];
     this.backupEnabled = true;
     this.lockdownEnabled = true;
     this.manualEnabled = true;

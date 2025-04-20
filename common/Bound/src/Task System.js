@@ -36,20 +36,26 @@ function Trigger_TaskManager(e) {
   const sheet = e.source.getActiveSheet();
   const range = e.range;
   const col = range.getColumn();
+  const oldValue = e.oldValue;
   let response;
 
-  if (col === 14) {
+  if (col === 14 && sheet.getSheetId() === 1504741049) {
     const re = SpreadsheetApp.getUi().alert("Delete?", "Do you wish to proceed? This action cannot be undone.\n", SpreadsheetApp.getUi().ButtonSet.YES_NO);
     if (re == SpreadsheetApp.getUi().Button.YES) {
       response = RosterService.task_manager(sheet, range);
     } else {
       return range.setValue(false);
     }
+  } else if (sheet.getSheetId() === 789793193 && col === 3 && range.getRow() === 3) {
+    // Submitting interview
+    console.log("Generating Interview");
+    range.setValue(false);
+    return GenInterviewUI();
   } else {
-     response = RosterService.task_manager(sheet, range);
+     response = RosterService.task_manager(sheet, range, oldValue);
   }
 
-  if (typeof response === "string") return SpreadsheetApp.getUi().alert(response);
+  if (typeof response === "string") return SpreadsheetApp.getUi().alert(response, "", SpreadsheetApp.getUi().ButtonSet.OK);
   if (Array.isArray(response) && response.length === 4) return OpenFile(response[0], response[1], response[2], response[3]);
 }
 

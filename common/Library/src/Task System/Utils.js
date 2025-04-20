@@ -241,6 +241,7 @@ function task_changeAssignment(inputData) {
 function task_isAssigned(newTask = false) {
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   const taskSheet = getCollect(LIBRARY_SETTINGS.sheetId_task);
+  const taskCol = LIBRARY_SETTINGS.dataCols.taskAssigned;
   const total_rows = sheet.getMaxRows();
   const task_rows = task_getLastRow(taskSheet, "Backlog");
   let total_assignees = [];
@@ -248,7 +249,7 @@ function task_isAssigned(newTask = false) {
   for (let i = 6; i < total_rows; i++) {
     const rank = sheet.getRange(i, 4).getValue();
     if (rank === LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) {
-      sheet.getRange(i, 15).setValue("N/A");
+      sheet.getRange(i, taskCol).setValue("N/A");
       continue;
     }
 
@@ -256,7 +257,7 @@ function task_isAssigned(newTask = false) {
     const member = sheet.getRange(i, 5).getDisplayValue();
 
     if (!member) {
-      sheet.getRange(i, 15).setValue(false);
+      sheet.getRange(i, taskCol).setValue(false);
       continue;
     }
 
@@ -265,11 +266,11 @@ function task_isAssigned(newTask = false) {
       if (!assignees) continue;
       if (!newTask) total_assignees.push(assignees);
 
-      if (assignees.includes(member)) sheet.getRange(i, 15).setValue(true);
+      if (assignees.includes(member)) sheet.getRange(i, taskCol).setValue(true);
     }
 
     if (!newTask) {
-      if (!total_assignees.includes(sheet.getRange(i, 15).getValue())) sheet.getRange(i, 15).setValue(false);
+      if (!total_assignees.includes(sheet.getRange(i, taskCol).getValue())) sheet.getRange(i, taskCol).setValue(false);
       total_assignees = [];
     }
   } 

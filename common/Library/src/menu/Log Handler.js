@@ -134,7 +134,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           if (targetData.status == "LOA") return "You cannot promote members who are on LOA";
           if (Number(targetData.infractions) !== 0) return "You cannot promote members with an active infraction";
           if (targetData.status == "Suspended") return "You cannot promote suspended members";
-          if (roster.getRange(targetData.row, 16).getDisplayValue().toLowerCase() == "false") return "This user must complete all their requirements before promotion."; 
+          if (roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1).getDisplayValue().toLowerCase() == "false") return "This user must complete all their requirements before promotion."; 
           const promotionDestination = ranks[currentRankIndex + 1];
           if (!promotionDestination || currentRankIndex === ranks.length - 3) return "This user cannot be promoted any further";
 
@@ -388,6 +388,30 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
       // Insert log
       sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 11).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.reqName, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
       protectRange("N", sheet, null, insertLogRow);
+      break;
+    case "Merit Log":
+      if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_merit);
+      insertLogRow = getLastRow(sheet);
+
+      // Get meritCount
+      inputData.meritCount = 0;
+      for (meritAction of LIBRARY_SETTINGS.meritActions) {
+        if (meritAction.title === inputData.meritAction) inputData.meritCount = meritAction.meritCount;
+      }
+
+      if (inputData.meritCount <= 0 || !inputData.meritCount) return "Invalid Merit Action";
+
+      // Insert data
+      sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 12).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.meritAction, inputData.meritCount, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
+      
+      // Special Protect range
+      protections = sheet.getRange(insertLogRow, 1, 1, 16).protect();
+
+      protections.removeEditors(protections.getEditors());
+      if (protections.canDomainEdit()) {
+        protections.setDomainEdit(false);
+      }
       break;
     case "Blacklist Appeal":
       sheet = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);

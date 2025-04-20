@@ -525,7 +525,7 @@
         position: fixed;
     }
 
-    #restoreBackupButton, #resetButton, #backupButton, #lockdownButton, #toggleReqsButton {
+    #restoreBackupButton, #resetButton, #backupButton, #lockdownButton, #toggleReqsButton, #toggleMeritButton {
         width: 100%;
     }
 
@@ -823,4 +823,27 @@
     }
 
     /* ************************************************************************************ */
+
+    #meritActionPoints::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      background: #152e48;
+      cursor: pointer;
+      border-radius: 50px;
+    }
+
+    #meritActionPoints {
+      -webkit-appearance: none;
+      width: 50%;
+      height: 10px;
+      background: #555555;
+      outline: none;
+      opacity: 0.7;
+      -webkit-transition: .2s;
+      transition: opacity .2s;
+      border: black 3px;
+      border-radius: 50px;
+    }
 </style>

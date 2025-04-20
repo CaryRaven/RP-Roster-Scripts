@@ -461,7 +461,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
         sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
 
         // Set Task Assigned? to a checkbox - always
-        sheet.getRange(insertRow, 15).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
+        sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
 
         if (changeGroup) {
           sheet.moveRows(sheet.getRange(insertRow - 1, 1, 2, sheet.getMaxColumns()), getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]) - 1);
@@ -622,15 +622,20 @@ function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
  * Add num amount of extra slots to the rank passed in as arg
  * @param {String} rank - Name of the rank to add a slot to
  * @param {Object} userData
- * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 15], [17, 17]]
+ * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 16], [17, 17]]
  * @param {Number} num (optional) - default: 1
  * @param {Boolean} discordnotif (optional) - Send a discord notification or not, default: true
  * @returns {Void|String}
  */
-function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = [[5, 8], [10, 16], [18, 18]]) {
+function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = undefined) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
 
+  if (!borderPairs) borderPairs = [
+    [5, 8], 
+    [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
+    [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
+  ]
   console.log(`num: ${num}`)
 
   let rowData = getFirstRankRow(rank);
@@ -668,7 +673,7 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
 
   sheet.insertRowsAfter(lastRankRow, num)
   sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, num, insertData[0].length).setValues(insertData);
-  sheet.getRange(insertRow, 16, promoReqData.length, 1).setValues(promoReqData);
+  sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned + 1, promoReqData.length, 1).setValues(promoReqData);
 
   borderPairs.forEach(cellpair => {
     let numcols = (cellpair[1] - cellpair[0]) + 1;
@@ -695,12 +700,18 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
  * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 16], [18, 18]]
  * @returns {Void|String}
  */
-function removeRankRow(rank, userData, num = 1, borderPairs = [[5, 8], [10, 16], [18, 18]]) {
+function removeRankRow(rank, userData, num = 1, borderPairs = null) {
   for (let i = 1; i <= num; i++) {
     const rowData = getFirstRankRow(rank);
     const lastRankRow = getLastRankRow(rank);
     const startRankRow = getStartRankRow(rank);
     const sheet = rowData[1];
+
+    if (!borderPairs) borderPairs = [
+      [5, 8], 
+      [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
+      [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
+    ]
 
     if (rowData[0] == 0) return "Remove Rank Instead";
     if (startRankRow === lastRankRow || sheet.getRange(lastRankRow, LIBRARY_SETTINGS.dataCols.name, 1, 1).getDisplayValue() !== "") return "Population";

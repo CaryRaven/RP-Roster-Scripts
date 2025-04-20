@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Main Web App: Security Admin Menu</title>
+  <title>Main Web App: <?= factionName ?> Admin Menu</title>
   <base target="_top">
   <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
@@ -20,7 +20,7 @@
     <h1>AFK Warning</h1><br>
     <h3>Please do not open the admin menu if you do not need to be here.</h3>
   </div>
-
+  
   <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
   <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
   <p id="adminRanks" style="font-size: 0px;"><?= adminRanks ?></p>
@@ -96,6 +96,8 @@
             <span class="tooltip">Config</span>
           </button>
         </li>
+        <? } ?>
+        <? if (accessType === "manager" || accessType === "admin" || accessType === "dev") { ?>
         <li>
           <button onclick="ShowRequests()" id="requestButton">
             <i class='bx bx-calendar-check bx-tada-hover' ></i>
@@ -332,39 +334,42 @@
           <br>
           <hr><br>
 
-          <form id="config-form-modRanks">
-            <label for="mod-role-select"><strong>Select Rank to add/remove Mod access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Mod" access means that the person won't get acess to requests or config and all logs/edits they make via this menu will need to be approved by a manager, though they are able to perform operations on their subordinates.</span>
-            <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="modRanks"><?= modRanks.join(", ") ?></span><br>
-            </label><br>
-            <select id="mod-role-select" style="width: 50%;" >
-            </select>
-            <button id="ModRankButton" onclick="SaveRanks(event, true)" type="submit" class="submitButton-mini">Add/Remove</button>
-          </form><br><hr><br>
+          <button id="generalConfig" class="submitButton">General Config</button>
+          <div id="generalConfigContent" class="container">
+            <form id="config-form-modRanks">
+              <label for="mod-role-select"><strong>Select Rank to add/remove Mod access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Mod" access means that the person won't get acess to requests or config and all logs/edits they make via this menu will need to be approved by a manager, though they are able to perform operations on their subordinates.
+              <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="modRanks"><?= modRanks.join(", ") ?></span></span><br>
+              </label><br>
+              <select id="mod-role-select" style="width: 50%;" >
+              </select>
+              <button id="ModRankButton" onclick="SaveRanks(event, true)" type="submit" class="submitButton-mini">Add/Remove</button>
+            </form><br><hr><br>
 
-          <form id="config-form-managerRanks">
-            <label for="manager-role-select"><strong>Select Rank to add/remove Manager access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Manager" access means that the person won't get acess to the config but they will be able to accept/deny requests made by their subordinates & also manage their subordinates themselves without needing to make a request.</span>
-            <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="managerRanks"><?= managerRanks.join(", ") ?></span><br>
-            </label><br>
-            <select id="manager-role-select" style="width: 50%;" >
-            </select>
-            <button id="ManagerRankButton" onclick="SaveRanks(event, false)" type="submit" class="submitButton-mini">Add/Remove</button>
-          </form><br><hr><br>
+            <form id="config-form-managerRanks">
+              <label for="manager-role-select"><strong>Select Rank to add/remove Manager access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Manager" access means that the person won't get acess to the config but they will be able to accept/deny requests made by their subordinates & also manage their subordinates themselves.
+              <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="managerRanks"><?= managerRanks.join(", ") ?></span></span><br>
+              </label><br>
+              <select id="manager-role-select" style="width: 50%;" >
+              </select>
+              <button id="ManagerRankButton" onclick="SaveRanks(event, false)" type="submit" class="submitButton-mini">Add/Remove</button>
+            </form><br><hr><br>
 
-          <form id="config-new-folder">
-            <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.<br>In order to register a file/folder, it must be owned by "dontorro208@gmail.com".</span></label><br>
-            <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folder or file ID (one at a time)">
-            <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button><br>
-            <button type="button" class="submitButton" id="registeredListButton" style="width: 40%;">Registered List</button><br>
-            <div id="registeredListContent" class="container" style="width: 40%;"></div>
-          </form><br><hr><br><br>
+            <form id="config-new-folder">
+              <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.<br>In order to register a file/folder, it must be owned by "dontorro208@gmail.com".</span></label><br>
+              <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folder or file ID (one at a time)">
+              <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button><br>
+              <button type="button" class="submitButton" id="registeredListButton" style="width: 40%;">Registered File & Folder List</button><br>
+              <div id="registeredListContent" class="container" style="width: 40%;"></div>
+            </form><br><hr><br><br>
 
-          <? if (accessType === "dev") { ?>
-          <form id="changelog-form">
-            <label for="changes"><strong>Add the change notes, seperated by a comma:</strong></label><br>
-            <input type="message" id="changes" placeholder="Add your changes, seperated by a comma" minlength="20" style="width: 50%;"  required></input>
-            <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
-          </form><br><hr><br>
-          <? } ?>
+            <? if (accessType === "dev") { ?>
+            <form id="changelog-form">
+              <label for="changes"><strong>Add the change notes, seperated by a comma:</strong></label><br>
+              <input type="message" id="changes" placeholder="Add your changes, seperated by a comma" minlength="20" style="width: 50%;"  required></input>
+              <button id="changelogButton" onclick="SubmitChangelog(event)" type="submit" class="submitButton-mini">Submit</button>
+            </form><br>
+            <? } ?>
+          </div><br><br>
 
           <button id="manageRank" class="submitButton">Manage Ranks</button>
           <div id="newRankContent" class="container">
@@ -374,7 +379,7 @@
               </select><br>
               <label for="newRankTitle">Add a title to your rank:</label><br>
               <input id="newRankTitle" type="text" placeholder="Add rank Title" required><br>
-              <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:<br><span style="font-size: 13px; font-weight: 100;">Optional, default: at the top of the hierarchy (below the Chiefs)</span></label><br>
+              <label for="new-rank-before-select">Add your rank before this rank in the hierarchy:<br><span style="font-size: 13px; font-weight: 100;">Optional, default: at the top of the hierarchy (below the LTCOM)</span></label><br>
               <select id="new-rank-before-select">
               </select><br>
               <label for="new-rank-group-select">Add your rank to this group:</label><br>
@@ -463,7 +468,7 @@
           <button id="manageThreshold" class="submitButton">Manage Infraction Threshold</button>
           <div id="manageThresholdContent" class="container">
             <form id="threshold-form">
-              <label for="threshold">Enter Required Amount of Infractions<br><span style="font-size: 13px; font-weight: 100;">The amount of infractions a person should have in order to reach the threshold</span></label><br>
+              <label for="threshold">Enter Required Amount of Infractions:<br><span style="font-size: 13px; font-weight: 100;">The amount of infractions a person should have in order to reach the threshold</span></label><br>
               <input type="number" id="threshold" placeholder="Enter required amount of infractions"><br>
               <label for="thresholdActionSelect">Which action should be performed if threshold is reached:</label><br>
               <select id="thresholdActionSelect">
@@ -474,6 +479,28 @@
               </select><br>
               <button onclick="ManageThreshold(event)" class="submitButton" id="threshold-button" type="submit">Submit</button>
             </form><br>
+          </div><br><br>
+
+          <button id="manageMerits" class="submitButton">Manage Merit System</button>
+          <div id="manageMeritsContent" class="container">
+            <form id="manageMerit-form">
+              <label for="editMeritActionSelect">Select if you want to edit an merit action:<br><span style="font-size: 13px; font-weight: 100;">A merit action is an action (such as hosting a cross-training) that is worth merits.</span></label><br>
+              <select id="editMeritActionSelect" onchange="FillMeritAction()">
+              </select><br>
+              <label for="meritActionTitle">Give your merit action a name:</label><br>
+              <input type="text" id="meritActionTitle" placeholder="Add a name to your merit action" maxlength="60" required><br>
+              <label for="meritActionDesc">Give your merit action a description:</label><br>
+              <input type="text" id="meritActionDesc" placeholder="Add a description to your merit action" maxlength="200" required><br>
+              <label for="meritActionPoints">How many merits will be awarded for this action:<br><span style="font-size: 13px; font-weight: 100;">Current Amount: <span id="meritSliderOutput">1</span></span></label><br>
+              <input type="range" id="meritActionPoints" max="5" min="1" value="1" required><br>
+              <button onclick="ManageMeritActions(event)" class="submitButton" id="meritAction-button" type="submit">Submit New Merit Action</button>
+            </form><br><hr><br>
+            <form id="removeMeritAction-form">
+              <label for="removeMerit">Select a merit action to remove:</label><br>
+              <select id="removeMerit" style="width: 50%">
+              </select>
+              <button onclick="RemoveMeritAction(event)" class="submitButton-mini" id="removemerit-button" type="submit">Remove</button>
+            </form>
           </div>
 
           <table class="config-switches" style="margin-top: 30px;">
@@ -587,7 +614,8 @@
                 <? } ?>
                 <option value="LOA Log">LOA Log</option>
                 <option value="Requirement Log">Promotion Requirement Log</option>
-                <? if (accessType !== "visitor" && accessType !== "mod") { ?>
+                <option value="Merit Log">Merit Log</option>
+                <? if (accessType === "dev" || accessType === "admin") { ?>
                 <option value="Blacklist">Blacklist / Suspension</option>
                 <? } ?>
                 <? if (accessType === "dev") { ?>
@@ -647,9 +675,15 @@
               <select id="reqfield" style='display: none;' required>
                 <option value=''></option>
               </select>
+              <label for="meritfield" id="meritfieldlabel" style="display: none;">Select which merit action you have completed:</label>
+              <select id="meritfield" style='display: none;' required>
+              </select>
+              <div id="meritinfofield" style="display: none;">
+                <h3>Merit Count: [ <span id="meritInfoCount"></span> ]</h3><br>
+                <h3>Action Description: [ <span id="meritInfoDesc"></span> ]</h3><br>
+              </div>
               <input type="text" placeholder="Reason" id='reasonfield' maxlength="70" required />
               <button onclick="SubmitLog(event)" type="submit" class="submitButton" id="loggerSubmitButton">Submit</button>
-              <p id="disclaimerText"></p>
             </form>
           </div>
 
