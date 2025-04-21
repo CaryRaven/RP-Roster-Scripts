@@ -250,6 +250,7 @@ function filterQuotes(inputData) {
   let valid = true;
 
   values.forEach(value => {
+    value = value.toString();
     try {
       if (!value) return;
       if (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{")) valid = false;
@@ -337,7 +338,8 @@ function getRankContent(title) {
         LIBRARY_SETTINGS.folders[i].editorAccess,
         LIBRARY_SETTINGS.interviewRequired[i].toString(),
         LIBRARY_SETTINGS.promoReqs[i],
-        LIBRARY_SETTINGS.group[i]
+        LIBRARY_SETTINGS.group[i],
+        LIBRARY_SETTINGS.minMeritScore[i]
       ];
     }
   });
@@ -418,4 +420,15 @@ function getDiscordWebhookUrls(authInput) {
     default:
       throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
   }
+}
+
+/**
+ * Get the Menu/JS file and add it to the web apps, this way I can have one centralized JS file in the library and distribute it across all web apps.
+ */
+function includeJS() {
+  return HtmlService.createHtmlOutputFromFile('Menu/Interfaces/JS').getContent();
+}
+
+function includeCSS() {
+  return HtmlService.createHtmlOutputFromFile('Menu/Interfaces/CSS').getContent();
 }

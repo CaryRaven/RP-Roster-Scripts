@@ -6,8 +6,8 @@
   <base target="_top">
   <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-  <?!= include("Interfaces/CSS"); ?>
-  <?!= include("Interfaces/JS"); ?>
+  <?!= RosterService.includeCSS(); ?>
+  <?!= RosterService.includeJS(); ?>
 </head>
 
 <body>
@@ -25,6 +25,7 @@
   <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
   <p id="adminRanks" style="font-size: 0px;"><?= adminRanks ?></p>
   <p id="groups" style="font-size: 0px;"><?= groups ?></p>
+  <p id="hex" style="font-size: 0px;"><?= hex ?></p>
 
   <div class="loader" id="changeLoader"></div>
   <div id="update-popup" class="main-content" style="display: none;">
@@ -399,6 +400,14 @@
                       <input type="checkbox" id="interviewNeeded">
                       <span class="slider round"></span>
                     </label>
+                  </td>
+                </tr>
+                <tr id="minMeritConfig">
+                  <td>
+                    Minimum Merit Count:<br><span style="font-weight: 200; font-size: 12px;">The minimum merit score players must have in order to be promoted to the next rank.<br>(Set to 0 to disable this)</span>
+                  </td>
+                  <td class="config-switch">
+                    <input type="number" id="meritsNeeded" min="0" max="25" style="width: 100%; font-size: 20px; text-align: center; margin-bottom: 0px;" required>
                   </td>
                 </tr>
                 <tr id="addReqButton">

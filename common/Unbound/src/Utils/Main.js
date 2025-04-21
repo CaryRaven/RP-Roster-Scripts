@@ -273,9 +273,11 @@ function RemoveRankRow(rank, num = 1) {
   if (!rank || typeof rank !== "string") return "no";
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   let returnVal;
-  if (LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length > 0) {
+  
+  if (LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length > 0 || LIBRARY_SETTINGS.minMeritScore[LIBRARY_SETTINGS.ranks.indexOf(rank)] > 0) {
     returnVal = RosterService.removeReqRow(rank.toString(), num);
   }
+
   returnVal = RosterService.removeRankRow(rank, userData, num);
   return returnVal;
 }
@@ -375,49 +377,22 @@ function ToggleReqs() {
 
   if (value) {
     console.log("removing")
-    // Remove ranks from promo reqs sheet
-    LIBRARY_SETTINGS.ranks.forEach(rank => {
-      if (LIBRARY_SETTINGS.adminRanks.includes(rank)) return;
-      RosterService.removeRank(rank, false, LIBRARY_SETTINGS.rosterIds.length - 1, true);
-    });
 
     // Hide sheets related to promo reqs
-    [LIBRARY_SETTINGS.sheetId_reqs, LIBRARY_SETTINGS.sheetId_reqlogs].forEach(sheetId => {
-      const s = RosterService.getCollect(sheetId);
+    for (sheetId of [46188961, 1535565949]) {
+      const s = RosterService.getCollect(Number(sheetId));
       s.hideSheet();
-    });
+    }
   } else {
     console.log("re-adding");
     // Show sheets related to promo reqs
-    [LIBRARY_SETTINGS.sheetId_reqs, LIBRARY_SETTINGS.sheetId_reqlogs].forEach(sheetId => {
-      const s = RosterService.getCollect(sheetId);
+    for (sheetId of [46188961, 1535565949]) {
+      const s = RosterService.getCollect(Number(sheetId));
       s.showSheet();
-    });
-  
-    LIBRARY_SETTINGS.ranks.forEach((rank, i) => {
-      if (LIBRARY_SETTINGS.promoReqs[i].length <= 0) return;
-      const inputData = {
-        title: rank,
-        rankBefore: LIBRARY_SETTINGS.ranks[i + 1],
-        viewerFolders: LIBRARY_SETTINGS.folders[i].viewerAccess.join(", "),
-        editorFolders: LIBRARY_SETTINGS.folders[i].editorAccess.join(", "),
-        editRank: rank,
-        interviewRequired: LIBRARY_SETTINGS.interviewRequired[i].toString(),
-        promoReqs: LIBRARY_SETTINGS.promoReqs[i]
-      };
-
-      const borderPairs = [
-        [3, 3],
-        [5, 8], 
-        [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
-        [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
-      ];
-
-      RosterService.manageRank(inputData, borderPairs, userData, false, true);
-    });
+    }
   }
 
-  LIBRARY_SETTINGS.reqsDisabled = value
+  LIBRARY_SETTINGS.reqsDisabled = value;
   RosterService.init(LIBRARY_SETTINGS);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 

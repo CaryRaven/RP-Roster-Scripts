@@ -1,6 +1,27 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     /* ******** UTILITIES *******************************************************/
+
+    // Set general colors based on hex from library settings
+    const hex = document.getElementById("hex").innerText;
+    document.body.style.backgroundColor = hex;
+
+    ["sidebar", "main-content"].forEach(name => {
+      const classElements = document.getElementsByClassName(name);
+
+      for (let m = 0; m < classElements.length; m++) {
+        classElements[m].style.backgroundColor = hex;
+      }
+    });
+
+    ["req", "task"].forEach(name => {
+      const classElements = document.getElementsByClassName(name);
+
+      for (let m = 0; m < classElements.length; m++) {
+        classElements[m].style.borderLeft = `8px solid ${hex}`;
+      }
+    });
+
     window.CloseChangelog =  function (event) {
       try { event.preventDefault(); } catch(e) { }
       document.getElementById("update-popup").setAttribute("style", "display: none;");
@@ -1231,6 +1252,8 @@
       const reqs = ExtractReqs();
       if (reqs === "invalid") return Shake();
 
+      console.log(reqs);
+
       let data = {
         title: document.getElementById("newRankTitle").value,
         rankBefore: hierarchySelect.value,
@@ -1239,10 +1262,11 @@
         editRank: document.getElementById("editRankSelect").value,
         interviewRequired: document.getElementById("interviewNeeded").checked,
         promoReqs: reqs,
-        group: document.getElementById("new-rank-group-select").value
+        group: document.getElementById("new-rank-group-select").value,
+        minMeritScore: document.getElementById("meritsNeeded").value
       }
 
-      if (!data.title || !data.group) return Shake();
+      if (!data.title || !data.group || (data.minMeritScore < 0 || data.minMeritScore > 25)) return Shake();
 
       // Permission check
       if (hierarchySelect.value == data.editRank && data.editRank !== "") {
@@ -1261,7 +1285,7 @@
       // Input sanitization
       let valid = true;
       Object.values(data).forEach(value => {
-        if (typeof value === "string" && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+        if (typeof value === "string" && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<"))) {
           valid = false;
         }
       });
@@ -1390,6 +1414,31 @@
       if (!title || !desc) return Shake();
       if (title.length > 20 || desc.length > 250) return Shake();
 
+      const data = {
+        title: title,
+        desc: desc,
+        editExisting: editExisting
+      }
+
+      // Input sanitization
+      let valid = true;
+      Object.values(data).forEach(value => {
+        if (typeof value === "string" && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<"))) {
+          valid = false;
+        }
+      });
+
+      if (!valid) {
+        Shake();
+        button.innerText = "No special characters allowed in input values";
+        button.disabled = true;
+        setTimeout(() => {
+          button.innerText = "Submit New Rank";
+          button.disabled = false;
+        }, 2000);
+        return;
+      }
+
       button.disabled = true;
       button.innerHTML = '<div class="loader"></div>';
 
@@ -1514,6 +1563,7 @@
       const viewFoldersInput = document.getElementById("newRankViewFolders");
       const editFoldersInput = document.getElementById("newRankEditFolders");
       const hasInterviewSlider = document.getElementById("interviewNeeded");
+      const minMeritsSelect = document.getElementById("meritsNeeded")
       const reqDiv = document.getElementById("reqs");
       const button = document.getElementById("newrank-button");
       const form = document.getElementById("newrankForm");
@@ -1532,7 +1582,7 @@
 
       google.script.run.withSuccessHandler(content => {
         content = JSON.parse(content);
-        if (content.length !== 7) {
+        if (content.length !== 8) {
           button.innerText = "Rank not found";
           button.classList.add("red");
           return setTimeout(() => {
@@ -1547,6 +1597,7 @@
         titleInput.value = content[0];
         hierarchySelect.value = content[1];
         groupSelect.value = content[6];
+        minMeritsSelect.value = content[7]
 
         /* Map for better styling & user experience (if not, it's just a series of bunched up characters)
           It's literally just one space, but it makes a difference
@@ -1989,6 +2040,7 @@
         if (accessType === "admin" || accessType === "dev") {
           document.getElementById("addReqButton").style.display = "none";
           document.getElementById("reqs").style.display = "none";
+          document.getElementById("minMeritConfig").style.display = "none";
           document.getElementById("reqIdentifier").innerText = "Enable";
         }
 
@@ -2000,9 +2052,9 @@
       } else {
         // Reqs enabled
         if (accessType === "admin" || accessType === "dev") {
-          // document.getElementById("addReqButton").style.display = "block";
           document.getElementById("addReqButton").style.display = "";
           document.getElementById("reqs").style.display = "block";
+          document.getElementById("minMeritConfig").style.display = "";
           document.getElementById("reqIdentifier").innerText = "Disable";
         }
 
@@ -2367,7 +2419,7 @@
 
       Object.values(dataToSubmit).forEach(value => {
         if (!value) return;
-        if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+        if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<"))) {
           valid = false;
         }
       });
@@ -2594,7 +2646,7 @@
       }
 
       Object.values(editdata).forEach(value => {
-      if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{"))) {
+      if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<"))) {
         validEdit = false;
       }
     });

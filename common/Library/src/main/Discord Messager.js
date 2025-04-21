@@ -434,6 +434,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
         Viewer Access to: ${userData.viewerAccess}
         Editor Access to: ${userData.editorAccess}
         Interview Required?: ${userData.interviewRequired.toString() === "true" ? "Yes" : "No"}
+        Minimum Merits for promotion: ${userData.minMeritScore}
         ${userData.reqsDisabled.toString() === "true" ? "" : `Requirements: ${userData.promoReqs}`}`;
       footerMessage = "Not all change info listen above is necessarily new";
       break;

@@ -88,6 +88,7 @@ function doGet() {
     template.allowedStaff = allowedStaff;
     template.factionName = LIBRARY_SETTINGS.factionName;
     template.groups = LIBRARY_SETTINGS.group;
+    template.hex = LIBRARY_SETTINGS.colorHex;
 
     let ssEditors;
 
@@ -169,14 +170,13 @@ function GetScriptUrl() {
 function AddRankRow(rank, num = 1, discordnotif = true) {
   console.log(rank);
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
   const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
   
-  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0 && reqsDisabled.toString() === "false") {
-    RosterService.addReqRow(rank.toString(), num, undefined, LIBRARY_SETTINGS.promoReqs[rankIndex]);
+  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0 || LIBRARY_SETTINGS.minMeritScore[rankIndex] > 0) {
+    RosterService.addReqRow(rank.toString(), num, undefined, LIBRARY_SETTINGS.promoReqs[rankIndex], LIBRARY_SETTINGS.minMeritScore[rankIndex]);
   }
 
-  const returnVal = RosterService.addRankRow(rank, userData, num, discordnotif, undefined); // Actual func
+  const returnVal = RosterService.addRankRow(rank.toString(), userData, num, discordnotif); // Actual func
   return returnVal; // Only returns something if no proper rank was given
 }
 

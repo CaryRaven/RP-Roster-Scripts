@@ -146,10 +146,11 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
   sheet.insertRowAfter(lastBeforeRow);
   sheet.moveRows(sheet.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
   let insertRow = lastBeforeRow + 2;
+  const hasMinMerits = inputData.minMeritScore > 0 ? 1 : 0;
   let borderPairs = [
     [3, 3], 
     [5, 6],
-    [8, 7 + inputData.promoReqs.length]
+    [8, 7 + inputData.promoReqs.length + hasMinMerits]
   ];
 
   // Set styling & (in case of promo reqs) add title/desc row + styling
@@ -161,15 +162,26 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
 
     // Set styling for promo req page
     if (cellpair[0] === 8) {
+      console.log(inputData.promoReqs);
+
+      if (hasMinMerits === 1) inputData.promoReqs.push({ title: `${inputData.minMeritScore} Merits`, desc: `Have a minimum of ${inputData.minMeritScore} merits on your name.`})
+
       addFirstReqRow(sheet, insertRow, inputData.promoReqs, cellpair, numcols);
       insertRow++;
+
+      if (hasMinMerits === 1) inputData.promoReqs.pop();
     }
   });
 
+  console.log(inputData.promoReqs);
+
   // Set data for promo reqs
   const reqFormulas = inputData.promoReqs.map((_, i) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow}, 'Requirement Logs'!G:G, D${insertRow}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + i)}$${insertRow - 1}, 'Requirement Logs'!C:C)`);
+  hasMinMerits === 1 && reqFormulas.push(`= HAS_MIN_MERITS(GET_MERIT_COUNT(F${insertRow}, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E), ${Number(inputData.minMeritScore)})`);
   const preData = [[inputData.title, inputData.title, "", "", ""]];
-  insertData = [preData[0].concat(reqFormulas)];
+  let insertData = [preData[0].concat(reqFormulas)];
+
+  console.log(insertData);
 
   // insert formulas
   sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
@@ -183,7 +195,7 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
   let reqRowNum = lastRankRow - startRankRow;
   // If the rank only has one row, no extra slots need to be added
   reqRowNum = reqRowNum === 1 ? 0 : reqRowNum;
-  addReqRow(inputData.title, reqRowNum, borderPairs, inputData.promoReqs);
+  addReqRow(inputData.title, reqRowNum, borderPairs, inputData.promoReqs, inputData.minMeritScore);
 
   // Only set this formula after as it can cause unwanted rows to be added
   sheet.getRange(insertRow, 5).setValue(`= IFERROR(FILTER('${LIBRARY_SETTINGS.factionName} Roster'!E:F, '${LIBRARY_SETTINGS.factionName} Roster'!D:D=D${insertRow}), "Rank Not found")`);
@@ -273,6 +285,9 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
           return `EditorFolder must be owned by ${ss.getOwner().getEmail()}`;
         }
+
+        // Check for duplicates
+        if (viewerFolders.includes(folderId)) return "Cannot have duplicate file/folder permissions";
       } catch(e) {
         try {
           let fi = DriveApp.getFileById(folderId.toString());
@@ -284,6 +299,9 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
             return `Editorfile must be owned by ${ss.getOwner().getEmail()}`;
           }
+
+          // Check for duplicates
+          if (viewerFolders.includes(folderId)) return "Cannot have duplicate file/folder permissions";
         } catch(ee) {
 
           return "EditorFolders & Files: Invalid Folder/File ID";
@@ -291,6 +309,11 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
       }
     }
   } else { editorFolders = []; }
+
+  // Check for duplicates
+  for (folderId of viewerFolders) {
+    if (editorFolders.includes(folderId)) return "Cannot have duplicate file/folder permissions";
+  }
 
   // **************************************************************
 
@@ -306,8 +329,10 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     rankBeforeGroup2 = LIBRARY_SETTINGS.group[rankBeforeIndex - 1];
     console.log(`rankBeforeGroup2: ${rankBeforeGroup2}`);
     if ((rankBeforeGroup === rankBeforeGroup2 && inputData.group !== rankBeforeGroup2)
-      || (inputData.group !== rankBeforeGroup && inputData.group !== rankBeforeGroup2)) return "Invalid group";
+      || (inputData.group !== rankBeforeGroup && inputData.group !== rankBeforeGroup2)
+      || rankBeforeIndex === 0 && inputData.group !== rankBeforeGroup) return "Invalid group";
     if (rankBeforeGroup !== rankBeforeGroup2 && inputData.group === rankBeforeGroup2) changeGroup = true;
+    if (editingRank && inputData.group === LIBRARY_SETTINGS.group[LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank)]) changeGroup = false;
   }
 
   // if no rankBefore => add it at the top (before Sr CL4)
@@ -322,7 +347,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
   // Determining if we're doing anything with promotion reqs
   // editReq = 0 if no, 1 if yes
-  let editReq = inputData.promoReqs.length > 0 ? 1 : 0;
+  let editReq = 1
+  if (inputData.promoReqs.length <= 0 && inputData.minMeritScore <= 0) editReq = 0;
 
   // Make sure that if promo reqs were all removed, it still registers it as a change in reqs
   try {
@@ -333,8 +359,10 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     editReq = editReq;
   }
 
-  editReq = reqsDisabled.toString() === "true" ? 0 : editReq;
+  // editReq = reqsDisabled.toString() === "true" ? 0 : editReq;
   editReq = reqsBeingEnabled === true ? 1 : editReq;
+
+  console.log(`editReq: ${editReq}`);
 
   // Store the amount of rows the rank had before making any edits
   // Only for editingRank
@@ -386,7 +414,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
         if (i === 1) {
           // Editing promo progress
-          if (inputData.promoReqs.length  > 0 && reqsDisabled.toString() === "false") {
+          if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0)) {
             // Only edit if there are promo reqs being added
 
             addReqRank(sheet, lastBeforeRow, inputData);
@@ -394,10 +422,13 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
         } else {
           console.log(`changeGroup: ${changeGroup}`);
           // Editing roster
+          let moveBefore;
           if (changeGroup) {
-            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]) - 1);
+            moveBefore = getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]);
+            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), moveBefore - 1);
           } else {
-            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), getLastRankRow(inputData.rankBefore) + 2)
+            moveBefore = getLastRankRow(inputData.rankBefore);
+            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), moveBefore + 2)
           }
         }
 
@@ -406,7 +437,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
         if (i === 1) { 
           // Editing promo progress
-          if (inputData.promoReqs.length  > 0 && reqsDisabled.toString() === "false") {
+          if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0)) {
+            console.log(inputData.promoReqs)
             addReqRank(sheet, lastBeforeRow, inputData);
           }
 
@@ -476,11 +508,11 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   // Setting Operations ***************************************************************
 
   // Prepare settings
-  if (hierarchyChange || !editingRank) {
+  let rankIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank);
 
+  if (hierarchyChange || !editingRank) {
     if (editingRank) {
       // Remove previous rank from settings if hierarchy changed
-      let rankIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank);
 
       LIBRARY_SETTINGS.ranks.splice(rankIndex, 1);
       LIBRARY_SETTINGS.folders.splice(rankIndex, 1);
@@ -494,30 +526,34 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
       }
     }
 
+    rankIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore);
+
     // Settings if hierarchy changed => remove & add new
-    LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, {
+    LIBRARY_SETTINGS.folders.splice(rankIndex, 0, {
       "viewerAccess": viewerFolders,
       "editorAccess": editorFolders
     });
 
-    LIBRARY_SETTINGS.interviewRequired.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.interviewRequired);
-    LIBRARY_SETTINGS.promoReqs.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.promoReqs);
-    LIBRARY_SETTINGS.group.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.group);
+    LIBRARY_SETTINGS.interviewRequired.splice(rankIndex, 0, inputData.interviewRequired);
+    LIBRARY_SETTINGS.promoReqs.splice(rankIndex, 0, inputData.promoReqs);
+    LIBRARY_SETTINGS.group.splice(rankIndex, 0, inputData.group);
+    LIBRARY_SETTINGS.minMeritScore.splice(rankIndex, 0, Number(inputData.minMeritScore));
 
-    LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore), 0, inputData.title); // Always change last
+    LIBRARY_SETTINGS.ranks.splice(rankIndex, 0, inputData.title); // Always change last
   } else {
     // Settings if no hierarchy change => replace existing
-    LIBRARY_SETTINGS.folders.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, {
+    LIBRARY_SETTINGS.folders.splice(rankIndex, 1, {
       "viewerAccess": viewerFolders,
       "editorAccess": editorFolders
     });
 
-    LIBRARY_SETTINGS.interviewRequired.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.interviewRequired);
-    LIBRARY_SETTINGS.promoReqs.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.promoReqs);
-    LIBRARY_SETTINGS.group.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.group);
+    LIBRARY_SETTINGS.interviewRequired.splice(rankIndex, 1, inputData.interviewRequired);
+    LIBRARY_SETTINGS.promoReqs.splice(rankIndex, 1, inputData.promoReqs);
+    LIBRARY_SETTINGS.group.splice(rankIndex, 1, inputData.group);
+    LIBRARY_SETTINGS.minMeritScore.splice(rankIndex, 1, Number(inputData.minMeritScore));
     
     if (!hierarchyChange && inputData.title !== inputData.editRank && editingRank) {
-      LIBRARY_SETTINGS.ranks.splice(LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank), 1, inputData.title); // Always change last
+      LIBRARY_SETTINGS.ranks.splice(rankIndex, 1, inputData.title); // Always change last
     }
   }
 
@@ -546,6 +582,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     userData.interviewRequired = inputData.interviewRequired;
     userData.promoReqs = inputData.promoReqs;
     userData.reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
+    userData.minMeritScore = inputData.minMeritScore;
     
     if (discordnotif) sendDiscordConfig("rankEdit", false, userData);
   }
@@ -562,6 +599,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
  */
 function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
   s.insertRowBefore(insertRow);
+
   let titles = reqs.map(req => req.title);
   let r = s.getRange(insertRow, cellpair[0], 1, titles.length);
   r.clearDataValidations();
@@ -602,7 +640,7 @@ function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
   r.setHorizontalAlignment("center");
   r.setFontSize(10);
 
-  for (let j = cellpair[0]; j <= 12; j++) {
+  for (let j = cellpair[0]; j <= 13; j++) {
     r = s.getRange(insertRow, j);
 
     if (j <= cellpair[1]) {
@@ -668,7 +706,7 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
     );
 
     insertData.push(singleData.flat());
-    promoReqData.push(LIBRARY_SETTINGS.reqsDisabled.toString() === "true" ? ["N/A"] : [`= REQS_CHECK(F${insertRow + i}, 'Promotion Progress'!F:F, 'Promotion Progress'!H:L)`])
+    promoReqData.push(LIBRARY_SETTINGS.reqsDisabled.toString() === "true" ? ["N/A"] : [`= REQS_CHECK(F${insertRow + i}, 'Promotion Progress'!F:F, 'Promotion Progress'!H:M)`])
   }
 
   sheet.insertRowsAfter(lastRankRow, num)
@@ -734,15 +772,18 @@ function removeRankRow(rank, userData, num = 1, borderPairs = null) {
  * @param {Number} num (optional)
  * @param {Array[]} borderPairs (optional)
  */
-function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []) {
+function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = [], minMeritScore) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
   if (num === 0) num = 1;
+  const hasMinMerits = minMeritScore > 0 ? 1 : 0;
 
   // Add third (custom) if no borderPair provided
-  if (promoReqs.length <= 0) promoReqs = LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)];
-  if (borderPairs.length === 2) borderPairs.push([8, 7 + promoReqs.length]);
+  // if (promoReqs.length <= 0) promoReqs = LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)];
+  if (borderPairs.length === 2) borderPairs.push([8, 7 + promoReqs.length + hasMinMerits]);
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
+
+  console.log(borderPairs);
 
   const rows = sheet.getMaxRows();
   const rankCol = LIBRARY_SETTINGS.dataCols.rank;
@@ -769,10 +810,15 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
 
   let insertRow = startRow + 1;
 
+  console.log(promoReqs);
+
   let reqs = [];
   for (let i = 0; i < num; i++) {
-    reqs.push([rank, "", "", "",
-      promoReqs.map((_, j) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow + i}, 'Requirement Logs'!G:G, D${insertRow + i}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + j)}$${insertRow - 2}, 'Requirement Logs'!C:C)`)]);
+    let reqFormulas = promoReqs.map((_, j) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow + i}, 'Requirement Logs'!G:G, D${insertRow + i}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + j)}$${startRow - 1}, 'Requirement Logs'!C:C)`);
+    hasMinMerits === 1 && reqFormulas.push(`= HAS_MIN_MERITS(GET_MERIT_COUNT(F${insertRow + i}, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E), ${Number(minMeritScore)})`);
+    const preData = [rank, "", "", ""];
+    const insertData = preData.concat(reqFormulas);
+    reqs.push(insertData);
   }
 
   // Insert row
@@ -804,7 +850,8 @@ function removeReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]]) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
 
-  borderPairs.push([8, 7 + LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length]);
+  const hasMinMerits = LIBRARY_SETTINGS.minMeritScore[LIBRARY_SETTINGS.ranks.indexOf(rank)] > 0 ? 1 : 0;;
+  borderPairs.push([8, 7 + LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length + hasMinMerits]);
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
 
   for (let i = 1; i <= num; i++) {
