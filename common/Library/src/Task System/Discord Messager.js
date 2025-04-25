@@ -4,6 +4,8 @@
  * @param {Object} targetData - Object containing data about the target of the log
  */
 function task_sendDiscordMessage(type, inputData, targetData = {}) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   // Variable init
   let embedTitle = '';
   let embedColor = '';
@@ -104,6 +106,8 @@ function task_sendDiscordMessage(type, inputData, targetData = {}) {
 }
 
 function ReturnDeadline(dateValue) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  
   // Timezone stuff
   const adjustedDate = new Date(dateValue.getTime() - (dateValue.getTimezoneOffset() * 60000));
   return Utilities.formatDate(adjustedDate, "GMT", 'dd MMMM yyyy');

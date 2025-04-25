@@ -230,7 +230,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
         case "Removal":
           moveMember(targetData.row);
           moveMember(firstRankRow[0], targetData.row);
-          insertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
+          insertRankChangeLog(inputData, userData, targetData, "D-Class", insertLogRow);
           protectRange("N", sheet, null, insertLogRow);
           removeDocAccess(targetData.email);
           break;
@@ -300,7 +300,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           // For MTFs, say "Passed Tryout" and not "Passed Interview"
           let passed = "Passed Interview";
           if (LIBRARY_SETTINGS.factionName.includes("MTF")) passed = "Passed Tryout";
-          const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "Member", passed, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+          const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "D-Class", passed, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
           sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, dataToInsert[0].length).setValues(dataToInsert);
 
           protectRange("N", sheet, null, insertLogRow);
@@ -357,7 +357,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
         insertLogRow = getLastRow(sheet);
 
         moveMember(firstRankRow[0], targetData.row);
-        insertRankChangeLog(inputData, userData, targetData, "Member", insertLogRow);
+        insertRankChangeLog(inputData, userData, targetData, "D-Class", insertLogRow);
         protectRange("N", sheet, null, insertLogRow);
         removeDocAccess(targetData.email);
       }
@@ -382,7 +382,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
         }
       }
 
-      sheet = getCollect(LIBRARY_SETTINGS.sheetId_reqs);
+      sheet = getCollect(LIBRARY_SETTINGS.sheetId_reqlogs);
       insertLogRow = getLastRow(sheet);
 
       // Insert log

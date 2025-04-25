@@ -8,6 +8,8 @@
  * @returns {String|Array}
  */
 function merit_manageAction(title, desc, meritCount, editTitle) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  
   const actions = LIBRARY_SETTINGS.meritActions;
   meritCount = Number(meritCount);
   let message = "Added new Merit Action";

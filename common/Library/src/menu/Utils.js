@@ -207,45 +207,13 @@ function getAllEmails() {
 }
 
 /**
- * Get emails of people that aren't mentioned on the roster but should still get access to the admin menu
- * @returns {JSON.String[]}
- */
-function getAllowedStaff() {
-  if (!isInit) throw new Error("Library is not yet initialized");
-
-  try {
-    const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
-    let rows = staffAdminRoster.getMaxRows();
-    let emails = [];
-
-    staffAdminRoster.getRange(8, 8, rows, 1).getValues().forEach(row => {
-        const email = row[0];
-        if (!email) return;
-        emails.push(email);
-    });
-
-    const seniorsRoster = SpreadsheetApp.openById('1H_7iso49sh1IfVQGEuUGAymPcAuoUdSygX7_sOM1wWw').getSheetById(675133232);
-    rows = seniorsRoster.getMaxRows();
-    
-    seniorsRoster.getRange(8, 8, rows, 1).getValues().forEach((row, i) => {
-      const email = row[0];
-      if (!email) return;
-      if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
-    });
-
-    console.log(emails);
-    return JSON.stringify(emails);
-  } catch(e) {
-    return;
-  }
-}
-
-/**
  * Filters inputData for quotes, to prevent code injection
  * @param {Object} inputData - data that you want to filter
  * @returns {Boolean}
  */
 function filterQuotes(inputData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const values = Object.values(inputData);
   let valid = true;
 
@@ -267,6 +235,8 @@ function filterQuotes(inputData) {
  * @param {Stirng} id - id of the image (open in different window)
  */
 function loadImageBytes(id){
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   var bytes = DriveApp.getFileById(id).getBlob().getBytes();
   return Utilities.base64Encode(bytes);
 }
@@ -297,21 +267,25 @@ function backupSheet() {
   s.getRange(10, 1).setValue(LIBRARY_SETTINGS.manualEnabled.toString());
 
   wbBackup.getSheets().forEach(sheet => {
-    const sheetId = sheet.getSheetId();
-    const sourceSheet = wb.getSheetById(sheetId);
-    const rows = sourceSheet.getMaxRows();
-    const cols = sourceSheet.getMaxColumns();
+    try {
+      const sheetId = sheet.getSheetId();
+      const sourceSheet = wb.getSheetById(sheetId);
+      const rows = sourceSheet.getMaxRows();
+      const cols = sourceSheet.getMaxColumns();
 
-    const formulas = sourceSheet.getRange(1, 1, rows, cols).getFormulas();
-    const values = sourceSheet.getRange(1, 1, rows, cols).getValues();
+      const formulas = sourceSheet.getRange(1, 1, rows, cols).getFormulas();
+      const values = sourceSheet.getRange(1, 1, rows, cols).getValues();
 
-    // Apply formulas where available, if not apply values
-    const finalData = formulas.map((row, rowIndex) =>
-      row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
-    );
+      // Apply formulas where available, if not apply values
+      const finalData = formulas.map((row, rowIndex) =>
+        row.map((cell, colIndex) => (cell ? cell : values[rowIndex][colIndex]))
+      );
 
-    sheet.getRange(1, 1, rows, cols).setValues(finalData);
-    console.log(`Backed ${sheet.getName()} up`);
+      sheet.getRange(1, 1, rows, cols).setValues(finalData);
+      console.log(`Backed ${sheet.getName()} up`);
+    } catch(e) {
+      console.log(e);
+    }
   });
   // TODO: add discord notification
 }
@@ -407,6 +381,8 @@ function getSpreadsheetData(inputValue) {
  * Gets the webhook url based on faction name
  */
 function getDiscordWebhookUrls(authInput) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
   if (authInput !== authKey) throw new Error("Incorrect Auth Key");
 
@@ -417,6 +393,8 @@ function getDiscordWebhookUrls(authInput) {
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
     case "MTF O-45":
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("O-45WebhookURL"));
+    case "MTF E-11":
+      return JSON.parse(PropertiesService.getScriptProperties().getProperty("E-11WebhookURL"));
     default:
       throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
   }

@@ -439,9 +439,10 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       footerMessage = "Not all change info listen above is necessarily new";
       break;
     case "folderEdit":
-      embedTitle = value === true ? `[🛠️] 🟩 ${userData.title} Added to Folder List 🟩` : `[🛠️] ⚠️ ${userData.title} Removed from Folder List ⚠️`;
+      embedTitle = value === true ? `[🛠️] 🟩 Registered ${userData.title} 🟩` : `[🛠️] ⚠️ Unregistered ${userData.title} ⚠️`;
       embedColor = value === true ? "1143627" : "16497668";
-      info = value === true ? `${userData.title} is now recognized by the Admin Menu and its functions. It can be added to ranks in the config menu.` : `${userData.title} is no longer recognized by the Admin Menu and its functions. No operations (such as permission checks) will go through this folder.`;
+      info = value === true ? `${userData.title} is now recognized by the Admin Menu and its functions. It can be added to ranks in the config menu and will no longer be flagged.` 
+        : `${userData.title} is no longer recognized by the Admin Menu and its functions. This file/folder has been moved to "Pending Documents", where it can be archived or removed.`;
       footerMessage = "";
       break;
     case "cooldownChange":
@@ -516,6 +517,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
  * @returns {Void}
  */
 function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
+  if (!isInit) throw new Error("Library is not yet initialized");
 
   // Compose discord embed
   let payload = JSON.stringify({
@@ -562,6 +564,7 @@ function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
  * @returns {Void}
  */
 function sendDiscordNewRank(rank, added = true) {
+  if (!isInit) throw new Error("Library is not yet initialized");
 
   // Compose discord embed
   let payload = JSON.stringify({
@@ -607,6 +610,7 @@ function sendDiscordNewRank(rank, added = true) {
  * @returns {Void}
  */
 function sendDiscordChangeLog(notes, url = '') {
+  if (!isInit) throw new Error("Library is not yet initialized");
   notes = notes.map(note => `- ${note}`).join('\n');
 
    let payload = JSON.stringify({
@@ -649,6 +653,7 @@ function sendDiscordChangeLog(notes, url = '') {
 }
 
 function sendDiscordManualEdit(range) {
+  if (!isInit) throw new Error("Library is not yet initialized");
 
   // Compose discord embed
   let payload = JSON.stringify({
@@ -694,6 +699,7 @@ function sendDiscordManualEdit(range) {
  * @returns {Void}
  */
 function sendDiscordRequestDenied(data, userData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
 
   // Compose discord embed
   let payload = JSON.stringify({

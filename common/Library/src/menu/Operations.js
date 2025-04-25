@@ -142,6 +142,8 @@ function restoreSheet() {
  * Add promotion requirements to a rank - Helper to manageRank
  */
 function addReqRank(sheet, lastBeforeRow, inputData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  
   sheet.insertRowAfter(lastBeforeRow + 1);
   sheet.insertRowAfter(lastBeforeRow);
   sheet.moveRows(sheet.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
@@ -598,6 +600,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
  * @returns {Void}
  */
 function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   s.insertRowBefore(insertRow);
 
   let titles = reqs.map(req => req.title);

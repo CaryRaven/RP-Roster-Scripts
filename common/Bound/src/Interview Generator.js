@@ -1,10 +1,17 @@
+const interviewRanks = ["Captain"];
+
 function GenInterviewUI() {
   try {
     DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_interviews);
-    const interviewFile = RosterService.getHtmlInterview();
-    return SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(interviewFile).setWidth(700).setHeight(900), "Generate Interview Doc");
+    let interviewFile = RosterService.getHtmlInterview();
+    
+    interviewFile = HtmlService.createTemplate(interviewFile);
+    interviewFile.ranks = interviewRanks;
+
+    return SpreadsheetApp.getUi().showModalDialog(interviewFile.evaluate().setWidth(700).setHeight(900), "Generate Interview Doc");
   } catch(e) {
-    return SpreadsheetApp.getUi().alert("Only Security Chiefs+ are allowed to perform this action.");
+    console.log(e);
+    return SpreadsheetApp.getUi().alert("You are not authorized to generate an interview document.");
   }
 }
 

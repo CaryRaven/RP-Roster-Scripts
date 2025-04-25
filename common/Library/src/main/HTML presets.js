@@ -5,6 +5,8 @@
  * @returns {String}
  */
 function getHtmlTaskManager() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   return `
   <!DOCTYPE html>
 <html>
@@ -318,6 +320,13 @@ function getHtmlTaskManager() {
                 }
                 google.script.host.close();
               }, 2000);
+            } else {
+              button.innerText = "No response from server";
+              button.classList.add("red");
+              setTimeout(() => {
+                button.classList.remove("red");
+                button.innerText = "Assign";
+              }, 2000);
             }
           })
           .withFailureHandler(() => {
@@ -404,7 +413,18 @@ function getHtmlTaskManager() {
             }, 2000);
           })
           .ChangePriority(data);
-      };      
+      };
+
+      let emailList = document.getElementById("emails").innerText;
+      const gmailSelect = document.getElementById("gmail");
+      emailList = emailList.split(",");
+
+      for (email of emailList) {
+        const emailOption = document.createElement("option");
+        emailOption.value = email;
+        emailOption.innerText = email;
+        gmailSelect.appendChild(emailOption);
+      }
     });
   </script>
 </head>
@@ -427,7 +447,8 @@ function getHtmlTaskManager() {
     <hr>
     <form>
       <label for="gmail">Gmail address of person to assign:</label>
-      <input type="text" id="gmail" placeholder="Enter the gmail address of the person you want to assign this task to." maxlength="50" required>
+      <select id="gmail" required>
+      </select>
       <button onclick="SubmitAssignment(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
     </form>
   <? } else if (type == "Priority") { ?>
@@ -446,9 +467,10 @@ function getHtmlTaskManager() {
       <button onclick="SubmitPriority(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
     </form>
   <? } ?>
-  <p style="font-size: 1px;" id="row"><?= row ?></p>
-  <p style="font-size: 1px;" id="col"><?= col ?></p>
-  <p style="font-size: 1px;" id="title"><?= title ?></p>
+  <p style="font-size: 0px;" id="row"><?= row ?></p>
+  <p style="font-size: 0px;" id="col"><?= col ?></p>
+  <p style="font-size: 0px;" id="title"><?= title ?></p>
+  <p style="font-size: 0px;" id="emails"><?= emails ?></p>
 </body>
 
 </html>`
@@ -460,6 +482,8 @@ function getHtmlTaskManager() {
  * @returns {String}
  */
 function getHtmlAddTask() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   return `
   <!DOCTYPE html>
 <html>
@@ -740,6 +764,8 @@ function getHtmlAddTask() {
  * @returns {String}
  */
 function getHtmlTerminalAnimation() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -1169,6 +1195,8 @@ function getHtmlTerminalAnimation() {
  * @returns {String}
  */
 function getHtmlRetroTerminal() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   return `
   <!DOCTYPE html>
 <html>
@@ -1506,6 +1534,8 @@ function getHtmlRetroTerminal() {
  * @returns {String}
  */
 function getHtmlInterview() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  
   return `
 <!DOCTYPE html>
 <html>

@@ -3,6 +3,8 @@
  * @param {String} folderId
  */
 function getAllDocsInFolder(folderId) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const folder = DriveApp.getFolderById(folderId);
   const docs = [];
 
@@ -29,7 +31,6 @@ function permissionsGuard(exempt) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
   let authed = getAllEmails();
-  let folders = LIBRARY_SETTINGS.folders;
   exempt.push("micheal.labus@gmail.com");
   let flagArray = [];
 
@@ -44,27 +45,29 @@ function permissionsGuard(exempt) {
     }
   });
 
-  // Check registered folders
-  folders[folders.length - 1].forEach(folderId => {
-    if (!folderId) return;
-    let folder;
+  // Check all docs
+  const docs = getAllDocsInFolder(LIBRARY_SETTINGS.folderId_main);
+  docs.forEach(id => {
+    if (!id) return;
+    let doc;
 
     try {
-      folder = DriveApp.getFolderById(folderId);
+      doc = DriveApp.getFolderById(id);
     } catch (e) {
       try {
-        folder = DriveApp.getFileById(folderId);
+        doc = DriveApp.getFileById(id);
       } catch(ee) {
-        return console.log(`Error found at ${folderId}`);
+        return console.log(`Error found at ${id}`);
       }
     }
 
-    const folderName = folder.getName();
-    const viewers = folder.getViewers();
-    const editors = folder.getEditors();
+    const viewers = doc.getViewers();
+    const editors = doc.getEditors();
 
-    flagArray = flagArray.concat(processPermissions(viewers, authed, exempt, "VIEW", folderName, folderId, folders));
-    flagArray = flagArray.concat(processPermissions(editors, authed, exempt, "EDIT", folderName, folderId, folders));
+    console.log(doc.getName());
+
+    flagArray = flagArray.concat(processPermissions(viewers, authed, exempt, "VIEW", doc));
+    flagArray = flagArray.concat(processPermissions(editors, authed, exempt, "EDIT", doc));
 
   });
 
@@ -84,10 +87,13 @@ function permissionsGuard(exempt) {
  * @param {String} accessType - Type of access to check for: "VIEW" or "EDIT"
  * @return {Array}
  */
-function processPermissions(users, authed, exemptUsers, accessType, folderName, folderId, folderData) {
+function processPermissions(users, authed, exemptUsers, accessType, doc) {
   if (!isInit) throw new Error("Library is not yet initialized");
   let flagArray = [];
   const ranks = LIBRARY_SETTINGS.ranks;
+  const registeredDocs = LIBRARY_SETTINGS.folders;
+
+  if (doc.getSharingPermission() === DriveApp.Access.ANYONE_WITH_LINK) return;
 
   users.forEach(user => {
     const email = user.getEmail().toLowerCase();
@@ -98,45 +104,33 @@ function processPermissions(users, authed, exemptUsers, accessType, folderName, 
       DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(email);
       DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(email);
     } catch(e) {
-      flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Deleted/Blocked Google Account" });
+      Logger.log(e);
+      flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Deleted/Blocked Google Account" });
     }
 
-    if (!authed.includes(email)) return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
+    if (!authed.includes(email)) return flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Unauthorized access" });
 
     const userData = getUserData(email.toString());
 
-    if (ranks[ranks.length - 2].includes(userData.rank) || ranks[ranks.length - 1].includes(userData.rank)) return "User is exempt";
+    if (LIBRARY_SETTINGS.adminRanks.includes(userData.rank)) return Logger.log(`${email} is exempt`);
 
-    const allowedFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].viewerAccess : folderData[ranks.indexOf(userData.rank)].editorAccess;
-    const wrongFolders = accessType === "VIEW" ? folderData[ranks.indexOf(userData.rank)].editorAccess : folderData[ranks.indexOf(userData.rank)].viewerAccess;
+    const allowedFolders = accessType === "VIEW" ? registeredDocs[ranks.indexOf(userData.rank)].viewerAccess : registeredDocs[ranks.indexOf(userData.rank)].editorAccess;
+    const wrongFolders = accessType === "VIEW" ? registeredDocs[ranks.indexOf(userData.rank)].editorAccess : registeredDocs[ranks.indexOf(userData.rank)].viewerAccess;
 
     // Allow users to have access to files if they have access to a parent folder.
-    // TODO: testing required
-    let parents;
-    try {
-      parents = DriveApp.getFolderById(folderId).getParents();
-      while (parents.hasNext()) {
-        const parent = parents.next();
-        const parentId = parent.getId();
-        if (allowedFolders.includes(parentId)) return;
-      }
-    } catch(e) {
-      try {
-        parents = DriveApp.getFileById(folderId).getParents();
-        while (parents.hasNext()) {
-          const parent = parents.next();
-          const parentId = parent.getId();
-          if (allowedFolders.includes(parentId)) return;
-        }
-      } catch(ee) { }
+    let parents = doc.getParents();
+    while (parents.hasNext()) {
+      const parent = parents.next();
+      const parentId = parent.getId();
+      if (allowedFolders.includes(parentId)) return;
     }
 
-    if (allowedFolders.includes(folderId)) return;
+    if (allowedFolders.includes(doc.getId())) return;
 
     if (wrongFolders.includes(folderId)) {
-      return flagArray.push({ email: email, folderName: folderName, expectedPermission: accessType === "VIEW" ? "EDIT" : "VIEW", reason: "Incorrect permissions" });
+      return flagArray.push({ email: email, folderName: doc.getName(), expectedPermission: accessType === "VIEW" ? "EDIT" : "VIEW", reason: "Incorrect permissions" });
     } else {
-      return flagArray.push({ email: email, folderName: folderName, currentPermission: accessType, reason: "Unauthorized access" });
+      return flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Unauthorized access" });
     }
 
   });
@@ -147,10 +141,12 @@ function processPermissions(users, authed, exemptUsers, accessType, folderName, 
  * Recursive function to check through all docs under a parent folder
  */
 function collectUnregisteredDocs(folder, itemsArray) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   // Folder
   if (
     !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folder.getId())
-    && !folder.getName().includes("Interview")) {
+    && !folder.getName().includes("Interview")
+    && !folder.getName().toLowerCase().includes("pending")) {
     itemsArray.push({
       type: "folder",
       name: folder.getName(),
@@ -165,7 +161,8 @@ function collectUnregisteredDocs(folder, itemsArray) {
     const file = files.next();
     if (
       !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(file.getId())
-      && !file.getName().includes("Interview")) {
+      && !file.getName().includes("Interview")
+      && !file.getName().toLowerCase().includes("pending")) {
       itemsArray.push({
         type: "file",
         name: file.getName(),
@@ -180,5 +177,39 @@ function collectUnregisteredDocs(folder, itemsArray) {
   while (subfolders.hasNext()) {
     const subfolder = subfolders.next();
     collectUnregisteredDocs(subfolder, itemsArray);
+  }
+}
+
+/**
+ * Get emails of people that aren't mentioned on the roster but should still get access to the admin menu
+ * @returns {JSON.String[]}
+ */
+function getAllowedStaff() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  try {
+    const staffAdminRoster = SpreadsheetApp.openById("1Y5vRfPV4v1NnD32eLJf4TWBRrur3xJpYjOBpgwRmHrU").getSheetById(591802026);
+    let rows = staffAdminRoster.getMaxRows();
+    let emails = [];
+
+    staffAdminRoster.getRange(8, 8, rows, 1).getValues().forEach(row => {
+        const email = row[0];
+        if (!email) return;
+        emails.push(email);
+    });
+
+    const seniorsRoster = SpreadsheetApp.openById('1H_7iso49sh1IfVQGEuUGAymPcAuoUdSygX7_sOM1wWw').getSheetById(675133232);
+    rows = seniorsRoster.getMaxRows();
+    
+    seniorsRoster.getRange(8, 8, rows, 1).getValues().forEach((row, i) => {
+      const email = row[0];
+      if (!email) return;
+      if (seniorsRoster.getRange(i + 8, 4).getValue().includes("Site")) emails.push(email);
+    });
+
+    console.log(emails);
+    return JSON.stringify(emails);
+  } catch(e) {
+    return;
   }
 }

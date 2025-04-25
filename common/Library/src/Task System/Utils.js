@@ -4,6 +4,8 @@ const types = ["Backlog", "In Progress", "Completed"];
  * @returns {String}
  */
 function task_add(inputData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
   let loc = task_getEmptyRow(s, "Backlog");
   let endLoc = task_getLastRow(s, "Backlog");
@@ -36,6 +38,8 @@ function task_add(inputData) {
  * @returns {String|Void|Array[4]}
  */ 
 function task_manager(sheet, range, oldValue) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const col = range.getColumn();
   const row = range.getRow();
   const sheetID = sheet.getSheetId();
@@ -114,6 +118,7 @@ function task_manager(sheet, range, oldValue) {
  * Open a modal Dialog for the task manager
  */
 function task_openFile(type, row, col, title) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   if (!type) throw new Error("Do not run this function from the editor");
 
   const taskManager = getHtmlTaskManager();
@@ -187,6 +192,8 @@ function task_getFirstRow(s, type) {
  * @returns {String|Void}
  */
 function task_changeDeadline(taskData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const s = getCollect(1504741049);
 
   if (types[2].includes(s.getRange(taskData.row, 2).getValue())) return "You cannot change the status of a completed task";
@@ -205,6 +212,7 @@ function task_changeDeadline(taskData) {
  * @returns {String}
  */
 function task_changeAssignment(inputData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData) throw new Error("Do not run this function from the editor");
   if (!inputData.gmail.includes("@") || !inputData.gmail.includes(".")) return "Not a valid Gmail";
   
@@ -212,13 +220,16 @@ function task_changeAssignment(inputData) {
   if (!targetData.row) return "User not found";
 
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
+  const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   let currentAssignees = s.getRange(inputData.row, 7).getValue();
   let assigned = false;
 
   if (currentAssignees.includes(targetData.name)) {
     currentAssignees = task_removeAssignee(currentAssignees, targetData.name);
+    roster.getRange(targetData.row, 16).setValue(false);
   } else {
     currentAssignees = currentAssignees + `${currentAssignees ? ", " : ""} ${targetData.name}`;
+    roster.getRange(targetData.row, 16).setValue(true);
     assigned = true;
   }
 
@@ -228,7 +239,6 @@ function task_changeAssignment(inputData) {
   inputData["deadline"] = s.getRange(inputData.row, 4).getValue();
 
   task_sendDiscordMessage(assigned, inputData, targetData);
-  task_isAssigned(assigned === "Assigned" ? true : false);
 
   return `${targetData.name} ${assigned}`;
 }
@@ -238,13 +248,14 @@ function task_changeAssignment(inputData) {
  * @param {Boolean} newTask
  * @returns {void}
  */
-function task_isAssigned(newTask = false) {
+function task_isAssigned() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   const taskSheet = getCollect(LIBRARY_SETTINGS.sheetId_task);
   const taskCol = LIBRARY_SETTINGS.dataCols.taskAssigned;
   const total_rows = sheet.getMaxRows();
   const task_rows = task_getLastRow(taskSheet, "Backlog");
-  let total_assignees = [];
 
   for (let i = 6; i < total_rows; i++) {
     const rank = sheet.getRange(i, 4).getValue();
@@ -255,23 +266,18 @@ function task_isAssigned(newTask = false) {
 
     if (!rank) continue;
     const member = sheet.getRange(i, 5).getDisplayValue();
+    sheet.getRange(i, taskCol).setValue(false);
 
-    if (!member) {
-      sheet.getRange(i, taskCol).setValue(false);
-      continue;
-    }
-
+    if (!member) continue;
+    
     for (let j = 10; j <= task_rows; j++) {
       const assignees = taskSheet.getRange(j, 7).getValue();
       if (!assignees) continue;
-      if (!newTask) total_assignees.push(assignees);
 
-      if (assignees.includes(member)) sheet.getRange(i, taskCol).setValue(true);
-    }
-
-    if (!newTask) {
-      if (!total_assignees.includes(sheet.getRange(i, taskCol).getValue())) sheet.getRange(i, taskCol).setValue(false);
-      total_assignees = [];
+      if (assignees.includes(member)) {
+        sheet.getRange(i, taskCol).setValue(true);
+        continue;
+      }
     }
   } 
 }
@@ -284,6 +290,8 @@ function task_isAssigned(newTask = false) {
  * @returns {String}
  */
 function task_removeAssignee(str, name) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   if (str.includes(name)) {
     const escapedName = name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
     const regex = new RegExp(`\\s*${escapedName}\\s*,?|,?\\s*${escapedName}\\s*`, 'g');
@@ -298,6 +306,8 @@ function task_removeAssignee(str, name) {
  * Check if a task is overdue. All asignees will be striked.
  */
 function task_checkOverdue() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const taskSheet = getCollect(LIBRARY_SETTINGS.sheetId_task);
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   const infractionSheet = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
@@ -356,7 +366,7 @@ function task_checkOverdue() {
                   targetData.rank,
                   "Regular",
                   false,
-                  `Failure to complete the ${inputData.title} task before the deadline.`,
+                  `Failure to complete the task "${inputData.title}" before the deadline.`,
                   "",
                   "Task Manager",
                   "N/A",
@@ -367,14 +377,15 @@ function task_checkOverdue() {
             protectRange("A", infractionSheet, 9, insertLogRow);
 
             Logger.log("Infraction Logged");
+            inputData.description = `${inputData.description}\n${targetData.name} has been automatically unassigned from this task and striked for failure to complete it by the deadline.`;
             task_sendDiscordMessage("Unassigned", inputData, targetData);
+
+            sheet.getRange(targetData.row, 16).setValue(false);
           }
         }
       }
     }
   }
-
-  task_isAssigned();
 }
 
 /**
@@ -383,6 +394,8 @@ function task_checkOverdue() {
  * @returns {String}
  */
 function task_cycleStatus(row) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
   if (s.getRange(row, 5).getValue() == "") return "This task is empty";
 
@@ -463,7 +476,9 @@ function task_cycleStatus(row) {
  * @returns {String}
  */
 function task_changePriority(inputData) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData) throw new Error("Do not run this function from the editor");
+
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
   if (s.getRange(inputData.row, 5).getValue() == "") return "This task is empty";
 
@@ -485,7 +500,9 @@ function task_changePriority(inputData) {
  * @returns {String|Object}
  */
 function task_delete(row, clearcell = 14, endLoc = null, startLoc = null) {
+  if (!isInit) throw new Error("Library is not yet initialized");
   if (!row) throw new Error("Do not run this function from the editor");
+  
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
   if (s.getRange(row, 5).getValue() == "") return "This task is empty";
 

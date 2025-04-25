@@ -5,7 +5,13 @@ function ManualEdit(e) {
   if (!e) throw new Error("Do not run this function from the editor");
   const sheet = e.source.getActiveSheet();
   const sheetID = sheet.getSheetId();
-  if (sheetID === 1504741049 || sheetID === 171954164 || sheetID === 746891100) return;
+  const range = e.range;
+  const col = range.getColumn();
+  const row = range.getRow();
+
+  if (sheetID === LIBRARY_SETTINGS.sheetId_task || sheetID === 171954164 || sheetID === 746891100) return;
+
+  if (sheetID === 789793193 && col === 3 && row === 3) return;
   
   const s = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
   const manualEnabled = s.getRange(10, 1).getValue();
