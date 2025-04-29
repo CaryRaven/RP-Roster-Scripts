@@ -262,7 +262,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           }
 
           // Check if the person has an open interview
-          if (LIBRARY_SETTINGS.interviewRequired[0].toString() !== "false") {
+          if (LIBRARY_SETTINGS.interviewRequired[0].toString() !== "false" && LIBRARY_SETTINGS.folderId_interviews !== "") {
             const files = DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_interviews).getFiles();
             let hasInterview = false;
             while (files.hasNext() && !hasInterview) {

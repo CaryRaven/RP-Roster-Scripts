@@ -1,4 +1,21 @@
-<!DOCTYPE html>
+/**
+ * Gets the HTML content for the admin menu (template)
+ * 
+ * Parameters: 
+ *  template.user = user;
+    template.ranks = LIBRARY_SETTINGS.ranks;
+    template.modRanks = LIBRARY_SETTINGS.modRanks;
+    template.managerRanks = LIBRARY_SETTINGS.managerRanks;
+    template.adminRanks = LIBRARY_SETTINGS.adminRanks;
+    template.allowedStaff = allowedStaff;
+    template.factionName = LIBRARY_SETTINGS.factionName;
+    template.groups = LIBRARY_SETTINGS.group;
+    template.hex = LIBRARY_SETTINGS.colorHex;
+ * @returns {String}
+ */
+function getAdminMenu() {
+  return `
+  <!DOCTYPE html>
 <html>
 
 <head>
@@ -64,7 +81,7 @@
           </button>
         </li>
         <li>
-          <a href="https://docs.google.com/spreadsheets/d/1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE/edit?usp=sharing"
+          <a href="https://docs.google.com/spreadsheets/d/1w2Xl7gpPY_VmXC_a67jOpglw-mFrNuDWnzcis9kjum0/edit?usp=sharing"
             target="_blank">
             <button>
               <i class="bx bx-grid bx-tada-hover"></i>
@@ -742,4 +759,5 @@
   </div>
 </body>
 
-</html>
+</html>`
+}

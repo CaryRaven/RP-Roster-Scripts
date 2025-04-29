@@ -5,7 +5,7 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() { 
-  console.log(DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getName())
+  console.log(JSON.parse(PropertiesService.getScriptProperties().getProperty("settings")))
 }
 
 /**
@@ -78,7 +78,7 @@ function doGet() {
     userProperty.deleteProperty("terminalShownThisSession");
 
     // Load the Admin Menu
-    const template = HtmlService.createTemplateFromFile("Interfaces/Admin Menu");
+    const template = HtmlService.createTemplate(RosterService.getAdminMenu());
 
     template.user = user;
     template.ranks = LIBRARY_SETTINGS.ranks;
@@ -154,168 +154,113 @@ function doGet() {
 }
 
 /**
- * Get the URL of the version the web application is opened in
- */
-function GetScriptUrl() {
-  PropertiesService.getUserProperties().setProperty("showTerminal", false);
-  return ScriptApp.getService().getUrl();
-}
-
-/**
- * Add one extra slot to the rank passed in as arg
- * @param {String} rank - Name of the rank to add a slot to
- * @param {Number} num (optional)
- * @returns {Void|String}
- */
-function AddRankRow(rank, num = 1, discordnotif = true) {
-  console.log(rank);
-  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
-  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
-  
-  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0 || LIBRARY_SETTINGS.minMeritScore[rankIndex] > 0) {
-    RosterService.addReqRow(rank.toString(), num, undefined, LIBRARY_SETTINGS.promoReqs[rankIndex], LIBRARY_SETTINGS.minMeritScore[rankIndex]);
-  }
-
-  const returnVal = RosterService.addRankRow(rank.toString(), userData, num, discordnotif); // Actual func
-  return returnVal; // Only returns something if no proper rank was given
-}
-
-/**
- * Add a HTML file into the Admin Menu (or another HTML file)
- * Only works for files located in this project
- */
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-/**
- * Returns the userData to the client (HTML)
- * @param {Boolean} bool - Should the output be stringified (in this case yes, since we're sending data to the client)
- */
-function ReturnUserData(inputData, bool) {
-  return RosterService.getUserData(inputData, null, bool);
-}
-
-/**
- * Workaround to get images (located in drive) to load into the web app
- * Found solution on stackoverflow
- */
-function loadImageBytes(id) {
-  return RosterService.loadImageBytes(id);
-}
-
-/**
- * Returns the current settings for specializations
- * Used to populate config fields when editing an existing specialization
- */
-function ReturnSpecs() {
-  return JSON.stringify(LIBRARY_SETTINGS.specializations);
-}
-
-function GetAllEmails() {
-  return JSON.stringify(RosterService.getAllEmails());
-}
-
-/**
  * Reset the settings of this admin menu
  * Must be done when adding a new option to the settings obj to aling with the library
  * |-> Cannot use library without a full & complete settings obj
  */
 function Set() {
   // throw new Error("Do not run this function from the editor");
-  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify({
-    dataCols: {
-      firstCol: 3,
-      rank: 4,
-      name: 5,
-      playerId: 6,
-      discordId: 7,
-      email: 8,
-      infraction: 10,
-      merits: 11,
-      status: 12,
-      specialization: 13,
-      lastRankChange: 14,
-      loaEnd: 15,
-      taskAssigned: 16,
-      blacklistEnd: 18,
-      notes: 19,
-      supervisor_name: 1,
-      supervisor_playerId: 1,
-      cooldown: 1,
-      firstReqRow: 6
-    },
-
-    rosterIds: [2063800821, 46188961],
-    firstMemberRow: 6,
-    spreadsheetId_main: "1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE",
-    spreadsheetId_backup: "1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64",
-    folderId_interviews: "17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB",
-    folderId_closedInterviews: "1Nr4xPCEfMMtynlzJqenrjt7itkCSBfYq",
-    folderId_main: "1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc",
-    folderId_publicDocs: "13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A",
-    sheetId_rankchange: 789793193,
-    sheetId_infraction: 343884184,
-    sheetId_loa: 977408594,
-    sheetId_blacklist: 1787594911,
-    sheetId_reqs: 46188961,
-    sheetId_task: 1504741049,
-    sheetId_merit: 1635403376,
-    sheetId_reqlogs: 1535565949,
-    cooldown_loa: 14,
-    cooldown_promotion: 14,
-    threshold_num: 3,
-    threshold_action: "Suspension",
-    leaderPing: '1186431632647921736',
-    factionName: "Security",
-    colorHex: "#2b547e",
-    modRanks: [],
-    managerRanks: [],
-    adminRanks: ["Security Chief", "Office of Site Management"],
-    folders: [ { viewerAccess: 
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(	{ dataCols: 
+   { firstCol: 3,
+     rank: 4,
+     name: 5,
+     playerId: 6,
+     discordId: 7,
+     email: 8,
+     infraction: 10,
+     merits: 11,
+     status: 12,
+     specialization: 13,
+     lastRankChange: 14,
+     loaEnd: 15,
+     taskAssigned: 16,
+     blacklistEnd: 18,
+     notes: 19,
+     supervisor_name: 1,
+     supervisor_playerId: 1,
+     cooldown: 1,
+     firstReqRow: 6 },
+  rosterIds: [ 2063800821, 46188961 ],
+  firstMemberRow: 6,
+  spreadsheetId_main: '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE',
+  spreadsheetId_backup: '1Dy34hbsmJFd2nZHsOFCDcwk7TpblQfgSNWPeUpTOv64',
+  folderId_interviews: '17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB',
+  folderId_closedInterviews: '1Nr4xPCEfMMtynlzJqenrjt7itkCSBfYq',
+  folderId_main: '1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc',
+  folderId_publicDocs: '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
+  sheetId_rankchange: 789793193,
+  sheetId_infraction: 343884184,
+  sheetId_loa: 977408594,
+  sheetId_blacklist: 1787594911,
+  sheetId_reqs: 46188961,
+  sheetId_task: 1504741049,
+  sheetId_merit: 1635403376,
+  sheetId_reqlogs: 1535565949,
+  cooldown_loa: 14,
+  cooldown_promotion: 14,
+  threshold_num: 3,
+  threshold_action: 'Suspension',
+  leaderPing: '1186431632647921736',
+  factionName: 'Security',
+  colorHex: '#2b547e',
+  rosterHex: '#2b547e',
+  modRanks: [],
+  managerRanks: [],
+  adminRanks: [ 'Security Chief', 'Office of Site Management' ],
+  folders: 
+   [ { viewerAccess: [Object], editorAccess: [] },
+     { viewerAccess: [Object], editorAccess: [] },
      [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
-       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE' ],
-    editorAccess: [] },
-  { viewerAccess: 
-     [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
-       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE' ],
-    editorAccess: [] },
-  [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
-    '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
-    '1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-',
-    '17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB',
-    '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE',
-    '1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc',
-    '1PPQsskt8pohBTmfAvniXebwzVt0XIOfuSco4xlOha8iqJj6OZgCJS5uJ',
-    '1MbMChbevrX1mx5gHGGL74SQ8cbABt_kQMdcwbLWXnC8',
-    '1QiBmaUTcKU0iZ1uyEYH30ZGD8cAZfjz5M0LEb5ZceZU',
-    '1Hor8B4_cxYYtjmkNtsVcBWBaR2rWRfDV',
-    '1IQvMVAE6xS93NbOwaS60IqCAfVMKqFPg1tmvifT8bYg',
-    '1zQnOxsHb3BVEQTLn9ySSj8myKrNCclNUWSWQMOkRJpk',
-    '10RmXJBe6IWA5DMQtfrQFaeXy5u7UEtzkQ1jjRngsVow' ] ],
-    ranks: ["Captain","Captain Major","Security Chief","Office of Site Management"],
-    interviewRequired: [true, false, false, false],
-    promoReqs: [[], [], [], []],
-    group: ["Security","Security","Sr CL4","Sr CL4"],
-    specializations: [{title: "", desc: ""}, {title: "Security Liaison", desc: "In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs"},{ title: 'Punishment Lead',desc: 'Specialist of the security department\'s policies, in charge of handing out appropriate punishments to security personnel.' }],
-    meritActions: [],
-    minMeritScore: [0, 0, 0, 0],
-    pings: true,
-    backupEnabled: true,
-    lockdownEnabled: false,
-    manualEnabled: false,
-    reqsDisabled: true,
-    newRowData: [[ // TODO: Add a way to dynamically edit this?
-      "/title/", "/title/", "", "", "", "", "", 
-      `= INFRACTIONS(F/row/, Infractions!E:E, Infractions!H:H, Infractions!I:I, Infractions!C:C)`,
-      "= GET_MERIT_COUNT(F/row/, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E)",
-      `= STATUS(F/row/, G/row/, E/row/, H/row/, 'LOA Logs'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P/row/)`,
-      "",
-      `= LAST_RANKCHANGE(F/row/, 'Rank Changes'!E:E, 'Rank Changes'!C:C)`,
-      `= LOA_DATE(F/row/, 'LOA Logs'!E:E, 'LOA Logs'!G:G)`,
-      false,
-      `= REQS_CHECK(F/row/, 'Promotion Progress'!F:F, 'Promotion Progress'!H:M)`,
-      `= BLACKLIST_DATE(F/row/, 'Suspensions / Blacklists'!E:E, 'Suspensions / Blacklists'!H:H, 'Suspensions / Blacklists'!J:J)`, ""
-    ]]
-  }));
+       '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
+       '1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-',
+       '17ARu5vNWpQ8Td3yPxGiDRxNWYfYO37ZB',
+       '1LpkjzBEoOSmw41dDLwONE2Gn9mhSGb5GaiCApnhI3JE',
+       '1zhE5Rs1vlDNvuYMD8rAToMpjFd8rKahc',
+       '1PPQsskt8pohBTmfAvniXebwzVt0XIOfuSco4xlOha8iqJj6OZgCJS5uJ',
+       '1MbMChbevrX1mx5gHGGL74SQ8cbABt_kQMdcwbLWXnC8',
+       '1QiBmaUTcKU0iZ1uyEYH30ZGD8cAZfjz5M0LEb5ZceZU',
+       '1Hor8B4_cxYYtjmkNtsVcBWBaR2rWRfDV',
+       '1IQvMVAE6xS93NbOwaS60IqCAfVMKqFPg1tmvifT8bYg',
+       '1zQnOxsHb3BVEQTLn9ySSj8myKrNCclNUWSWQMOkRJpk',
+       '10RmXJBe6IWA5DMQtfrQFaeXy5u7UEtzkQ1jjRngsVow',
+       '1Pnh9FaNnlVho5T2cfJSg6PaPg_UFaiF8Lc81EYfjx7Y' ] ],
+  ranks: 
+   [ 'Captain',
+     'Captain Major',
+     'Security Chief',
+     'Office of Site Management' ],
+  interviewRequired: [ true, false, false, false ],
+  promoReqs: [ [], [], [], [] ],
+  group: [ 'Security', 'Security', 'Sr CL4', 'Sr CL4' ],
+  specializations: 
+   [ { title: '', desc: '' },
+     { title: 'Security Liaison',
+       desc: 'In charge of voicing the concerns/suggestions... of the site\'s junior personnel to the Chiefs' },
+     { title: 'Punishment Lead',
+       desc: 'Specialist of the security department\'s policies, in charge of handing out appropriate punishments to security personnel.' } ],
+  meritActions: [],
+  minMeritScore: [ 0, 0, 0, 0 ],
+  pings: false,
+  backupEnabled: true,
+  lockdownEnabled: false,
+  manualEnabled: true,
+  reqsDisabled: true,
+  newRowData: 
+   [ [ '/title/',
+       '/title/',
+       '',
+       '',
+       '',
+       '',
+       '',
+       '= INFRACTIONS(F/row/, Infractions!E:E, Infractions!H:H, Infractions!I:I, Infractions!C:C)',
+       '= GET_MERIT_COUNT(F/row/, \'Merit Logs\'!I:I, \'Merit Logs\'!C:C, \'Merit Logs\'!E:E)',
+       '= STATUS(F/row/, G/row/, E/row/, H/row/, \'LOA Logs\'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P/row/)',
+       '',
+       '= LAST_RANKCHANGE(F/row/, \'Rank Changes\'!E:E, \'Rank Changes\'!C:C)',
+       '= LOA_DATE(F/row/, \'LOA Logs\'!E:E, \'LOA Logs\'!G:G)',
+       false,
+       '= REQS_CHECK(F/row/, \'Promotion Progress\'!F:F, \'Promotion Progress\'!H:M)',
+       '= BLACKLIST_DATE(F/row/, \'Suspensions / Blacklists\'!E:E, \'Suspensions / Blacklists\'!H:H, \'Suspensions / Blacklists\'!J:J)',
+       '' ] ] }));
 }

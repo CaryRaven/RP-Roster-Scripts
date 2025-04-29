@@ -723,3 +723,66 @@ function FillMerit(title) {
 
   return JSON.stringify(["", "", 0]);
 }
+
+/**
+ * Get the URL of the version the web application is opened in
+ */
+function GetScriptUrl() {
+  PropertiesService.getUserProperties().setProperty("showTerminal", false);
+  return ScriptApp.getService().getUrl();
+}
+
+/**
+ * Add one extra slot to the rank passed in as arg
+ * @param {String} rank - Name of the rank to add a slot to
+ * @param {Number} num (optional)
+ * @returns {Void|String}
+ */
+function AddRankRow(rank, num = 1, discordnotif = true) {
+  console.log(rank);
+  const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(rank);
+  
+  if (LIBRARY_SETTINGS.promoReqs[rankIndex].length > 0 || LIBRARY_SETTINGS.minMeritScore[rankIndex] > 0) {
+    RosterService.addReqRow(rank.toString(), num, undefined, LIBRARY_SETTINGS.promoReqs[rankIndex], LIBRARY_SETTINGS.minMeritScore[rankIndex]);
+  }
+
+  const returnVal = RosterService.addRankRow(rank.toString(), userData, num, discordnotif); // Actual func
+  return returnVal; // Only returns something if no proper rank was given
+}
+
+/**
+ * Add a HTML file into the Admin Menu (or another HTML file)
+ * Only works for files located in this project
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+/**
+ * Returns the userData to the client (HTML)
+ * @param {Boolean} bool - Should the output be stringified (in this case yes, since we're sending data to the client)
+ */
+function ReturnUserData(inputData, bool) {
+  return RosterService.getUserData(inputData, null, bool);
+}
+
+/**
+ * Workaround to get images (located in drive) to load into the web app
+ * Found solution on stackoverflow
+ */
+function loadImageBytes(id) {
+  return RosterService.loadImageBytes(id);
+}
+
+/**
+ * Returns the current settings for specializations
+ * Used to populate config fields when editing an existing specialization
+ */
+function ReturnSpecs() {
+  return JSON.stringify(LIBRARY_SETTINGS.specializations);
+}
+
+function GetAllEmails() {
+  return JSON.stringify(RosterService.getAllEmails());
+}

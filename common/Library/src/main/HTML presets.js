@@ -1788,7 +1788,40 @@ function getHtmlInterview() {
             }, 2000);
           })
           .GenerateInterview(interviewerEmail, applicantName, applicantRank);
-      };   
+      };
+
+      // Set the rank selects
+      let ranks = document.getElementById("ranks").innerText;
+      const rankSelect = document.getElementById("applicantRank");
+
+      if (ranks) {
+        ranks = ranks.split(",");
+      } else {
+        ranks = [];
+      }
+
+      for (rank of ranks) {
+        const rankOption = document.createElement("option");
+        rankOption.value = rank;
+        rankOption.innerText = rank;
+        rankSelect.appendChild(rankOption);
+      }
+
+      let emails = document.getElementById("emails").innerText;
+      const emailSelect = document.getElementById("interviewerEmail");
+
+      if (emails) {
+        emails = emails.split(",");
+      } else {
+        emails = [];
+      }
+
+      for (email of emails) {
+        const emailOption = document.createElement("option");
+        emailOption.value = email;
+        emailOption.innerText = email;
+        emailSelect.appendChild(emailOption);
+      }
     });
   </script>
 </head>
@@ -1801,13 +1834,17 @@ function getHtmlInterview() {
     <hr>
     <form id="docForm">
       <label for="interviewerEmail" id="emailLabel">Enter your email address:</label>
-      <input type="email" id="interviewerEmail" placeholder="Enter your email address (the one logged on the roster)" required>
+      <select id="interviewerEmail" required>
+      </select>
       <label for="applicantName" id="nameLabel">Enter the <strong>name</strong> of the applicant undertaking this Interview:</label>
       <input type="text" id="applicantName" placeholder="Enter the name of the applicant that is undertaking this interview" maxlength="20" required>
-      <label for="applicantRank" id="rankLabel">Enter the <strong>name</strong> of the rank that the applicant is doing an interview for:<br><span style="font-size: 13px; font-weight: 100;">Make sure the name you input corresponds EXACTLY to the name of the rank that this person will be promoted to after the interview</span></label>
-      <input type="text" id="applicantRank" placeholder="Enter the name of the rank that the applicant is doing an interview for" maxlength="20" required>
+      <label for="applicantRank" id="rankLabel">Select the name of the rank that this interview is for. If your desired rank is not on the list, open a ticket on the discord.</label>
+      <select id="applicantRank" required>
+      </select>
       <button onclick="GenerateDoc(event)" type="submit" class="submitButton" id="generateButton">Generate</button>
     </form>
+    <p id="ranks" style="font-size: 0px;"><?= ranks ?></p>
+    <p id="emails" style="font-size: 0px;"><?= emails ?></p>
 </body>
 
 </html>`;

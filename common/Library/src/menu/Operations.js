@@ -494,8 +494,9 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
         // Insert data
         sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, insertData[0].length).setValues(insertData);
 
-        // Set Task Assigned? to a checkbox - always
+        // Set Task Assigned? && reqs completed? to a checkbox - always
         sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
+        sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned + 1).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
 
         if (changeGroup) {
           sheet.moveRows(sheet.getRange(insertRow - 1, 1, 2, sheet.getMaxColumns()), getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]) - 1);
@@ -619,14 +620,14 @@ function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
 
   r = s.getRange(insertRow, 2, 1, 5);
   r.setBorder(null, null, null, null, null, null);
-  r.setBackground(LIBRARY_SETTINGS.colorHex);
+  r.setBackground(LIBRARY_SETTINGS.rosterHex);
   r.clearContent();
 
   // Only do this if there is margin on the right (less then max (5) reqs)
   // If not, this might create extra columns
   if (12 - cellpair[1] > 0) {
     r = s.getRange(insertRow, cellpair[1] + 1, 1, 12 - cellpair[1]);
-    r.setBackground(LIBRARY_SETTINGS.colorHex);
+    r.setBackground(LIBRARY_SETTINGS.rosterHex);
     r.clearDataValidations();
     r.clearContent();
   }
@@ -654,7 +655,7 @@ function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
       s.getRange(insertRow - 1, j).setBackground("#434343");
     } else {
       r.clearDataValidations();
-      r.setBackground(LIBRARY_SETTINGS.colorHex);
+      r.setBackground(LIBRARY_SETTINGS.rosterHex);
       r.clearContent();
     }
   }

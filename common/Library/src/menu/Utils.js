@@ -389,6 +389,8 @@ function getDiscordWebhookUrls(authInput) {
   switch(LIBRARY_SETTINGS.factionName) {
     case "Security":
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
+    case "Science":
+      return JSON.parse(PropertiesService.getScriptProperties().getProperty("scienceWebhook"));
     case "Staff":
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
     case "MTF O-45":

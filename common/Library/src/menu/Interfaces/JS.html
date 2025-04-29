@@ -1328,6 +1328,12 @@
           // Change mod/manager ranks (only really needed when title changed)
           document.getElementById("modRanks").innerText = settings.modRanks.join(", ");
           document.getElementById("managerRanks").innerText = settings.managerRanks.join(", ");
+
+          // Warn users that interview questions are set manually
+          if (data.interviewRequired) {
+            alert(`Keep in mind that this does not actually provide your rank with usable interview questions to generate a document from. You will have to contact a member of Community Leadership with your questions and descriptions so they can set it up for you.
+            \nKeep in mind that, without doing this, you will not be able to promote anybody to the rank of ${data.title}. So make sure that you submit your interview questions as soon as possible (preferably before editing the rank here).`);
+          }
         }
 
         button.innerHTML = "";
@@ -1433,7 +1439,7 @@
         button.innerText = "No special characters allowed in input values";
         button.disabled = true;
         setTimeout(() => {
-          button.innerText = "Submit New Rank";
+          button.innerText = `${editExisting == "" ? "Submit New" : "Edit Existing"} Specialization`;
           button.disabled = false;
         }, 2000);
         return;
@@ -1573,7 +1579,7 @@
         button.disabled = false;
         reqDiv.innerHTML = "";
         reqCount = 0;
-        return button.innerText = "Submit New Rank";
+        return button.innerText = "Edit Existing Rank";
       }
 
       button.disabled = true;
@@ -2656,7 +2662,7 @@
       button.innerText = "No special characters allowed in input values";
       button.disabled = true;
       setTimeout(() => {
-        button.innerText = "Submit New Rank";
+        button.innerText = "Submit";
         button.disabled = false;
       }, 2000);
       return;

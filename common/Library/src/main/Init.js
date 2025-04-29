@@ -48,6 +48,7 @@ class SettingsTemplate {
     this.spreadsheetId_main = "";
     this.factionName = "";
     this.colorHex = "";
+    this.rosterHex = "";
     this.sheetId_rankchange = 0;
     this.sheetId_infraction = 0;
     this.sheetId_loa = 0;

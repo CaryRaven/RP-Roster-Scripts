@@ -57,9 +57,17 @@ function permissionsGuard(exempt) {
       try {
         doc = DriveApp.getFileById(id);
       } catch(ee) {
-        return console.log(`Error found at ${id}`);
+        console.log(ee);
+        return flagArray.push({ email: "N/A", folderName: `Unknown File/Folder`, currentPermission: "None", reason: `${id} has not been shared with "dontorro208@gmail.com"` });
       }
     }
+
+    // Make sure doc is owner by me (exception: pending docs)
+    if (doc.getOwner().getEmail() !== "dontorro208@gmail.com" && !doc.getName().toLowerCase().includes("pending")) {
+      return flagArray.push({ email: "N/A", folderName: `${doc.getName()}`, currentPermission: "N/A", reason: `Document should be owned by "dontorro208@gmail.com"` });
+    }
+
+    if (doc.getName().toLowerCase().includes("pending")) return;
 
     const viewers = doc.getViewers();
     const editors = doc.getEditors();
