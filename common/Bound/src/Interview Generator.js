@@ -7,6 +7,7 @@ function GenInterviewUI() {
     
     interviewFile = HtmlService.createTemplate(interviewFile);
     interviewFile.ranks = interviewRanks;
+    interviewFile.emails = RosterService.getAllEmails();
 
     return SpreadsheetApp.getUi().showModalDialog(interviewFile.evaluate().setWidth(700).setHeight(900), "Generate Interview Doc");
   } catch(e) {
@@ -20,6 +21,12 @@ function GenerateInterview(email, name, rank) {
   const rankRow = RosterService.getStartRankRow(rank);
   console.log(rankRow);
   if (!rankRow) return "Invalid Rank";
+
+  let q = JSON.parse(PropertiesService.getDocumentProperties().getProperty("q"));
+
+  if (q.length !== interviewRanks.length) return "Not all ranks have quetions";
+
+  q = q[interviewRanks.indexOf(rank)];
 
   let docNum = PropertiesService.getDocumentProperties().getProperty("docNum");
   docNum = Number(docNum) ? Number(docNum) + 1 : 1;
@@ -46,8 +53,6 @@ function GenerateInterview(email, name, rank) {
   body.replaceText("{{InterviewerName}}", `${userData.rank} ${userData.name}`);
   body.replaceText("{{Date}}", Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss"));
   body.replaceText("{{Rank}}", rank);
-
-  const q = JSON.parse(PropertiesService.getDocumentProperties().getProperty("q"));
 
   let selectedQuestions = [];
   while (selectedQuestions.length < 10) {

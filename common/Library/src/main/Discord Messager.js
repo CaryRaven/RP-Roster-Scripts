@@ -16,18 +16,18 @@ function sendDiscordLog(inputData, targetData, userData) {
   if (!targetData || typeof targetData != "object") throw new Error("sendDiscordLog: no valid targetdata provided");
   if (!userData || typeof userData != "object") throw new Error("sendDiscordLog: no valid userdata provided");
   // if (!accessFolders || !Array.isArray(accessFolders)) throw new Error("sendDiscordLog: no access folders provided");
-
+  
   // Variable init
   let embedTitle = '';
   let embedColor = '';
   let field1Name = '';
   let info = '';
-  let inline2 = true;
+  let inline2 = false;
   let content = '';
   let reason = inputData.reason;
   let footerMessage = '';
+  let end_date;
   // let folderChanges = accessFolders.map(folder => ` ${folder.folderName} - ${folder.permission} access /`);
-  let supervisorInfo = `Name: ${userData.name}\nplayerId: ${userData.playerId}\nRank: ${userData.rank}`;
   let date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
   let appealTo = "the Office of Office of Site Management";
 
@@ -41,7 +41,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           embedTitle = `👔 New ${targetData.newRank} 👔`;
           embedColor = '1143627';
           field1Name = 'Please congratulate 🥁...'; // drumrolls
-          info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscord ID: ${targetData.discordId}\nGmail Address: ${inputData.email}`;
+          info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscord ID: ${targetData.discordId}`;
           footerMessage = `Congratulations - ${LIBRARY_SETTINGS.factionName} Command.`;
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
@@ -83,8 +83,8 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} ${inputData.blacklist_type} Issued ❌`;
       embedColor = '0';
       field1Name = `${inputData.blacklist_type} Information`;
-      inputData.end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
-      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nExpiry Date: ${inputData.end_date}\nAppealable: ${inputData.blacklist_appealable}`;
+      end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nExpiry Date: ${end_date}\nAppealable: ${inputData.blacklist_appealable}`;
       footerMessage = `This may be appealed to ${appealTo}.`;
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
@@ -92,8 +92,8 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedTitle = '💤 LOA Started 💤';
       embedColor = '12658943';
       field1Name = 'LOA Information';
-      inputData.end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
-      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nStart Date: ${date}\nEnd Date: ${inputData.end_date}`;
+      end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nStart Date: ${date}\nEnd Date: ${end_date}`;
       footerMessage = `Enjoy your time off, ${targetData.name}`;
       break;
     case 'Infraction Appeal':
@@ -151,8 +151,8 @@ function sendDiscordLog(inputData, targetData, userData) {
           inline: true
         },
         {
-          name: 'Issued by',
-          value: supervisorInfo,
+          name: `Issued by ${Number(userData.discordId) ? `<@${userData.discordId}>` : `${userData.rank}`}`,
+          value: "",
           inline: inline2
         },
         {
@@ -178,7 +178,7 @@ function sendDiscordLog(inputData, targetData, userData) {
   const webhookURLs = getDiscordWebhookUrls(authKey);
 
   // Send message
-  const response = webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
+  webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
   Logger.log('Discord Notification Sent Successfully.');
 }
 
@@ -230,23 +230,21 @@ function sendDiscordUnauthed() {
 /**
  * Send an error report to Staff Administration
  * @param {String} error - the error message
- * @deprecated
  */
-function sendDiscordError(error) {
+function sendDiscordError(error, func) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
   let webhookURLs = JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
-  let user = Session.getActiveUser().getEmail();
 
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
     embeds: [{
-      title: "Error Report",
+      title: `${func} Error`,
       color: "11600386",
       fields: [
         {
-          name: `Produced by ${user}`,
-          value: error,
+          name: error,
+          value: "",
           inline: true
         }
       ],

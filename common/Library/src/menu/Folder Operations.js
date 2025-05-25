@@ -8,13 +8,14 @@ function addDocAccess(foldersIndex, emailToAdd, togglingLockdown = false) {
   if (!foldersIndex && foldersIndex !== 0) throw new Error("addDocAccess: no folders index provided");
   if (!emailToAdd) throw new Error("addDocAccess: no email provided");
 
-  const folders = LIBRARY_SETTINGS.folders[foldersIndex];
-  if ((!folders.viewerAccess || !folders.editorAccess) && !togglingLockdown) throw new Error("addDocAccess: invalid folders index");
-
-  let folder;
-  // let accessFolders = JSON.parse(PropertiesService.getUserProperties().getProperty("accessFolders"));
-  let folderChangeList = [];
   try {
+    const folders = LIBRARY_SETTINGS.folders[foldersIndex];
+    if ((!folders.viewerAccess || !folders.editorAccess) && !togglingLockdown) throw new Error("addDocAccess: invalid folders index");
+
+    let folder;
+    // let accessFolders = JSON.parse(PropertiesService.getUserProperties().getProperty("accessFolders"));
+
+    let folderChangeList = [];
     if (folders.viewerAccess.length) folders.viewerAccess.forEach(folderId => {
       try {
         folder = DriveApp.getFolderById(folderId);
@@ -38,9 +39,11 @@ function addDocAccess(foldersIndex, emailToAdd, togglingLockdown = false) {
       console.log(`Added editor access to ${emailToAdd} in ${folder.getName()}`);
       folderChangeList.push({ folderName: folder.getName(), permission: "Editor"});
     });
+
     // PropertiesService.getUserProperties().setProperty("accessFolders", JSON.stringify(folderChangeList));
   } catch(e) {
-    console.log(`Error: ${e}`);
+    sendDiscordError(e.toString(), "addDocAccess");
+    throw new Error(e);
   }
 }
 
@@ -65,9 +68,11 @@ function removeDocAccess(emailToRemove) {
       }
       docAccessHandler(folder, emailToRemove);
     });
+
     // PropertiesService.getUserProperties().deleteProperty("accessFolders");
-  } catch(e)  {
-    console.log(`Invalid Folder ID. Error: ${e}`);
+  } catch(e) {
+    sendDiscordError(e.toString(), "removeDocAccess");
+    throw new Error(e);
   }
 }
 
@@ -93,25 +98,25 @@ function docAccessHandler(folder, emailToRemove) {
 function removeAllDocAccess(allowedStaff) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  let unaffected = ["micheal.labus@gmail.com", "rykitala@gmail.com"];
-  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  try {
+    let unaffected = ["micheal.labus@gmail.com", "rykitala@gmail.com"];
+    const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
-  sheet.getRange(6, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
-    if (!email[0] || !email[0].includes("@")) return;
-    i = i + 6;
-    console.log(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue());
-    console.log(email);
-    if (!LIBRARY_SETTINGS.adminRanks.includes(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue())) return;
-    
-    unaffected.push(email[0].toLowerCase());
-  });
+    sheet.getRange(6, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - 6), 1).getValues().forEach((email, i) => {
+      if (!email[0] || !email[0].includes("@")) return;
+      i = i + 6;
+      console.log(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue());
+      console.log(email);
+      if (!LIBRARY_SETTINGS.adminRanks.includes(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue())) return;
+      
+      unaffected.push(email[0].toLowerCase());
+    });
 
-  unaffected = unaffected.concat(allowedStaff);
+    unaffected = unaffected.concat(allowedStaff);
 
-  const allDocs = getAllDocsInFolder(LIBRARY_SETTINGS.folderId_main);
+    const allDocs = getAllDocsInFolder(LIBRARY_SETTINGS.folderId_main);
 
-  allDocs.forEach(id => {
-    try {
+    allDocs.forEach(id => {
       let doc;
       try {
         doc = DriveApp.getFolderById(id);
@@ -140,10 +145,11 @@ function removeAllDocAccess(allowedStaff) {
         doc.removeViewer(viewerEmail);
         Logger.log(`Removed viewer access from ${viewerEmail} in ${doc.getName()}`);
       });
-    } catch (e) {
-      console.log(e);
-    }
-  });
+    });
+  } catch(e) {
+    sendDiscordError(e.toString(), "removeAllDocAccess");
+    throw new Error(e);
+  }
 }
 
 /**
@@ -155,56 +161,61 @@ function updateAccess(rankToAdd, currentRank, mod = true) {
   if (!rankToAdd || typeof rankToAdd !== "string") return "Invalid Rank";
   if (!currentRank || typeof currentRank !== "string") throw new Error("No valid currentRank");
 
-  if (LIBRARY_SETTINGS.ranks.indexOf(rankToAdd) >= LIBRARY_SETTINGS.ranks.indexOf(currentRank) && currentRank !== "Blackshadow Staff") return "Invalid Perms";
+  try {
+    if (LIBRARY_SETTINGS.ranks.indexOf(rankToAdd) >= LIBRARY_SETTINGS.ranks.indexOf(currentRank) && currentRank !== "Blackshadow Staff") return "Invalid Perms";
 
-  // Get array of current allowed ranks
-  let adminRankArray;
+    // Get array of current allowed ranks
+    let adminRankArray;
 
-  // If adminRankArray is LIBRARY_SETTINGS.modRanks, this will be LIBRARY_SETTINGS.managerRanks & vice-versa
-  let secondaryRankArray;
+    // If adminRankArray is LIBRARY_SETTINGS.modRanks, this will be LIBRARY_SETTINGS.managerRanks & vice-versa
+    let secondaryRankArray;
 
-  if (mod) {
-    adminRankArray = LIBRARY_SETTINGS.modRanks;
-    secondaryRankArray = LIBRARY_SETTINGS.managerRanks;
-  } else {
-    adminRankArray = LIBRARY_SETTINGS.managerRanks;
-    secondaryRankArray = LIBRARY_SETTINGS.modRanks;
-  }
-
-  if (adminRankArray.indexOf(rankToAdd) >= 0) {
-    // If rank is already in array => remove them
-    adminRankArray.splice(adminRankArray.indexOf(rankToAdd), 1);
-  } else {
-    // If not => add them
-    let rosterParents = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getParents();
-    let ssId = LIBRARY_SETTINGS.spreadsheetId_main;
-
-    let parentIds = [];
-    while (rosterParents.hasNext()) {
-      let parent = rosterParents.next();
-      parentIds.push(parent.getId());
+    if (mod) {
+      adminRankArray = LIBRARY_SETTINGS.modRanks;
+      secondaryRankArray = LIBRARY_SETTINGS.managerRanks;
+    } else {
+      adminRankArray = LIBRARY_SETTINGS.managerRanks;
+      secondaryRankArray = LIBRARY_SETTINGS.modRanks;
     }
 
-    if ((!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.ranks.indexOf(rankToAdd)].editorAccess.includes(ssId) || parentIds.includes(ssId))
-      && !mod ) return "Needs Roster Editor";
-      
-    adminRankArray.push(rankToAdd);
-  }
+    if (adminRankArray.indexOf(rankToAdd) >= 0) {
+      // If rank is already in array => remove them
+      adminRankArray.splice(adminRankArray.indexOf(rankToAdd), 1);
+    } else {
+      // If not => add them
+      let rosterParents = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getParents();
+      let ssId = LIBRARY_SETTINGS.spreadsheetId_main;
 
-  if (secondaryRankArray.includes(rankToAdd)) {
-    secondaryRankArray.splice(secondaryRankArray.indexOf(rankToAdd), 1);
-  }
+      let parentIds = [];
+      while (rosterParents.hasNext()) {
+        let parent = rosterParents.next();
+        parentIds.push(parent.getId());
+      }
 
-  if (mod) {
-    LIBRARY_SETTINGS.modRanks = adminRankArray;
-    LIBRARY_SETTINGS.managerRanks = secondaryRankArray;
-  } else {
-    LIBRARY_SETTINGS.managerRanks = adminRankArray;
-    LIBRARY_SETTINGS.modRanks = secondaryRankArray;
+      if ((!LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.ranks.indexOf(rankToAdd)].editorAccess.includes(ssId) || parentIds.includes(ssId))
+        && !mod ) return "Needs Roster Editor";
+        
+      adminRankArray.push(rankToAdd);
+    }
+
+    if (secondaryRankArray.includes(rankToAdd)) {
+      secondaryRankArray.splice(secondaryRankArray.indexOf(rankToAdd), 1);
+    }
+
+    if (mod) {
+      LIBRARY_SETTINGS.modRanks = adminRankArray;
+      LIBRARY_SETTINGS.managerRanks = secondaryRankArray;
+    } else {
+      LIBRARY_SETTINGS.managerRanks = adminRankArray;
+      LIBRARY_SETTINGS.modRanks = secondaryRankArray;
+    }
+    
+    Logger.log(adminRankArray);
+    return [LIBRARY_SETTINGS];
+  } catch(e) {
+    sendDiscordError(e.toString(), "updateAccess");
+    throw new Error(e);
   }
-  
-  Logger.log(adminRankArray);
-  return [LIBRARY_SETTINGS];
 }
 
 /**
@@ -213,21 +224,27 @@ function updateAccess(rankToAdd, currentRank, mod = true) {
  */
 function restoreAllDocAccess(allowedStaff) {
   if (!isInit) throw new Error("Library is not yet initialized");
-  let allStaff = getAllEmails();
-  let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
-  const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
-  unaffected = unaffected.concat(allowedStaff);
 
-  sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach((email, i) => {
-    if (!email[0] || !email[0].includes("@")) return;
-    i = i + 6;
-    if (!LIBRARY_SETTINGS.adminRanks.includes(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue())) return;
-    unaffected.push(email[0].toLowerCase());
-  });
+  try {
+    let allStaff = getAllEmails();
+    let unaffected = ["dontorro208@gmail.com", "micheal.labus@gmail.com", "rykitala@gmail.com"];
+    const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+    unaffected = unaffected.concat(allowedStaff);
 
-  allStaff.forEach(email => {
-    if (unaffected.includes(email)) return;
-    let userData = getUserData(email);
-    addDocAccess(LIBRARY_SETTINGS.ranks.indexOf(userData.rank), email, true);
-  });
+    sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach((email, i) => {
+      if (!email[0] || !email[0].includes("@")) return;
+      i = i + 6;
+      if (!LIBRARY_SETTINGS.adminRanks.includes(sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue())) return;
+      unaffected.push(email[0].toLowerCase());
+    });
+
+    allStaff.forEach(email => {
+      if (unaffected.includes(email)) return;
+      let userData = getUserData(email);
+      addDocAccess(LIBRARY_SETTINGS.ranks.indexOf(userData.rank), email, true);
+    });
+  } catch(e) {
+    sendDiscordError(e.toString(), "updateAccess");
+    throw new Error(e);
+  }
 }

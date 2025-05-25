@@ -391,6 +391,8 @@ function getDiscordWebhookUrls(authInput) {
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("securityWebhook"));
     case "Science":
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("scienceWebhook"));
+    case "Medical":
+      return JSON.parse(PropertiesService.getScriptProperties().getProperty("medicalWebhookURL"));
     case "Staff":
       return JSON.parse(PropertiesService.getScriptProperties().getProperty("adminWebhookURL"));
     case "MTF O-45":
@@ -400,6 +402,41 @@ function getDiscordWebhookUrls(authInput) {
     default:
       throw new Error(`${LIBRARY_SETTINGS.factionName} does not support discord messages yet`);
   }
+}
+
+/**
+ * Check if a certain user is currently blacklisted, used when promoting/adding members
+ * Will return undefined if no date was found
+ * @param {String} playerId
+ * @returns {Undefined|String}
+ * @throws {Error} if library is not initialized or no valid playerId is provided
+ */
+function isUserBlacklisted(playerId) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+  if (!playerId || typeof playerId !== "string") throw new Error("Invalid playerId");
+
+  const s = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
+  const rows = getLastRow(s);
+  const todayTime = new Date().getTime();
+
+  // in milliseconds
+  let expiryTime;
+
+  for (let i = 7; i <= rows; i++) {
+    if (s.getRange(i, 5).getValue().toString() !== playerId) continue;
+    if (s.getRange(i, 10).getValue() === true) continue;
+    if (s.getRange(i, 8).getValue() === "") continue;
+    if (s.getRange(i, 3).getValue() === "") continue;
+
+    expiryTime = dateToMilliseconds(s.getRange(i, 8).getDisplayValue().toString());
+    
+    if (todayTime - expiryTime > 0) {
+      expiryTime = undefined;
+      break;
+    }
+  }
+
+  return expiryTime;
 }
 
 /**

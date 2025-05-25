@@ -82,7 +82,7 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
   if (!destinationRow) console.log("moveMember: no destination row was provided, removing member");
 
   const libCols = LIBRARY_SETTINGS.dataCols;
-  const roster = this.getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(branch)]);
+  const roster = getCollect(LIBRARY_SETTINGS.rosterIds[Math.round(branch)]);
   let cols = Object.values(libCols);
   let dataCols = [];
 

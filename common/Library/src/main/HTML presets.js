@@ -7,473 +7,477 @@
 function getHtmlTaskManager() {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  return `
-  <!DOCTYPE html>
-<html>
+  try {
+    return `
+    <!DOCTYPE html>
+    <html>
 
-<head>
-  <!-- This page will be displayed if the user does not have authorization to open this admin menu -->
-  <base target="_top">
-  <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
-  <style>
-    body {
-      background-color: whitesmoke;
-      justify-content: center;
-      text-align: center;
-      font-family: Lexend;
-    }
-
-    @keyframes shake {
-        0% {
-        transform: translate(1px, 1px) rotate(0deg);
+    <head>
+      <!-- This page will be displayed if the user does not have authorization to open this admin menu -->
+      <base target="_top">
+      <link href='https://fonts.googleapis.com/css?family=Lexend' rel='stylesheet'>
+      <style>
+        body {
+          background-color: whitesmoke;
+          justify-content: center;
+          text-align: center;
+          font-family: Lexend;
         }
 
-        10% {
-        transform: translate(-1px, -2px) rotate(-1deg);
-        }
-
-        20% {
-        transform: translate(-3px, 0px) rotate(1deg);
-        }
-
-        30% {
-        transform: translate(3px, 2px) rotate(0deg);
-        }
-
-        40% {
-        transform: translate(1px, -1px) rotate(1deg);
-        }
-
-        50% {
-        transform: translate(-1px, 2px) rotate(-1deg);
-        }
-
-        60% {
-        transform: translate(-3px, 1px) rotate(0deg);
-        }
-
-        70% {
-        transform: translate(3px, 1px) rotate(-1deg);
-        }
-
-        80% {
-        transform: translate(-1px, -1px) rotate(1deg);
-        }
-
-        90% {
-        transform: translate(1px, 2px) rotate(0deg);
-        }
-
-        100% {
-        transform: translate(1px, -2px) rotate(-1deg);
-        }
-    }
-
-    .shake {
-        overflow: hidden;
-        animation: shake 0.1s;
-    }
-
-    label {
-      font-size: 23px;
-      margin-top: 15px;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      align-self: center;
-      padding: 12px 20px;
-      margin-bottom: 40px;
-      box-sizing: border-box;
-      border: 4px solid #111111;
-      box-shadow: 0 0.3rem 0.4rem #111111;
-      border-radius: 10px;
-      -webkit-transition: 0.5s;
-      transition: 0.5s;
-      background-color: #444444;
-      color: #fff;
-      outline: none;
-      text-align: center;
-    }
-
-    input:hover,
-    select:hover,
-    textarea:hover {
-      border: 4px solid #ccc;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border: 4px solid #ccc;
-      background-color: #222222;
-    }
-
-    input:invalid,
-    select:invalid,
-    textarea:invalid {
-      border: 4px solid #8B0000;
-    }
-
-    input:invalid:focus,
-    select:invalid:focus,
-    textarea:invalid:focus,
-    input:invalid:hover,
-    select:invalid:hover,
-    textarea:invalid:hover {
-      border: 4px solid red;
-    }
-
-    p {
-      font-size: 15px;
-    }
-
-    #description {
-      height: 4rem;
-      text-align: left;
-      justify-content: top;
-      word-wrap: break-word;
-      resize: none;
-      text-align: left;
-    }
-
-    .submitButton {
-        background-color: #4a4a4a;
-        color: whitesmoke;
-        text-align: center;
-        align-self: center;
-        border-radius: 20px;
-        box-shadow: 0 0.3rem 0.4rem #111111;
-        width: 45%;
-        padding: 20px 20px;
-        font-size: 20px;
-        border: 4px solid #111111;
-        transition: 0.5s ease;
-        overflow: hidden;
-    }
-
-    .submitButton:hover {
-        background-color: #222222;
-        transition: 0.5s ease;
-        cursor: pointer;
-    }
-
-    .submitButton:disabled {
-        background-color: #4a4a4a;
-        color: gray;
-        cursor: not-allowed;
-    }
-
-    .loader {
-        border: 16px solid #666666;
-        border-top: 16px solid black;
-        border-radius: 50%;
-        width: 25px;
-        height: 25px;
-        animation: spin 1.2s linear infinite;
-        justify-self: center;
-    }
-
-    @keyframes spin {
-        0% {
-        transform: rotate(0deg);
-        }
-
-        100% {
-        transform: rotate(360deg);
-        }
-    }
-
-    .red {
-        background-color: red !important;
-        color: black !important;
-    }
-
-    .green {
-        background-color: green !important;
-        color: black !important;
-    }
-  </style>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      window.SubmitNewDeadline = function(event) {
-        event.preventDefault();
-        const deadline = document.getElementById("deadline").value;
-        const button = document.getElementById("postponeButton");
-        const rowElement = document.getElementById("row");
-        const colElement = document.getElementById("col");
-
-        // Check if the elements exist before accessing their innerText
-        if (!rowElement || !colElement) {
-          console.error("Row or column element not found!");
-          return;
-        }
-
-        let row = rowElement.innerText;
-        let col = colElement.innerText;
-
-        if (!deadline || !row || !col) {
-          document.body.classList.add("shake");
-          setTimeout(() => {
-            document.body.classList.remove("shake");
-          }, 100);
-          console.error("Invalid arguments");
-          return;
-        };
-        button.disabled = true;
-        button.innerHTML = '<div class="loader"></div>';
-
-        const data = {
-          deadline: deadline,
-          row: row,
-          col: col
-        };
-
-        google.script.run
-          .withSuccessHandler(response => {
-            if (response) {
-              button.innerText = response;
-              if (response.includes("Postponed")) {
-                button.classList.add("green");
-              } else {
-                button.classList.add("red");
-              }
-              setTimeout(() => {
-                button.disabled = false;
-                if (response.includes("Postponed")) {
-                  button.classList.remove("green");
-                } else {
-                  button.classList.remove("red");
-                }
-                google.script.host.close();
-              }, 2000);
+        @keyframes shake {
+            0% {
+            transform: translate(1px, 1px) rotate(0deg);
             }
-          })
-          .withFailureHandler(() => {
-            button.innerText = "Something went wrong";
-            document.body.classList.add("shake");
-            setTimeout(() => {
-              document.body.classList.remove("shake");
-            }, 100);
-            setTimeout(() => {
-              button.disabled = false;
-              button.innerHTML = "";
-              button.innerText = "Submit";
-            }, 2000);
-          })
-          .ChangeDeadline(data);
-      };
 
-      window.SubmitAssignment = function(event) {
-        event.preventDefault();
-        const gmail = document.getElementById("gmail").value;
-        const button = document.getElementById("assignButton");
-        const rowElement = document.getElementById("row");
-        const colElement = document.getElementById("col");
-        const titleElement = document.getElementById("title");
+            10% {
+            transform: translate(-1px, -2px) rotate(-1deg);
+            }
 
-        // Check if the elements exist before accessing their innerText
-        if (!rowElement || !colElement || !titleElement) {
-          console.error("Row or column element not found!");
-          return;
+            20% {
+            transform: translate(-3px, 0px) rotate(1deg);
+            }
+
+            30% {
+            transform: translate(3px, 2px) rotate(0deg);
+            }
+
+            40% {
+            transform: translate(1px, -1px) rotate(1deg);
+            }
+
+            50% {
+            transform: translate(-1px, 2px) rotate(-1deg);
+            }
+
+            60% {
+            transform: translate(-3px, 1px) rotate(0deg);
+            }
+
+            70% {
+            transform: translate(3px, 1px) rotate(-1deg);
+            }
+
+            80% {
+            transform: translate(-1px, -1px) rotate(1deg);
+            }
+
+            90% {
+            transform: translate(1px, 2px) rotate(0deg);
+            }
+
+            100% {
+            transform: translate(1px, -2px) rotate(-1deg);
+            }
         }
 
-        let row = rowElement.innerText;
-        let col = colElement.innerText;
-        let title = titleElement.innerText;
-
-        if (!gmail || !row || !col) {
-          document.body.classList.add("shake");
-          setTimeout(() => {
-            document.body.classList.remove("shake");
-          }, 100);
-          console.error("Invalid arguments");
-          return;
-        };
-        button.disabled = true;
-        button.innerHTML = '<div class="loader"></div>';
-
-        const data = {
-          gmail: gmail,
-          row: row,
-          col: col,
-          title: title
-        };
-
-        google.script.run
-          .withSuccessHandler(response => {
-            if (response) {
-              button.innerText = response;
-              if (response.includes("Assigned")) {
-                button.classList.add("green");
-              } else {
-                button.classList.add("red");
-              }
-              setTimeout(() => {
-                button.disabled = false;
-                if (response.includes("Assigned")) {
-                  button.classList.remove("green");
-                } else {
-                  button.classList.remove("red");
-                }
-                google.script.host.close();
-              }, 2000);
-            } else {
-              button.innerText = "No response from server";
-              button.classList.add("red");
-              setTimeout(() => {
-                button.classList.remove("red");
-                button.innerText = "Assign";
-              }, 2000);
-            }
-          })
-          .withFailureHandler(() => {
-            button.innerText = "Something went wrong";
-            document.body.classList.add("shake");
-            setTimeout(() => {
-              document.body.classList.remove("shake");
-            }, 100);
-            setTimeout(() => {
-              button.disabled = false;
-              button.innerHTML = "";
-              button.innerText = "Submit";
-            }, 2000);
-          })
-          .ChangeAssignment(data);
-      };
-
-      window.SubmitPriority = function(event) {
-        event.preventDefault();
-        const priority = document.getElementById("priority").value;
-        const button = document.getElementById("assignButton");
-        const rowElement = document.getElementById("row");
-        const colElement = document.getElementById("col");
-        const titleElement = document.getElementById("title");
-
-        // Check if the elements exist before accessing their innerText
-        if (!rowElement || !colElement || !titleElement) {
-          console.error("Row or column element not found!");
-          return;
+        .shake {
+            overflow: hidden;
+            animation: shake 0.1s;
         }
 
-        let row = rowElement.innerText;
-        let col = colElement.innerText;
-        let title = titleElement.innerText;
+        label {
+          font-size: 23px;
+          margin-top: 15px;
+        }
 
-        if (!priority || !row || !col) {
-          document.body.classList.add("shake");
-          setTimeout(() => {
-            document.body.classList.remove("shake");
-          }, 100);
-          console.error("Invalid arguments");
-          return;
-        };
-        button.disabled = true;
-        button.innerHTML = '<div class="loader"></div>';
+        input,
+        select,
+        textarea {
+          width: 100%;
+          align-self: center;
+          padding: 12px 20px;
+          margin-bottom: 40px;
+          box-sizing: border-box;
+          border: 4px solid #111111;
+          box-shadow: 0 0.3rem 0.4rem #111111;
+          border-radius: 10px;
+          -webkit-transition: 0.5s;
+          transition: 0.5s;
+          background-color: #444444;
+          color: #fff;
+          outline: none;
+          text-align: center;
+        }
 
-        const data = {
-          priority: priority,
-          row: row,
-          col: col,
-          title: title
-        };
+        input:hover,
+        select:hover,
+        textarea:hover {
+          border: 4px solid #ccc;
+        }
 
-        google.script.run
-          .withSuccessHandler(response => {
-            if (response) {
-              button.innerText = response;
-              if (response.includes("Edited")) {
-                button.classList.add("green");
-              } else {
-                button.classList.add("red");
-              }
-              setTimeout(() => {
-                button.disabled = false;
-                if (response.includes("Edited")) {
-                  button.classList.remove("green");
-                } else {
-                  button.classList.remove("red");
-                }
-                google.script.host.close();
-              }, 2000);
+        input:focus,
+        select:focus,
+        textarea:focus {
+          border: 4px solid #ccc;
+          background-color: #222222;
+        }
+
+        input:invalid,
+        select:invalid,
+        textarea:invalid {
+          border: 4px solid #8B0000;
+        }
+
+        input:invalid:focus,
+        select:invalid:focus,
+        textarea:invalid:focus,
+        input:invalid:hover,
+        select:invalid:hover,
+        textarea:invalid:hover {
+          border: 4px solid red;
+        }
+
+        p {
+          font-size: 15px;
+        }
+
+        #description {
+          height: 4rem;
+          text-align: left;
+          justify-content: top;
+          word-wrap: break-word;
+          resize: none;
+          text-align: left;
+        }
+
+        .submitButton {
+            background-color: #4a4a4a;
+            color: whitesmoke;
+            text-align: center;
+            align-self: center;
+            border-radius: 20px;
+            box-shadow: 0 0.3rem 0.4rem #111111;
+            width: 45%;
+            padding: 20px 20px;
+            font-size: 20px;
+            border: 4px solid #111111;
+            transition: 0.5s ease;
+            overflow: hidden;
+        }
+
+        .submitButton:hover {
+            background-color: #222222;
+            transition: 0.5s ease;
+            cursor: pointer;
+        }
+
+        .submitButton:disabled {
+            background-color: #4a4a4a;
+            color: gray;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            border: 16px solid #666666;
+            border-top: 16px solid black;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            animation: spin 1.2s linear infinite;
+            justify-self: center;
+        }
+
+        @keyframes spin {
+            0% {
+            transform: rotate(0deg);
             }
-          })
-          .withFailureHandler(() => {
-            button.innerText = "Something went wrong";
-            document.body.classList.add("shake");
-            setTimeout(() => {
-              document.body.classList.remove("shake");
-            }, 100);
-            setTimeout(() => {
-              button.disabled = false;
-              button.innerHTML = "";
-              button.innerText = "Submit";
-            }, 2000);
-          })
-          .ChangePriority(data);
-      };
 
-      let emailList = document.getElementById("emails").innerText;
-      const gmailSelect = document.getElementById("gmail");
-      emailList = emailList.split(",");
+            100% {
+            transform: rotate(360deg);
+            }
+        }
 
-      for (email of emailList) {
-        const emailOption = document.createElement("option");
-        emailOption.value = email;
-        emailOption.innerText = email;
-        gmailSelect.appendChild(emailOption);
-      }
-    });
-  </script>
-</head>
+        .red {
+            background-color: red !important;
+            color: black !important;
+        }
 
-<body>
-  <? if (type == "Postpone") { ?>
-    <h1>Postpone this task</h1>
-    <p>Fill out all of the below questions in order to edit the deadline for this task.</p>
-    <hr>
-    <form>
-      <label for="deadline">New Deadline:</label>
-      <input type="date" id="deadline" placeholder="Select a new deadline for the task" required>
-      <button onclick="SubmitNewDeadline(event)" type="submit" class="submitButton" id="postponeButton">Submit</button>
-    </form>
-  <? } else if (type == "Assign") { ?>
-    <h1>Assign</h1>
-    <p>Fill out all of the below questions in order to assign or unassign a member to this task.<br>
-    If the assigned member was to be removed, they will be unassigned automatically.<br>
-    If the task would not be completed by the deadline, all assigned members will receive a "normal" infraction.</p>
-    <hr>
-    <form>
-      <label for="gmail">Gmail address of person to assign:</label>
-      <select id="gmail" required>
-      </select>
-      <button onclick="SubmitAssignment(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
-    </form>
-  <? } else if (type == "Priority") { ?>
-    <h1>Change Priority</h1>
-    <p>Fill out all of the below questions in order to change the priority level of this task.</p>
-    <hr>
-    <form>
-      <label for="priority">Select new priority level:</label>
-      <select id="priority" required>
-        <option value=""></option>
-        <option value="Low Priority">Low Priority</option>
-        <option value="Medium Priority">Medium Priority</option>
-        <option value="High Priority">High Priority</option>
-        <option value="Urgent">Urgent</option>
-      </select>
-      <button onclick="SubmitPriority(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
-    </form>
-  <? } ?>
-  <p style="font-size: 0px;" id="row"><?= row ?></p>
-  <p style="font-size: 0px;" id="col"><?= col ?></p>
-  <p style="font-size: 0px;" id="title"><?= title ?></p>
-  <p style="font-size: 0px;" id="emails"><?= emails ?></p>
-</body>
+        .green {
+            background-color: green !important;
+            color: black !important;
+        }
+      </style>
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          window.SubmitNewDeadline = function(event) {
+            event.preventDefault();
+            const deadline = document.getElementById("deadline").value;
+            const button = document.getElementById("postponeButton");
+            const rowElement = document.getElementById("row");
+            const colElement = document.getElementById("col");
 
-</html>`
+            // Check if the elements exist before accessing their innerText
+            if (!rowElement || !colElement) {
+              console.error("Row or column element not found!");
+              return;
+            }
+
+            let row = rowElement.innerText;
+            let col = colElement.innerText;
+
+            if (!deadline || !row || !col) {
+              document.body.classList.add("shake");
+              setTimeout(() => {
+                document.body.classList.remove("shake");
+              }, 100);
+              console.error("Invalid arguments");
+              return;
+            };
+            button.disabled = true;
+            button.innerHTML = '<div class="loader"></div>';
+
+            const data = {
+              deadline: deadline,
+              row: row,
+              col: col
+            };
+
+            google.script.run
+              .withSuccessHandler(response => {
+                if (response) {
+                  button.innerText = response;
+                  if (response.includes("Postponed")) {
+                    button.classList.add("green");
+                  } else {
+                    button.classList.add("red");
+                  }
+                  setTimeout(() => {
+                    button.disabled = false;
+                    if (response.includes("Postponed")) {
+                      button.classList.remove("green");
+                    } else {
+                      button.classList.remove("red");
+                    }
+                    google.script.host.close();
+                  }, 2000);
+                }
+              })
+              .withFailureHandler(() => {
+                button.innerText = "Something went wrong";
+                document.body.classList.add("shake");
+                setTimeout(() => {
+                  document.body.classList.remove("shake");
+                }, 100);
+                setTimeout(() => {
+                  button.disabled = false;
+                  button.innerHTML = "";
+                  button.innerText = "Submit";
+                }, 2000);
+              })
+              .ChangeDeadline(data);
+          };
+
+          window.SubmitAssignment = function(event) {
+            event.preventDefault();
+            const gmail = document.getElementById("gmail").value;
+            const button = document.getElementById("assignButton");
+            const rowElement = document.getElementById("row");
+            const colElement = document.getElementById("col");
+            const titleElement = document.getElementById("title");
+
+            // Check if the elements exist before accessing their innerText
+            if (!rowElement || !colElement || !titleElement) {
+              console.error("Row or column element not found!");
+              return;
+            }
+
+            let row = rowElement.innerText;
+            let col = colElement.innerText;
+            let title = titleElement.innerText;
+
+            if (!gmail || !row || !col) {
+              document.body.classList.add("shake");
+              setTimeout(() => {
+                document.body.classList.remove("shake");
+              }, 100);
+              console.error("Invalid arguments");
+              return;
+            };
+            button.disabled = true;
+            button.innerHTML = '<div class="loader"></div>';
+
+            const data = {
+              gmail: gmail,
+              row: row,
+              col: col,
+              title: title
+            };
+
+            google.script.run
+              .withSuccessHandler(response => {
+                if (response) {
+                  button.innerText = response;
+                  if (response.includes("Assigned")) {
+                    button.classList.add("green");
+                  } else {
+                    button.classList.add("red");
+                  }
+                  setTimeout(() => {
+                    button.disabled = false;
+                    if (response.includes("Assigned")) {
+                      button.classList.remove("green");
+                    } else {
+                      button.classList.remove("red");
+                    }
+                    google.script.host.close();
+                  }, 2000);
+                } else {
+                  button.innerText = "No response from server";
+                  button.classList.add("red");
+                  setTimeout(() => {
+                    button.classList.remove("red");
+                    button.innerText = "Assign";
+                  }, 2000);
+                }
+              })
+              .withFailureHandler(() => {
+                button.innerText = "Something went wrong";
+                document.body.classList.add("shake");
+                setTimeout(() => {
+                  document.body.classList.remove("shake");
+                }, 100);
+                setTimeout(() => {
+                  button.disabled = false;
+                  button.innerHTML = "";
+                  button.innerText = "Submit";
+                }, 2000);
+              })
+              .ChangeAssignment(data);
+          };
+
+          window.SubmitPriority = function(event) {
+            event.preventDefault();
+            const priority = document.getElementById("priority").value;
+            const button = document.getElementById("assignButton");
+            const rowElement = document.getElementById("row");
+            const colElement = document.getElementById("col");
+            const titleElement = document.getElementById("title");
+
+            // Check if the elements exist before accessing their innerText
+            if (!rowElement || !colElement || !titleElement) {
+              console.error("Row or column element not found!");
+              return;
+            }
+
+            let row = rowElement.innerText;
+            let col = colElement.innerText;
+            let title = titleElement.innerText;
+
+            if (!priority || !row || !col) {
+              document.body.classList.add("shake");
+              setTimeout(() => {
+                document.body.classList.remove("shake");
+              }, 100);
+              console.error("Invalid arguments");
+              return;
+            };
+            button.disabled = true;
+            button.innerHTML = '<div class="loader"></div>';
+
+            const data = {
+              priority: priority,
+              row: row,
+              col: col,
+              title: title
+            };
+
+            google.script.run
+              .withSuccessHandler(response => {
+                if (response) {
+                  button.innerText = response;
+                  if (response.includes("Edited")) {
+                    button.classList.add("green");
+                  } else {
+                    button.classList.add("red");
+                  }
+                  setTimeout(() => {
+                    button.disabled = false;
+                    if (response.includes("Edited")) {
+                      button.classList.remove("green");
+                    } else {
+                      button.classList.remove("red");
+                    }
+                    google.script.host.close();
+                  }, 2000);
+                }
+              })
+              .withFailureHandler(() => {
+                button.innerText = "Something went wrong";
+                document.body.classList.add("shake");
+                setTimeout(() => {
+                  document.body.classList.remove("shake");
+                }, 100);
+                setTimeout(() => {
+                  button.disabled = false;
+                  button.innerHTML = "";
+                  button.innerText = "Submit";
+                }, 2000);
+              })
+              .ChangePriority(data);
+          };
+
+          let emailList = document.getElementById("emails").innerText;
+          const gmailSelect = document.getElementById("gmail");
+          emailList = emailList.split(",");
+
+          for (email of emailList) {
+            const emailOption = document.createElement("option");
+            emailOption.value = email;
+            emailOption.innerText = email;
+            gmailSelect.appendChild(emailOption);
+          }
+        });
+      </script>
+    </head>
+
+    <body>
+      <? if (type == "Postpone") { ?>
+        <h1>Postpone this task</h1>
+        <p>Fill out all of the below questions in order to edit the deadline for this task.</p>
+        <hr>
+        <form>
+          <label for="deadline">New Deadline:</label>
+          <input type="date" id="deadline" placeholder="Select a new deadline for the task" required>
+          <button onclick="SubmitNewDeadline(event)" type="submit" class="submitButton" id="postponeButton">Submit</button>
+        </form>
+      <? } else if (type == "Assign") { ?>
+        <h1>Assign</h1>
+        <p>Fill out all of the below questions in order to assign or unassign a member to this task.<br>
+        If the assigned member was to be removed, they will be unassigned automatically.<br>
+        If the task would not be completed by the deadline, all assigned members will receive a "normal" infraction.</p>
+        <hr>
+        <form>
+          <label for="gmail">Gmail address of person to assign:</label>
+          <select id="gmail" required>
+          </select>
+          <button onclick="SubmitAssignment(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
+        </form>
+      <? } else if (type == "Priority") { ?>
+        <h1>Change Priority</h1>
+        <p>Fill out all of the below questions in order to change the priority level of this task.</p>
+        <hr>
+        <form>
+          <label for="priority">Select new priority level:</label>
+          <select id="priority" required>
+            <option value=""></option>
+            <option value="Low Priority">Low Priority</option>
+            <option value="Medium Priority">Medium Priority</option>
+            <option value="High Priority">High Priority</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+          <button onclick="SubmitPriority(event)" type="submit" class="submitButton" id="assignButton">Submit</button>
+        </form>
+      <? } ?>
+      <p style="font-size: 0px;" id="row"><?= row ?></p>
+      <p style="font-size: 0px;" id="col"><?= col ?></p>
+      <p style="font-size: 0px;" id="title"><?= title ?></p>
+      <p style="font-size: 0px;" id="emails"><?= emails ?></p>
+    </body>
+
+    </html>`;
+  } catch(e) {
+    sendDiscordError(e.toString(), "getHtmlTaskManager")
+  }
 }
 
 /**

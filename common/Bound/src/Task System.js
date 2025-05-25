@@ -19,7 +19,7 @@ function AddTask() {
  */
 function SubmitTask(inputData) {
   if (!inputData) throw new Error("No inputdata found");
-  if (inputData.description.length > 250) throw new Error("Too long description");
+  if (inputData.description.length > 1500) throw new Error("Too long description");
 
   const valid = RosterService.filterQuotes(inputData);
   if (valid !== true) return "No quotes allowed";

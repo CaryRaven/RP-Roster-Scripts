@@ -763,8 +763,8 @@ function include(filename) {
  * Returns the userData to the client (HTML)
  * @param {Boolean} bool - Should the output be stringified (in this case yes, since we're sending data to the client)
  */
-function ReturnUserData(inputData, bool) {
-  return RosterService.getUserData(inputData, null, bool);
+function ReturnUserData(name, bool) {
+  return RosterService.getUserData(name, 5, bool);
 }
 
 /**
@@ -783,6 +783,18 @@ function ReturnSpecs() {
   return JSON.stringify(LIBRARY_SETTINGS.specializations);
 }
 
-function GetAllEmails() {
-  return JSON.stringify(RosterService.getAllEmails());
+/**
+ * Get all the names to fill in the user selects on menu
+ * @returns {JSON.Array}
+ */
+function GetAllNames() {
+  const emails = RosterService.getAllEmails();
+  let names = [];
+  for (email of emails) {
+    const data = RosterService.getUserData(email);
+    if (data.status === "Missing Data") continue;
+    names.push(data.name);
+  }
+
+  return JSON.stringify(names);
 }

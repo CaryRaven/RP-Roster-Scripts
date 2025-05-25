@@ -5,7 +5,7 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() { 
-  console.log(JSON.parse(PropertiesService.getScriptProperties().getProperty("settings")))
+  console.log(RosterService.getUserData("Charles", 5));
 }
 
 /**
@@ -89,6 +89,7 @@ function doGet() {
     template.factionName = LIBRARY_SETTINGS.factionName;
     template.groups = LIBRARY_SETTINGS.group;
     template.hex = LIBRARY_SETTINGS.colorHex;
+    template.sheetId = LIBRARY_SETTINGS.spreadsheetId_main;
 
     let ssEditors;
 
@@ -208,8 +209,8 @@ function Set() {
   managerRanks: [],
   adminRanks: [ 'Security Chief', 'Office of Site Management' ],
   folders: 
-   [ { viewerAccess: [Object], editorAccess: [] },
-     { viewerAccess: [Object], editorAccess: [] },
+   [ { viewerAccess: [], editorAccess: [] },
+     { viewerAccess: [], editorAccess: [] },
      [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
        '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A',
        '1p_H8U7AV0Fa21je8NxinPGK34-7rQnf-',

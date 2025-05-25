@@ -22,6 +22,11 @@
       }
     });
 
+    // Set the spreadsheet link (different for each menu based on input param)
+    const sheetId = document.getElementById("sheetId").innerText;
+    document.getElementById("sheetLink").href = "https://docs.google.com/spreadsheets/d/" + sheetId + "/edit?usp=sharing"
+
+
     window.CloseChangelog =  function (event) {
       try { event.preventDefault(); } catch(e) { }
       document.getElementById("update-popup").setAttribute("style", "display: none;");
@@ -65,26 +70,26 @@
     };
 
     // Set the selects for emails
-    window.SetEmailSelects = function () {
-      google.script.run.withSuccessHandler(emails => {
-        if (emails.length <= 0) return console.error("No emails were found on any roster.");
-        emails = JSON.parse(emails);
+    window.SetUserSelects = function () {
+      google.script.run.withSuccessHandler(names => {
+        names = JSON.parse(names);
+        if (names.length <= 0) return console.error("No names were found on any roster.");
 
-        ["emailfield", "curremailfield"].forEach(id => {
+        ["userSelect", "curruserSelect"].forEach(id => {
 
           const select = document.getElementById(id);
-          select.innerHTML = "<option value=''></option>";
-          emails.forEach(email => {
+          id !== "userSelect" ? select.innerHTML = "<option value=''></option>" : select.innerHTML = "";
+          names.forEach(name => {
             const option = document.createElement("option");
-            option.value = email.toString();
-            option.innerText = email.toString();
+            option.value = name.toString();
+            option.innerText = name.toString();
             select.appendChild(option);
           });
         });
-      }).GetAllEmails();
+      }).GetAllNames();
     }
 
-    SetEmailSelects();
+    SetUserSelects();
 
     // Make the lockdown button shimmer (idk looks cool)
     document.getElementById('lockdownButton').classList.add("light");
@@ -269,7 +274,7 @@
       // document.getElementById('connections').setAttribute('style', 'display: none;');
       document.getElementById('search_panel').setAttribute('style', 'display: none;');
       document.getElementById("requests-panel").setAttribute("style", "display: none;");
-      SetEmailSelects();
+      SetUserSelects();
       try {
         document.getElementById('config').setAttribute('style', 'display: none;'); 
         clearInterval(configupdate);
@@ -567,7 +572,7 @@
       google.script.run.withSuccessHandler(data => {
         data = JSON.parse(data);
         if (!Array.isArray(data)) return;
-        document.getElementById("mainDiv").innerHTML = "";
+        document.getElementById("mainDiv").innerHTML = "<p>Pending requests will appear here, they have all been handled at the moment.</p>";
         
         data.forEach(request => {
           GenerateRequest(request);
@@ -2085,7 +2090,7 @@
       document.getElementById('namefield').setAttribute('style', 'display: none;');
       document.getElementById('playerIdfield').setAttribute('style', 'display: none;');
       document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-      document.getElementById('emailfield').setAttribute('style', 'display: none;');
+      document.getElementById('userSelect').setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').setAttribute('style', 'display: block;');
       document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
       document.getElementById('infrlabel').setAttribute('style', 'display: none;');
@@ -2111,7 +2116,8 @@
       document.getElementById('namefield').setAttribute('style', 'display: none;');
       document.getElementById('playerIdfield').setAttribute('style', 'display: none;');
       document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-      document.getElementById('emailfield').setAttribute('style', 'display: none;');
+      document.getElementById('userSelectlabel').setAttribute('style', 'display: none;');
+      document.getElementById('userSelect').setAttribute('style', 'display: none;');
       document.getElementById("newMemberEmailField").setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').setAttribute('style', 'display: none;');
       document.getElementById('infrtypelist').setAttribute('style', 'display: none;');
@@ -2136,19 +2142,22 @@
 
       switch (logtype) {
         case 'Infraction Log':
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('infrtypelist').setAttribute('style', 'display: block;');
           document.getElementById('infrlabel').setAttribute('style', 'display: block;');
           break;
         case 'Rank Change':
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('rctypefield').setAttribute('style', 'display: block;');
           document.getElementById('rctypelabel').setAttribute('style', 'display: block;');
           break;
         case 'LOA Log':
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('enddatefield').setAttribute('style', 'display: block;');
           document.getElementById('enddatelabelLOA').setAttribute('style', 'display: block;');
@@ -2176,7 +2185,8 @@
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           break;
         case "Requirement Log":
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('reqfieldlabel').setAttribute('style', 'display: block;');
           document.getElementById('reqfield').setAttribute('style', 'display: block;');
@@ -2186,7 +2196,8 @@
           GetReqTitles();
           break;
         case "Merit Log":
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('meritfield').setAttribute('style', 'display: block;');
           document.getElementById('meritfieldlabel').setAttribute('style', 'display: block;');
@@ -2199,7 +2210,7 @@
       }
       
       // Visitors don't have to input their email as they can only manage themselves
-      if (accessType === "visitor") document.getElementById('emailfield').setAttribute('style', 'display: none;');
+      if (accessType === "visitor") document.getElementById('userSelect').setAttribute('style', 'display: none;');
     }
 
     window.GetReqTitles = function() {
@@ -2210,7 +2221,7 @@
       // TODO: possibly change to dynamic check
       if (accessType === "admin" || accessType === "dev") {
         rank = null;
-        email = document.getElementById('emailfield').value;
+        email = document.getElementById('userSelect').value;
       }
       
       google.script.run.withSuccessHandler(response => {
@@ -2282,11 +2293,11 @@
     GetReqTitles();
 
     // If you're not logging a req for yourself -> check the reqs of the person on every input change
-    document.getElementById("emailfield").addEventListener("change", () => {
+    document.getElementById("userSelect").addEventListener("change", () => {
       if (accessType === "visitor") return;
       if (document.getElementById("logTypeList").value !== "Requirement Log") return;
-      if (!document.getElementById("emailfield").value.includes("@")) return;
-      if (!document.getElementById("emailfield").value.includes(".")) return;
+      if (!document.getElementById("userSelect").value.includes("@")) return;
+      if (!document.getElementById("userSelect").value.includes(".")) return;
 
       try {
         GetReqTitles();
@@ -2336,7 +2347,16 @@
       let data_type = value == "New Member" ? "Rank Change" : value;
       let data_rankchangetype = value == "New Member" ? "Passed Interview" : document.getElementById('rctypefield').value;
       let data_type_check = value == "New Member" ? "New Member" : value;
-      let data_email = value == "New Member" ? document.getElementById('newMemberEmailField').value : document.getElementById('emailfield').value;
+
+      // Get all selected emails
+      let data_users;
+      if (value == "New Member") {
+        data_users = [document.getElementById('namefield').value];
+      } else {
+        const uSelect = document.getElementById('userSelect');
+        const selected = [...uSelect.selectedOptions].map(option => option.value);
+        data_users = selected.filter(Boolean);
+      }
 
       const dataToSubmit = {
         type: data_type,
@@ -2344,7 +2364,8 @@
         name: document.getElementById('namefield').value,
         playerId: document.getElementById('playerIdfield').value,
         discordid: document.getElementById('discordidfield').value,
-        email: data_email,
+        email: document.getElementById("newMemberEmailField").value,
+        users: data_users, // Array
         rankchangetype: data_rankchangetype,
         reason: document.getElementById('reasonfield').value,
         infraction_type: document.getElementById('infrtypelist').value,
@@ -2360,19 +2381,19 @@
       let valid = false;
       switch (dataToSubmit.type_check) {
         case 'Rank Change':
-          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') { valid = true; }
           break;
         case 'Infraction Log':
-          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') { valid = true; }
           break;
         case 'LOA Log':
-          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
 
           // Don't check email for visitors as they can't input it
           if (accessType === "visitor" && dataToSubmit.reason != '' && dataToSubmit.end_date != '') valid = true;
           break;
         case 'Blacklist':
-          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.end_date != '' && dataToSubmit.reason != '' && dataToSubmit.blacklist_appealable != '') {
+          if (dataToSubmit.end_date != '' && dataToSubmit.reason != '' && dataToSubmit.blacklist_appealable != '') {
             switch (dataToSubmit.blacklist_type) {
               case "Suspension":
                 valid = true;
@@ -2392,16 +2413,16 @@
           if (dataToSubmit.log_id >= 7) valid = true;
           break;
         case "New Member":
-          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.playerId.length === 5 && dataToSubmit.reason != '') valid = true;
+          if (dataToSubmit.email.includes("@") && dataToSubmit.email.includes(".") && dataToSubmit.playerId.length === 5 && dataToSubmit.reason != '') valid = true;
           break;
         case "Requirement Log":
-          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
+          if (dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
 
           // Don't check email for visitors as they can't input it
           if (accessType === "visitor" && dataToSubmit.reason.length > 10 && dataToSubmit.reqName != '') valid = true;
           break;
         case "Merit Log":
-          if (dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.reason.length > 10 && dataToSubmit.meritAction != '') valid = true;
+          if (dataToSubmit.reason.length > 10 && dataToSubmit.meritAction != '') valid = true;
 
           // Don't check email for visitors as they can't input it
           if (accessType === "visitor" && dataToSubmit.reason.length > 10 && dataToSubmit.meritAction != '') valid = true;
@@ -2411,9 +2432,13 @@
           return Shake();
       }
 
+      // Check if members were selected
+      if (!["Infraction Appeal", "Blacklist Appeal"].includes(dataToSubmit.type_check)) {
+        if (dataToSubmit.users.length <= 0) valid = false;
+      }
+
       if (!valid) {
         Shake();
-        console.log(dataToSubmit.email.includes('.') && dataToSubmit.email.includes('@') && dataToSubmit.playerId.length === 5 && dataToSubmit.reason != '')
         button.innerText = "Invalid Input";
         button.disabled = true;
         setTimeout(() => {
@@ -2425,7 +2450,8 @@
 
       Object.values(dataToSubmit).forEach(value => {
         if (!value) return;
-        if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<"))) {
+        if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<") || (value.includes('=')))) 
+        {
           valid = false;
         }
       });
@@ -2467,36 +2493,43 @@
       if (valid === true) {
         button.innerText = "";
         button.innerHTML = '<div class="loader"></div>';
-        google.script.run.withSuccessHandler(response => {
+        google.script.run.withSuccessHandler(oResponse => {
           try {
-            response = JSON.parse(response);
-            if (Number(response[1]) >= Number(response[2]) && dataToSubmit.type == "Infraction Log") {
-              proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
-              if (proceed == true) {
-                google.script.run.withSuccessHandler(() => {
-                  ResetUI(button, response[0]);
-                }).ProcessLog(dataToSubmit, true, accessType);
+            oResponse = JSON.parse(oResponse);
+
+            // Redir to the catch
+            // if (!Array.isArray(oResponse)) throw new Error("bad bad response");
+
+            for (response of oResponse) {
+              if (Number(response[1]) >= Number(response[2]) && dataToSubmit.type == "Infraction Log") {
+                proceed = confirm(`The person you've just handed an infraction to has exceeded the infraction threshold (${response[2]}) as they currently have ${response[1]} infractions, click "OK" if you would like to execute a ${response[3]} to this user.`);
+                if (proceed == true) {
+                  google.script.run.withSuccessHandler(() => {
+                    ResetUI(button, response[0]);
+                  }).ProcessLog(dataToSubmit, true, accessType);
+                } else {
+                  UIEnd(button, response)
+                }
               } else {
-                UIEnd(button, response)
+                UIEnd(button, response);
               }
-            } else {
-              UIEnd(button, response);
             }
           } catch(e) {
-              if (response.includes("not") || response.includes("capacity") || response.includes("only") || response.includes("must")) {
+            console.log(e);
+            if (oResponse.includes("not") || oResponse.includes("capacity") || oResponse.includes("only") || oResponse.includes("must")) {
               Shake();
               button.classList.add('red');
-              ResetUI(button, response);
-            } else if (!response.includes('something')) {
+              ResetUI(button, oResponse);
+            } else if (!oResponse.includes('something')) {
               document.getElementById('dataform').reset();
               HideCheck();
               button.classList.add('green');
-              ResetUI(button, response);
+              ResetUI(button, oResponse);
             }
           }
 
           console.timeEnd("Log Submission Runtime");
-          SetEmailSelects();
+          SetUserSelects();
 
         }).withFailureHandler(error => {
           
@@ -2527,7 +2560,7 @@
           document.getElementById('namefield').setAttribute('style', 'display: none;');
           document.getElementById('playerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('discordidfield').setAttribute('style', 'display: none;');
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
           document.getElementById('appealable').setAttribute('style', 'display: block;');
@@ -2539,7 +2572,7 @@
           document.getElementById('namefield').setAttribute('style', 'display: block;');
           document.getElementById('playerIdfield').setAttribute('style', 'display: block;');
           document.getElementById('discordidfield').setAttribute('style', 'display: block;');
-          document.getElementById('emailfield').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
           document.getElementById('appealable').setAttribute('style', 'display: block;');
@@ -2620,7 +2653,7 @@
 
       const editdata = {
         type: document.getElementById('infoTypeList')?.value || '',
-        current_email: document.getElementById('curremailfield')?.value || '',
+        current_user: document.getElementById('curruserSelect')?.value || '',
         name: document.getElementById('newnamefield')?.value || '',
         playerId: document.getElementById('newplayerIdfield')?.value || '',
         discordid: document.getElementById('newsdiscidfield')?.value || '',
@@ -2632,27 +2665,27 @@
       let validEdit = false;
       switch (editdata.type) {
         case 'Edit Name':
-          if (editdata.name != '' && editdata.current_email != '') { validEdit = true; }
+          if (editdata.name != '' && editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit playerId':
-          if (editdata.playerId != '' && editdata.current_email != '') { validEdit = true; }
+          if (editdata.playerId != '' && editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit dicsordID':
-          if (editdata.discordid != '' && editdata.current_email != '') { validEdit = true; }
+          if (editdata.discordid != '' && editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit Email':
-          if (editdata.email != '' && editdata.current_email != '') { validEdit = true; }
+          if (editdata.email != '' && editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit Specialization':
-          if (editdata.current_email != '') { validEdit = true; }
+          if (editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit Note':
-          if (editdata.notes != '' && editdata.current_email != '') { validEdit = true; }
+          if (editdata.notes != '' && editdata.current_user != '') { validEdit = true; }
           break;
       }
 
       Object.values(editdata).forEach(value => {
-      if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<"))) {
+      if (value && (value.includes('"') || value.includes("'") || value.includes("`") || value.includes("$") || value.includes("{") || value.includes("<") || value.includes("="))) {
         validEdit = false;
       }
     });
@@ -2691,6 +2724,8 @@
             button.classList.remove('red');
             button.classList.remove('green');
           }, 4000);
+
+          SetUserSelects();
           console.timeEnd("Edit Submission Runtime");
         }).withFailureHandler(error => {
           //
@@ -2702,6 +2737,7 @@
             button.innerText = "Submit";
             button.disabled = false;
           }, 4000);
+
           console.timeEnd("Edit Submission Runtime");
         }).ProcessInputEdits(editdata, accessType);
       } else if (validEdit == false) {
@@ -2716,12 +2752,12 @@
     // On open
     SetSpecSelects();
 
-    document.getElementById('curremailfield').addEventListener('change', () => {
-      const emailField = document.getElementById('curremailfield');
+    document.getElementById('curruserSelect').addEventListener('change', () => {
+      const userField = document.getElementById('curruserSelect');
       const elements = ["newnamefield", "newplayerIdfield", "newsdiscidfield", "newnotesfield"];
       const button = document.getElementById('editSubmitButton');
 
-      emailField.disabled = true;
+      userField.disabled = true;
       button.disabled = true;
       elements.forEach(elementId => document.getElementById(elementId).disabled = true);
       button.innerText = "";
@@ -2733,7 +2769,7 @@
           if (!targetData.row) {
             elements.forEach(element => document.getElementById(element[0]).value = "");
             elements.forEach(elementId => document.getElementById(elementId).disabled = false);
-            emailField.disabled = false;
+            userField.disabled = false;
             button.disabled = false;
             button.innerHTML = '';
             button.innerText = "Submit";
@@ -2746,13 +2782,13 @@
           document.getElementById(elements[3]).value = targetData.notes;
 
           elements.forEach(elementId => document.getElementById(elementId).disabled = false);
-          emailField.disabled = false;
+          userField.disabled = false;
           button.disabled = false;
           button.innerHTML = '';
           button.innerText = "Submit";
         } catch (e) {
           
-          emailField.disabled = false;
+          userField.disabled = false;
           button.disabled = false;
           elements.forEach(elementId => document.getElementById(elementId).disabled = false);
           button.innerHTML = '';
@@ -2761,12 +2797,12 @@
       }).withFailureHandler(error => {
         
         
-        emailField.disabled = false;
+        userField.disabled = false;
         button.disabled = false;
         elements.forEach(elementId => document.getElementById(elementId).disabled = false);
         button.innerHTML = '';
         button.innerText = "Submit";
-      }).ReturnUserData(emailField.value, true);
+      }).ReturnUserData(userField.value, true);
     });
 
     let specInterval;

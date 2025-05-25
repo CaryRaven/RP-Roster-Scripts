@@ -8,6 +8,7 @@ let isInit = false;
 function init(InputSettings) {
 
   if (!InputSettings) throw new Error("No settings where provided to library");
+  if (getSizeInBytes(InputSettings) >= 8500) throw new Error("Library exceeding size limit");
 
   const settings = new SettingsTemplate()
   const settingKeys = Object.keys(settings);

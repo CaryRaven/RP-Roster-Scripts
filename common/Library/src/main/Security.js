@@ -5,22 +5,27 @@
 function getAllDocsInFolder(folderId) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  const folder = DriveApp.getFolderById(folderId);
-  const docs = [];
+  try {
+    const folder = DriveApp.getFolderById(folderId);
+    const docs = [];
 
-  const folderFiles = folder.getFiles();
-  while (folderFiles.hasNext()) {
-    docs.push(folderFiles.next().getId());
+    const folderFiles = folder.getFiles();
+    while (folderFiles.hasNext()) {
+      docs.push(folderFiles.next().getId());
+    }
+
+    const subfolders = folder.getFolders();
+    while (subfolders.hasNext()) {
+      const subfolder = subfolders.next();
+      docs.push(subfolder.getId());
+      docs.push(...getAllDocsInFolder(subfolder.getId()));
+    }
+
+    return docs;
+  } catch(e) {
+    sendDiscordError(e.toString(), "getAllDocsInFolder");
+    throw new Error(e);
   }
-
-  const subfolders = folder.getFolders();
-  while (subfolders.hasNext()) {
-    const subfolder = subfolders.next();
-    docs.push(subfolder.getId());
-    docs.push(...getAllDocsInFolder(subfolder.getId()));
-  }
-
-  return docs;
 }
 
 /**
@@ -30,61 +35,55 @@ function getAllDocsInFolder(folderId) {
 function permissionsGuard(exempt) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  let authed = getAllEmails();
-  exempt.push("micheal.labus@gmail.com");
-  let flagArray = [];
+  try {
+    let authed = getAllEmails();
+    exempt.push("micheal.labus@gmail.com");
+    let flagArray = [];
 
-  authed.forEach(email => {
-    // Check if google account still exists / blocked me
-    try {
-      DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(email);
-      DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(email);
-    } catch(e) {
-      const user = getUserData(email);
-      flagArray.push({ email: email, folderName: `${LIBRARY_SETTINGS.factionName} Documentation Drive`, currentPermission: user.rank, reason: "Deleted/Blocked Google Account" });
-    }
-  });
+    // Check all docs
+    const docs = getAllDocsInFolder(LIBRARY_SETTINGS.folderId_main);
+    docs.forEach(id => {
+      if (!id) return;
+      let doc;
 
-  // Check all docs
-  const docs = getAllDocsInFolder(LIBRARY_SETTINGS.folderId_main);
-  docs.forEach(id => {
-    if (!id) return;
-    let doc;
-
-    try {
-      doc = DriveApp.getFolderById(id);
-    } catch (e) {
       try {
-        doc = DriveApp.getFileById(id);
-      } catch(ee) {
-        console.log(ee);
-        return flagArray.push({ email: "N/A", folderName: `Unknown File/Folder`, currentPermission: "None", reason: `${id} has not been shared with "dontorro208@gmail.com"` });
+        doc = DriveApp.getFolderById(id);
+      } catch (e) {
+        try {
+          doc = DriveApp.getFileById(id);
+        } catch(ee) {
+          console.log(ee);
+          return flagArray.push({ email: "N/A", folderName: `Unknown File/Folder`, currentPermission: "None", reason: `${id} has not been shared with "dontorro208@gmail.com"` });
+        }
       }
-    }
 
-    // Make sure doc is owner by me (exception: pending docs)
-    if (doc.getOwner().getEmail() !== "dontorro208@gmail.com" && !doc.getName().toLowerCase().includes("pending")) {
-      return flagArray.push({ email: "N/A", folderName: `${doc.getName()}`, currentPermission: "N/A", reason: `Document should be owned by "dontorro208@gmail.com"` });
-    }
+      // Make sure doc is owner by me (exception: pending docs)
+      if (doc.getOwner().getEmail() !== "dontorro208@gmail.com" && !doc.getName().toLowerCase().includes("pending")) {
+        return flagArray.push({ email: "N/A", folderName: `${doc.getName()}`, currentPermission: "N/A", reason: `Document should be owned by "dontorro208@gmail.com"` });
+      }
 
-    if (doc.getName().toLowerCase().includes("pending")) return;
+      if (doc.getName().toLowerCase().includes("pending")) return;
 
-    const viewers = doc.getViewers();
-    const editors = doc.getEditors();
+      const viewers = doc.getViewers();
+      const editors = doc.getEditors();
 
-    console.log(doc.getName());
+      console.log(doc.getName());
 
-    flagArray = flagArray.concat(processPermissions(viewers, authed, exempt, "VIEW", doc));
-    flagArray = flagArray.concat(processPermissions(editors, authed, exempt, "EDIT", doc));
+      flagArray = flagArray.concat(processPermissions(viewers, authed, exempt, "VIEW", doc));
+      flagArray = flagArray.concat(processPermissions(editors, authed, exempt, "EDIT", doc));
 
-  });
+    });
 
-  // Going through all docs checking for unregistered
-  const parentFolder = DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_main);
-  const flaggedDocs = [];
-  collectUnregisteredDocs(parentFolder, flaggedDocs);
+    // Going through all docs checking for unregistered
+    const parentFolder = DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_main);
+    const flaggedDocs = [];
+    collectUnregisteredDocs(parentFolder, flaggedDocs);
 
-  if (flagArray.length > 0 || flaggedDocs.length > 0) sendDiscordPermissionReport(flagArray, flaggedDocs);
+    if (flagArray.length > 0 || flaggedDocs.length > 0) sendDiscordPermissionReport(flagArray, flaggedDocs);
+  } catch(e) {
+    sendDiscordError(e.toString(), "permissionsGuard");
+    throw new Error(e);
+  }
 }
 
 /**
@@ -97,6 +96,7 @@ function permissionsGuard(exempt) {
  */
 function processPermissions(users, authed, exemptUsers, accessType, doc) {
   if (!isInit) throw new Error("Library is not yet initialized");
+  
   let flagArray = [];
   const ranks = LIBRARY_SETTINGS.ranks;
   const registeredDocs = LIBRARY_SETTINGS.folders;
@@ -108,13 +108,16 @@ function processPermissions(users, authed, exemptUsers, accessType, doc) {
     if (exemptUsers.includes(email)) return "User is exempt";
 
     // Check if google account still exists / blocked me
-    try {
-      DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(email);
-      DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(email);
-    } catch(e) {
-      Logger.log(e);
-      flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Deleted/Blocked Google Account" });
-    }
+    // Currently removed due to spamming users with emails (as an email is sent upon add/removeViewer)
+    // Potential fix by using drive API advanced service (implement everywhere if added here)
+
+    // try {
+    //   DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).addViewer(email);
+    //   DriveApp.getFolderById(LIBRARY_SETTINGS.folderId_publicDocs).removeViewer(email);
+    // } catch(e) {
+    //   Logger.log(e);
+    //   flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Deleted/Blocked Google Account" });
+    // }
 
     if (!authed.includes(email)) return flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Unauthorized access" });
 
@@ -135,7 +138,7 @@ function processPermissions(users, authed, exemptUsers, accessType, doc) {
 
     if (allowedFolders.includes(doc.getId())) return;
 
-    if (wrongFolders.includes(folderId)) {
+    if (wrongFolders.includes(doc.getId())) {
       return flagArray.push({ email: email, folderName: doc.getName(), expectedPermission: accessType === "VIEW" ? "EDIT" : "VIEW", reason: "Incorrect permissions" });
     } else {
       return flagArray.push({ email: email, folderName: doc.getName(), currentPermission: accessType, reason: "Unauthorized access" });
@@ -150,41 +153,47 @@ function processPermissions(users, authed, exemptUsers, accessType, doc) {
  */
 function collectUnregisteredDocs(folder, itemsArray) {
   if (!isInit) throw new Error("Library is not yet initialized");
-  // Folder
-  if (
-    !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folder.getId())
-    && !folder.getName().includes("Interview")
-    && !folder.getName().toLowerCase().includes("pending")) {
-    itemsArray.push({
-      type: "folder",
-      name: folder.getName(),
-      id: folder.getId(),
-      owner: getOwnerEmail(folder)
-    });
-  }
 
-  // Files
-  const files = folder.getFiles();
-  while (files.hasNext()) {
-    const file = files.next();
+  try {
+    // Folder
     if (
-      !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(file.getId())
-      && !file.getName().includes("Interview")
-      && !file.getName().toLowerCase().includes("pending")) {
+      !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(folder.getId())
+      && !folder.getName().includes("Interview")
+      && !folder.getName().toLowerCase().includes("pending")) {
       itemsArray.push({
-        type: "file",
-        name: file.getName(),
-        id: file.getId(),
-        owner: getOwnerEmail(file)
+        type: "folder",
+        name: folder.getName(),
+        id: folder.getId(),
+        owner: getOwnerEmail(folder)
       });
     }
-  }
 
-  // Move to next folder if possible
-  const subfolders = folder.getFolders();
-  while (subfolders.hasNext()) {
-    const subfolder = subfolders.next();
-    collectUnregisteredDocs(subfolder, itemsArray);
+    // Files
+    const files = folder.getFiles();
+    while (files.hasNext()) {
+      const file = files.next();
+      if (
+        !LIBRARY_SETTINGS.folders[LIBRARY_SETTINGS.folders.length - 1].includes(file.getId())
+        && !file.getName().includes("Interview")
+        && !file.getName().toLowerCase().includes("pending")) {
+        itemsArray.push({
+          type: "file",
+          name: file.getName(),
+          id: file.getId(),
+          owner: getOwnerEmail(file)
+        });
+      }
+    }
+
+    // Move to next folder if possible
+    const subfolders = folder.getFolders();
+    while (subfolders.hasNext()) {
+      const subfolder = subfolders.next();
+      collectUnregisteredDocs(subfolder, itemsArray);
+    }
+  } catch(e) {
+    sendDiscordError(e.toString(), "collectUnregisteredDocs");
+    throw new Error(e);
   }
 }
 
@@ -218,6 +227,7 @@ function getAllowedStaff() {
     console.log(emails);
     return JSON.stringify(emails);
   } catch(e) {
-    return;
+    sendDiscordError(e.toString(), "getAllowedStaff");
+    throw new Error(e);
   }
 }
