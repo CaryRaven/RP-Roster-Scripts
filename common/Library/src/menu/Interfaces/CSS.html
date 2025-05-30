@@ -7,6 +7,12 @@
         font-family: Lexend;
     }
 
+    @media print {
+      body {
+        display: none;
+      }
+    }
+
     #afkBanner {
       position: fixed;
       top: 50%;
@@ -563,6 +569,16 @@
     .subtitle {
       font-size: 14px;
       font-weight: bold;
+    }
+
+    .card-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      width: 90%;
+      box-sizing: border-box;
+      justify-items: center;
+      padding: 1rem;
     }
 
     /* Toggle Switch CSS ************************************

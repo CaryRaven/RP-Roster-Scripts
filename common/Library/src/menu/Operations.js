@@ -777,6 +777,7 @@ function removeRankRow(rank, userData, num = 1, borderPairs = null) {
  * @param {Number} num (optional)
  * @param {Array[]} borderPairs (optional)
  */
+// :hardcode
 function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = [], minMeritScore) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
@@ -785,6 +786,7 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
 
   // Add third (custom) if no borderPair provided
   // if (promoReqs.length <= 0) promoReqs = LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)];
+  // :hardcode
   if (borderPairs.length === 2) borderPairs.push([8, 7 + promoReqs.length + hasMinMerits]);
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
 
@@ -811,6 +813,7 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
     }
 
     if ((!startRow || !endRow) && reps > 50) throw new Error(`Could not find start or end row: ${startRow}, ${endRow}`);
+    reps++;
   } while (!startRow || !endRow)
 
   let insertRow = startRow + 1;
@@ -851,12 +854,15 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
   mergeRange.setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
 }
 
+// :hardcode
 function removeReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]]) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
 
   const hasMinMerits = LIBRARY_SETTINGS.minMeritScore[LIBRARY_SETTINGS.ranks.indexOf(rank)] > 0 ? 1 : 0;;
   borderPairs.push([8, 7 + LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length + hasMinMerits]);
+
+  // :hardcode roster length
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
 
   for (let i = 1; i <= num; i++) {

@@ -4,8 +4,7 @@ if (RosterService.getSizeInBytes(LIBRARY_SETTINGS) >= 450000) throw new Error("S
 RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
-function T() { 
-  console.log(RosterService.getUserData("Charles", 5));
+function T() {
 }
 
 /**
@@ -16,7 +15,15 @@ function doGet() {
   Logger.log(user);
 
   let userProperty = PropertiesService.getUserProperties();
-  let userData = RosterService.getUserData(user);
+  let userData;
+
+  // Try to get userdata, if not possible return error screen
+  try {
+    userData = RosterService.getUserData(user);
+  } catch(e) {
+    return ReturnUnauthPage();
+  }
+
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
 
   // Set different rank for SM & Staff -> Currently only works for the security sm liaison
@@ -24,12 +31,16 @@ function doGet() {
     userData.name = "N/A";
     userData.playerId = "N/A";
     userData.discordId = "N/A";
+
+    // :hardcode
     userData.rank = "Office of Site Management";
     userData.email = user;
   } else if (allowedStaff.includes(user)) {
     userData.name = "N/A";
     userData.playerId = "N/A";
     userData.discordId = "N/A";
+
+    // :hardcode
     userData.rank = "Blackshadow Staff";
     userData.email = user;
   }
@@ -51,6 +62,7 @@ function doGet() {
   }
 
   // Actual admin menu -> Check if allowed (allowedStaff, adminRanks & not suspended)
+  // :hardcode
   if (allowedStaff.includes(user) || (userData.row && userData.status !== "Suspended")) {
     const lastOpenTerminal = userProperty.getProperty("lastOpenTime"); // deciding terminal
     let configShowTerminal = userProperty.getProperty("configShowTerminal");
@@ -96,6 +108,7 @@ function doGet() {
     try {
       ssEditors = DriveApp.getFileById(LIBRARY_SETTINGS.spreadsheetId_main).getEditors().map(editor => editor.getEmail())
     } catch(e) {
+      // :hardcode
       return HtmlService.createHtmlOutput("<h1>You must have opened the Security Roster at least once before being able to access this Admin Menu, please do so and refresh this page after.</h1>");
     }
 
@@ -143,15 +156,24 @@ function doGet() {
     return template.evaluate();
   } else {
     // If not authed
-    const unauthedFile = RosterService.getHtmlRetroTerminal();
-    const unauthedPage = HtmlService.createTemplate(unauthedFile);
-    unauthedPage.type = "unauthed";
-    unauthedPage.rank = "user";
-    unauthedPage.factionName = LIBRARY_SETTINGS.factionName;
-    unauthedPage.name = "Undefined";
-    if (!userData.row) RosterService.sendDiscordUnauthed(); // Send warning (something wrong with doc access)
-    return unauthedPage.evaluate();
+    return ReturnUnauthPage();
   }
+}
+
+/**
+ * @returns {HTMLTemplate}
+ */
+function ReturnUnauthPage() {
+  const unauthedFile = RosterService.getHtmlRetroTerminal();
+  const unauthedPage = HtmlService.createTemplate(unauthedFile);
+  unauthedPage.type = "unauthed";
+  
+  // :hardcode
+  unauthedPage.rank = "user";
+  unauthedPage.factionName = LIBRARY_SETTINGS.factionName;
+  unauthedPage.name = "Undefined";
+  RosterService.sendDiscordUnauthed(); // Send warning (something wrong with doc access)
+  return unauthedPage.evaluate();
 }
 
 /**

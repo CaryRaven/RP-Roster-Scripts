@@ -572,7 +572,11 @@
       google.script.run.withSuccessHandler(data => {
         data = JSON.parse(data);
         if (!Array.isArray(data)) return;
-        document.getElementById("mainDiv").innerHTML = "<p>Pending requests will appear here, they have all been handled at the moment.</p>";
+        if (data.length > 0) {
+          document.getElementById("mainDiv").innerHTML = "";
+        } else {
+          document.getElementById("mainDiv").innerHTML = "<p>Pending requests will appear here, they have all been handled at the moment.</p>";
+        }
         
         data.forEach(request => {
           GenerateRequest(request);
@@ -810,7 +814,7 @@
       let rowAmount = document.getElementById("rankRowAmount").value;
       rowAmount = Number(rowAmount);
 
-      if (!rowAmount || rowAmount <= 0) {
+      if (!rowAmount || rowAmount <= 0 || rowAmount > 25) {
         Shake();
         return;
       }
@@ -1103,6 +1107,7 @@
     });
 
     // *********** DROPDOWN HANDLERS ************
+    // These are used in the config menu to make certain buttons reveal a content div on click
 
     let coll = document.getElementById("manageRank");
 
@@ -1136,13 +1141,24 @@
       if (content.style.display === "block") {
         content.style.display = "none";
       } else {
+        // Disable inputs until loaded
+        const loaCd = document.getElementById("loaCooldown");
+        const loaCdButton = document.getElementById("loaCooldown-button");
+        const promoCd = document.getElementById("promoCooldown");
+        const promoCdButton = document.getElementById("promoCooldown-button");
+
+        [loaCd, loaCdButton, promoCd, promoCdButton].forEach(el => el.disabled = true);
+
+        // Get cooldowns from server
+        google.script.run.withSuccessHandler(r => {
+          r = JSON.parse(r);
+          loaCd.value = r[0];
+          promoCd.value = r[1];
+          [loaCd, loaCdButton, promoCd, promoCdButton].forEach(el => el.disabled = false);
+        }).ReturnCooldown();
+
         content.style.display = "block";
       }
-      google.script.run.withSuccessHandler(r => {
-        r = JSON.parse(r);
-        document.getElementById("loaCooldown").value = r[0];
-        document.getElementById("promoCooldown").value = r[1];
-      }).ReturnCooldown();
     });
 
     let coll4 = document.getElementById("manageThreshold");
@@ -1153,26 +1169,39 @@
       if (content.style.display === "block") {
         content.style.display = "none";
       } else {
+        // Disable inputs until loaded
+        const threshold = document.getElementById("threshold");
+        const thresholdAction = document.getElementById("thresholdActionSelect");
+        const thresholdButton = document.getElementById("threshold-button");
+
+        [threshold, thresholdAction, thresholdButton].forEach(el => el.disabled = true);
+
+        google.script.run.withSuccessHandler(r => {
+          r = JSON.parse(r);
+          document.getElementById("threshold").value = r[0];
+          document.getElementById("thresholdActionSelect").value = r[1];
+          [threshold, thresholdAction, thresholdButton].forEach(el => el.disabled = false);
+        }).ReturnThreshold();
+
         content.style.display = "block";
       }
-      google.script.run.withSuccessHandler(r => {
-        r = JSON.parse(r);
-        document.getElementById("threshold").value = r[0];
-        document.getElementById("thresholdActionSelect").value = r[1];
-      }).ReturnThreshold();
     });
 
     let coll5 = document.getElementById("registeredListButton");
+    let coll5Hidden = true;
 
     coll5.addEventListener("click", function() {
+      coll5Hidden = !coll5Hidden;
       this.classList.toggle("active");
-      var content = document.getElementById("registeredListContent");
+      const wrapper = document.getElementById("docListWrapper");
+      const content = document.getElementById("registeredListContent");
       content.innerHTML = '<div class="loader"></div>';
 
-      if (content.style.display === "block") {
-        content.style.display = "none";
+      console.log(coll5Hidden);
+      if (coll5Hidden) {
+        return wrapper.style.display = "none";
       } else {
-        content.style.display = "block";
+        wrapper.style.display = "block";
       }
 
       google.script.run.withSuccessHandler(r => {
@@ -1189,9 +1218,10 @@
           docElement.style.borderRadius = "10px";
           docElement.style.color = "whitesmoke";
           docElement.style.backgroundColor = "#222222"
-          docElement.style.width = "70%";
           docElement.style.textAlign = "center";
-          docElement.style.justifySelf = "center";
+          docElement.style.width = "100%";
+          docElement.style.maxWidth = "250px";
+          docElement.style.wordWrap = "break-word";
 
           content.appendChild(docElement)
         })
@@ -1939,6 +1969,7 @@
     document.getElementById("manageThresholdContent").classList.add("collapseContent");
     document.getElementById("registeredListButton").classList.add("collapsible");
     document.getElementById("registeredListContent").classList.add("collapseContent");
+    document.getElementById("registeredListContent").classList.add("card-grid");
     document.getElementById("generalConfig").classList.add("collapsible");
     document.getElementById("generalConfigContent").classList.add("collapseContent");
     document.getElementById("manageMerits").classList.add("collapsible");
@@ -2572,7 +2603,7 @@
           document.getElementById('namefield').setAttribute('style', 'display: block;');
           document.getElementById('playerIdfield').setAttribute('style', 'display: block;');
           document.getElementById('discordidfield').setAttribute('style', 'display: block;');
-          document.getElementById('userSelect').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: none;');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('appealablelabel').setAttribute('style', 'display: block;');
           document.getElementById('appealable').setAttribute('style', 'display: block;');

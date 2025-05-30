@@ -1,4 +1,20 @@
+// Task system constants
 const types = ["Backlog", "In Progress", "Completed"];
+
+const taskCols = {
+  type: 2,
+  c_date: 3,
+  deadline: 4,
+  title: 5,
+  desc: 6,
+  assignees: 7,
+  priority: 8,
+  b_assign: 10,
+  b_status: 11,
+  b_postpone: 12,
+  b_priority: 13,
+  b_delete: 14
+}
 
 /**
  * @returns {String}
@@ -18,14 +34,17 @@ function task_add(inputData) {
     loc = endLoc + 1;
 
     // Style new row
-    [[3, 8], [10, 14]].forEach(cellpair => {
+    [[taskCols.c_date, taskCols.priority], [taskCols.b_assign, taskCols.b_delete]].forEach(cellpair => {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(loc, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       s.getRange(loc, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
     });
   }
 
-  s.getRange(loc, 2, 1, 7).setValues([["Backlog", Utilities.formatDate(new Date(), "GMT", 'dd MMMM yyyy'), inputData.deadline, inputData.title, inputData.description, "", inputData.priority]]);
+  // :hardcode
+  const values = [["Backlog", Utilities.formatDate(new Date(), "GMT", 'dd MMMM yyyy'), inputData.deadline, inputData.title, inputData.description, "", inputData.priority]];
+
+  s.getRange(loc, taskCols.type, 1, values[0].length).setValues(values);
   inputData.deadline = new Date(inputData.deadline);
   task_sendDiscordMessage("New", inputData);
   return "Task Added";
@@ -50,24 +69,27 @@ function task_manager(sheet, range, oldValue) {
   if (sheetID !== LIBRARY_SETTINGS.sheetId_task || LIBRARY_SETTINGS.rosterIds.includes(sheetID)) return;
   if (range.getValue() === false) range.setValue(false);
 
-  if (!types.includes(sheet.getRange(row, 2).getValue())) {
+  if (!types.includes(sheet.getRange(row, taskCols.type).getValue())) {
     range.clearContent();
     return "This is not a task";
   }
-  if (sheet.getRange(row, 3).getValue() == "") {
+
+  if (sheet.getRange(row, taskCols.c_date).getValue() == "") {
     range.setValue(false);
     return "This task is empty";
   }
 
-  if (types[2].includes(sheet.getRange(row, 2).getValue())) {
+  if (types[2].includes(sheet.getRange(row, taskCols.type).getValue())) {
     range.setValue(false);
     return "You cannot edit a completed task";
   }
 
-  const title = sheet.getRange(row, 5).getValue();
+  const title = sheet.getRange(row, taskCols.title).getValue();
 
   switch (col) {
-    case 5: // Editing title
+    case taskCols.title: // Editing title
+
+      // :hardcode
       if (range.getValue().length > 30 || range.getValue() === "") {
         range.setValue(oldValue);
         return "Invalid Title";
@@ -75,7 +97,7 @@ function task_manager(sheet, range, oldValue) {
 
       return "Title Edited";
 
-    case 6: // Editing description
+    case taskCols.desc: // Editing description
       if (range.getValue().length > 1500 || range.getValue() === "") {
         range.setValue(oldValue);
         return "Invalid Description";
@@ -83,25 +105,25 @@ function task_manager(sheet, range, oldValue) {
 
       return "Description Edited";
 
-    case 10: // Assigning
+    case taskCols.b_assign: // Assigning
       range.setValue(false);
       return ["Assign", row, col, title];
 
-    case 11: // Cycling status
+    case taskCols.b_status: // Cycling status
       const r = task_cycleStatus(row);
 
       if (r) return r;
       return;
 
-    case 12: // Postponing
+    case taskCols.b_postpone: // Postponing
       range.setValue(false);
       return ["Postpone", row, col, title];
 
-    case 13: // Changing priority
+    case taskCols.b_priority: // Changing priority
       range.setValue(false);
       return ["Priority", row, col, title];
 
-    case 14: // Deleting
+    case taskCols.b_delete: // Deleting
       const inputData = task_delete(row);
       if (typeof inputData !== "object") return inputData.toString();
 
@@ -141,11 +163,11 @@ function task_getEmptyRow(s, type) {
   if (!isInit) throw new Error("Library is not initialized yet");
   if (!s || !type) throw new Error("Do not run this function from the editor");
   const total_rows = s.getMaxRows();
-  let r = s.getRange(10, 2, total_rows, 1).getValues();
+  let r = s.getRange(10, taskCols.type, total_rows, 1).getValues();
 
   for (let i = 10; i <= total_rows; i++) {
     let taskType = r[i - 10][0];
-    if (s.getRange(i, 3).getValue() === "" && taskType == type) return i;
+    if (s.getRange(i, taskCols.c_date).getValue() === "" && taskType == type) return i;
   }
   return undefined;
 }
@@ -159,7 +181,8 @@ function task_getEmptyRow(s, type) {
 function task_getLastRow(s, type) {
   if (!isInit) throw new Error("Library is not initialized yet");
   if (!s || !type) throw new Error("Do not run this function from the editor");
-  let r = s.getRange(9, 2, s.getMaxRows(), 1).getValues();
+
+  let r = s.getRange(9, taskCols.type, s.getMaxRows(), 1).getValues();
   const total_rows = s.getMaxRows();
 
   for (let i = 10; i <= total_rows; i++) {
@@ -176,7 +199,9 @@ function task_getLastRow(s, type) {
   */
 function task_getFirstRow(s, type) {
   if (!s || !type) throw new Error("Do not run this function from the editor");
-  let r = s.getRange(10, 2, s.getMaxRows(), 1).getValues();
+
+  // :hardcode
+  let r = s.getRange(10, taskCols.type, s.getMaxRows(), 1).getValues();
   const total_rows = s.getMaxRows();
 
   for (let i = 10; i <= total_rows; i++) {
@@ -194,17 +219,18 @@ function task_getFirstRow(s, type) {
 function task_changeDeadline(taskData) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
-  const s = getCollect(1504741049);
+  const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
 
-  if (types[2].includes(s.getRange(taskData.row, 2).getValue())) return "You cannot change the status of a completed task";
-  if (!types.includes(s.getRange(taskData.row, 2).getValue())) return "This is not a task";
+  // :hardcode column
+  if (types[2].includes(s.getRange(taskData.row, taskCols.type).getValue())) return "You cannot change the status of a completed task";
+  if (!types.includes(s.getRange(taskData.row, taskCols.type).getValue())) return "This is not a task";
 
   taskData.deadline = new Date(taskData.deadline);
-  s.getRange(taskData.row, 4).setValue(taskData.deadline);
+  s.getRange(taskData.row, taskCols.deadline).setValue(taskData.deadline);
   s.getRange(taskData.row, taskData.col).setValue(false);
   
-  taskData["title"] = s.getRange(taskData.row, 5).getValue();
-  taskData["description"] = s.getRange(taskData.row, 6).getValue();
+  taskData["title"] = s.getRange(taskData.row, taskCols.title).getValue();
+  taskData["description"] = s.getRange(taskData.row, taskCols.desc).getValue();
   task_sendDiscordMessage("Postpone", taskData);
 }
 
@@ -221,22 +247,28 @@ function task_changeAssignment(inputData) {
 
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
   const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
-  let currentAssignees = s.getRange(inputData.row, 7).getValue();
+
+  // :hardcode column
+  let currentAssignees = s.getRange(inputData.row, taskCols.assignees).getValue();
   let assigned = false;
 
   if (currentAssignees.includes(targetData.name)) {
     currentAssignees = task_removeAssignee(currentAssignees, targetData.name);
-    roster.getRange(targetData.row, 16).setValue(false);
+    roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.taskAssigned).setValue(false);
   } else {
     currentAssignees = currentAssignees + `${currentAssignees ? ", " : ""} ${targetData.name}`;
-    roster.getRange(targetData.row, 16).setValue(true);
+    roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.taskAssigned).setValue(true);
     assigned = true;
   }
 
-  s.getRange(inputData.row, 7).setValue(currentAssignees);
+  s.getRange(inputData.row, taskCols.assignees).setValue(currentAssignees);
   assigned = `${assigned ? "Assigned" : "Unassigned"}`;
-  inputData["description"] = s.getRange(inputData.row, 6).getValue();
-  inputData["deadline"] = s.getRange(inputData.row, 4).getValue();
+
+  // :hardcode
+  inputData["description"] = s.getRange(inputData.row, taskCols.desc).getValue();
+
+  // :hardcode
+  inputData["deadline"] = s.getRange(inputData.row, taskCols.deadline).getValue();
 
   task_sendDiscordMessage(assigned, inputData, targetData);
 
@@ -258,20 +290,24 @@ function task_isAssigned() {
   const task_rows = task_getLastRow(taskSheet, "Backlog");
 
   for (let i = 6; i < total_rows; i++) {
-    const rank = sheet.getRange(i, 4).getValue();
+
+    // :hardcode
+    const rank = sheet.getRange(i, LIBRARY_SETTINGS.dataCols.rank).getValue();
     if (rank === LIBRARY_SETTINGS.ranks[LIBRARY_SETTINGS.ranks.length - 1]) {
       sheet.getRange(i, taskCol).setValue("N/A");
       continue;
     }
 
     if (!rank) continue;
-    const member = sheet.getRange(i, 5).getDisplayValue();
+    const member = sheet.getRange(i, LIBRARY_SETTINGS.dataCols.name).getDisplayValue();
     sheet.getRange(i, taskCol).setValue(false);
 
     if (!member) continue;
     
     for (let j = 10; j <= task_rows; j++) {
-      const assignees = taskSheet.getRange(j, 7).getValue();
+
+      // :hardcode
+      const assignees = taskSheet.getRange(j, taskCols.assignees).getValue();
       if (!assignees) continue;
 
       if (assignees.includes(member)) {
@@ -320,11 +356,11 @@ function task_checkOverdue() {
     if (task_rows < start_task_rows) continue;
 
     for (let i = start_task_rows; i <= task_rows; i++) {
-      const assignees = taskSheet.getRange(i, 7).getValue();
+      const assignees = taskSheet.getRange(i, taskCols.assignees).getValue();
       console.log(assignees);
       if (!assignees) continue;
 
-      const dueDate = taskSheet.getRange(i, 4).getValue();
+      const dueDate = taskSheet.getRange(i, taskCols.deadline).getValue();
 
       // Check if dueDate is valid
       if (!(dueDate instanceof Date)) {
@@ -335,27 +371,28 @@ function task_checkOverdue() {
       Logger.log(dueDate.valueOf() - new Date().valueOf());
       if (dueDate.valueOf() <= new Date().valueOf()) {
         for (let j = 6; j < total_rows; j++) {
-          const name = sheet.getRange(j, 5).getValue();
+          const name = sheet.getRange(j, LIBRARY_SETTINGS.dataCols.name).getValue();
           console.log(name);
           if (!name) continue;
           if (assignees.includes(name)) {
-            taskSheet.getRange(i, 7).setValue(task_removeAssignee(assignees, name));
+            taskSheet.getRange(i, taskCols.assignees).setValue(task_removeAssignee(assignees, name));
 
             let inputData = {
-              title: taskSheet.getRange(i, 5).getValue(),
-              description: taskSheet.getRange(i, 6).getValue(),
-              deadline: taskSheet.getRange(i, 4).getValue()
+              title: taskSheet.getRange(i, taskCols.title).getValue(),
+              description: taskSheet.getRange(i, taskCols.desc).getValue(),
+              deadline: taskSheet.getRange(i, taskCols.deadline).getValue()
             };
 
             let targetData = {
               name: name,
-              discordId: sheet.getRange(j, 7).getValue(),
-              playerId: sheet.getRange(j, 6).getValue(),
-              rank: sheet.getRange(j, 4).getValue()
+              discordId: sheet.getRange(j, LIBRARY_SETTINGS.dataCols.discordId).getValue(),
+              playerId: sheet.getRange(j, LIBRARY_SETTINGS.dataCols.playerId).getValue(),
+              rank: sheet.getRange(j, LIBRARY_SETTINGS.dataCols.rank).getValue()
             };
 
             const insertLogRow = getLastRow(infractionSheet);
             infractionSheet
+              // :hardcode
               .getRange(insertLogRow, 3, 1, 12)
               .setValues([
                 [
@@ -374,13 +411,14 @@ function task_checkOverdue() {
                 ]
               ]);
 
+            // :hardcode
             protectRange("A", infractionSheet, 9, insertLogRow);
 
             Logger.log("Infraction Logged");
             inputData.description = `${inputData.description}\n${targetData.name} has been automatically unassigned from this task and striked for failure to complete it by the deadline.`;
             task_sendDiscordMessage("Unassigned", inputData, targetData);
 
-            sheet.getRange(targetData.row, 16).setValue(false);
+            sheet.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.taskAssigned).setValue(false);
           }
         }
       }
@@ -397,16 +435,16 @@ function task_cycleStatus(row) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
-  if (s.getRange(row, 5).getValue() == "") return "This task is empty";
+  if (s.getRange(row, taskCols.title).getValue() == "") return "This task is empty";
 
-  let type = s.getRange(row, 2).getValue();
-  if (!types.includes(s.getRange(row, 2).getValue())) return "This is not a task";
-  if (types[2].includes(s.getRange(row, 2).getValue())) return "You cannot change the status of a completed task";
+  let type = s.getRange(row, taskCols.type).getValue();
+  if (!types.includes(s.getRange(row, taskCols.type).getValue())) return "This is not a task";
+  if (types[2].includes(s.getRange(row, taskCols.type).getValue())) return "You cannot change the status of a completed task";
 
   let inputData = {
-    title: s.getRange(row, 5).getValue(),
-    status: s.getRange(row, 2).getValue(),
-    deadline: s.getRange(row, 4).getValue()
+    title: s.getRange(row, taskCols.title).getValue(),
+    status: s.getRange(row, taskCols.type).getValue(),
+    deadline: s.getRange(row, taskCols.deadline).getValue()
   };
 
   let newLoc;
@@ -430,8 +468,8 @@ function task_cycleStatus(row) {
   }
   console.log(`Loc: ${newLoc}\nEndLoc: ${endLoc}`);
 
-  const data = s.getRange(row, 3, 1, 6).getValues();
-  task_delete(row, 11);
+  const data = s.getRange(row, taskCols.c_date, 1, 6).getValues();
+  task_delete(row, taskCols.b_delete);
   console.log(`Data: ${data}`)
 
   // If there are no more free slots in a type
@@ -441,7 +479,7 @@ function task_cycleStatus(row) {
     console.log(newLoc);
 
     // Style new row
-    [[3, 8], [10, 14]].forEach(cellpair => {
+    [[taskCols.c_date, taskCols.priority], [taskCols.b_assign, taskCols.b_delete]].forEach(cellpair => {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
 
       // Border styling
@@ -453,7 +491,7 @@ function task_cycleStatus(row) {
       }
 
       // Remove checboxes to avoid confusion
-      if (cellpair[0] === 10 && type === "Completed") s.getRange(newLoc, cellpair[0], 1, numcols).clearDataValidations().clearContent();
+      if (cellpair[0] === taskCols.b_assign && type === "Completed") s.getRange(newLoc, cellpair[0], 1, numcols).clearDataValidations().clearContent();
 
       // Set background color just in case (spreadsheets can be slippery with conditional formatting)
       if (newLoc > row) s.getRange(row, cellpair[0], 1, numcols).setBackground("#666666");
@@ -461,10 +499,13 @@ function task_cycleStatus(row) {
     });
   }
 
-  s.getRange(newLoc, 3, 1, 6).setValues(data);
-  s.getRange(newLoc, 2).setValue(type);
+  s.getRange(newLoc, taskCols.c_date, 1, 6).setValues(data);
+  s.getRange(newLoc, taskCols.type).setValue(type);
+
   if (type === "Completed") {
-    s.getRange(newLoc, 4).setValue(new Date());
+    s.getRange(newLoc, taskCols.deadline).setValue(new Date());
+
+    // :hardcode
     protectRange("N", s, null, newLoc);
   }
   task_sendDiscordMessage("Status", inputData);
@@ -485,7 +526,7 @@ function task_changePriority(inputData) {
   if (!types.includes(s.getRange(inputData.row, 2).getValue())) return "This is not a task";
   if (types[2].includes(s.getRange(inputData.row, 2).getValue())) return "You cannot change the priority of a completed task";
 
-  s.getRange(inputData.row, 8).setValue(inputData.priority);
+  s.getRange(inputData.row, taskCols.priority).setValue(inputData.priority);
   task_sendDiscordMessage("Priority", inputData);
   return "Priority Edited";
 }
@@ -495,7 +536,7 @@ function task_changePriority(inputData) {
  * 
  * @param {Number} row - Row where task to delete is located
  * @param {Number} [clearcell = 14] - The cell where the "delete" button (checkbox) is located
- * @parm {Number} [endLoc = null]
+ * @param {Number} [endLoc = null]
  * @param {Number} [startLoc = null]
  * @returns {String|Object}
  */
@@ -504,36 +545,41 @@ function task_delete(row, clearcell = 14, endLoc = null, startLoc = null) {
   if (!row) throw new Error("Do not run this function from the editor");
   
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
-  if (s.getRange(row, 5).getValue() == "") return "This task is empty";
+  if (s.getRange(row, taskCols.title).getValue() == "") return "This task is empty";
 
-  if (!types.includes(s.getRange(row, 2).getValue())) return "This is not a task";
-  if (types[2].includes(s.getRange(row, 2).getValue())) return "You cannot delete completed tasks";
+  if (!types.includes(s.getRange(row, taskCols.type).getValue())) return "This is not a task";
+  if (types[2].includes(s.getRange(row, taskCols.type).getValue())) return "You cannot delete completed tasks";
 
-  endLoc = endLoc ? endLoc : task_getLastRow(s, s.getRange(row, 2).getValue());
-  startLoc = startLoc ? startLoc : task_getFirstRow(s, s.getRange(row, 2).getValue());
+  endLoc = endLoc ? endLoc : task_getLastRow(s, s.getRange(row, taskCols.type).getValue());
+  startLoc = startLoc ? startLoc : task_getFirstRow(s, s.getRange(row, taskCols.type).getValue());
   let numcols;
 
   let inputData = {
-    title: s.getRange(row, 5).getValue()
+    title: s.getRange(row, taskCols.title).getValue()
   };
 
   if (row === endLoc && row === startLoc) {
     // Only one task row
-    s.getRange(row, 3, 1, 6).clearContent();
+    // :hardcode amount of cols
+    s.getRange(row, taskCols.c_date, 1, 6).clearContent();
     s.getRange(row, clearcell).setValue(false);
   } else if (row === endLoc && row !== startLoc) {
+
     // Task is at end of section
-    [[3, 8], [10, 14]].forEach(cellpair => {
+    [[taskCols.c_date, taskCols.priority], [taskCols.b_assign, taskCols.b_delete]].forEach(cellpair => {
       numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(row - 1, cellpair[0], 1, numcols).setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     });
+
     s.deleteRow(row);
   } else if (row !== endLoc && row === startLoc) {
+
     // Task is the first of that section
-    [[3, 8], [10, 14]].forEach(cellpair => {
+    [[taskCols.c_date, taskCols.priority], [taskCols.b_assign, taskCols.b_delete]].forEach(cellpair => {
       numcols = (cellpair[1] - cellpair[0]) + 1;
       s.getRange(row + 1, cellpair[0], 1, numcols).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     });
+
     s.deleteRow(row);
   } else {
     s.deleteRow(row);

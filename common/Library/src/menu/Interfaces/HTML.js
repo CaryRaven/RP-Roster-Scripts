@@ -425,7 +425,6 @@ function getAdminMenu() {
           <p>From here you can manage incoming requests made by roster moderators.<br>They need your authorization in order to perform an action, you may accept/decline these requests here. They will be notified of your verdict.</p><br>
           <div id="mainDiv">
             <!-- Request output goes here -->
-            <p>Pending requests will appear here, they have all been handled at the moment.</p>
           </div>
         </div>
       </div>
@@ -466,8 +465,10 @@ function getAdminMenu() {
               <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.<br>In order to register a file/folder, it must be owned by "dontorro208@gmail.com".</span></label><br>
               <input type="text" id="newFolderId" style="width: 50%;" placeholder="Enter folder or file ID (one at a time)">
               <button type="submit" onclick="ManageAllFolders(event)" class="submitButton-mini" id="newfolder-button">Manage</button><br>
-              <button type="button" class="submitButton" id="registeredListButton" style="width: 40%;">Registered File & Folder List</button><br>
-              <div id="registeredListContent" class="container" style="width: 40%;"></div>
+              <button type="button" class="submitButton" id="registeredListButton" style="width: 90%;">Registered File & Folder List</button><br>
+              <div id="docListWrapper" style="display: none;">
+                <div id="registeredListContent" class="container" style="width: 90%;"></div>
+              </div>
             </form><br><hr><br><br>
 
             <? if (accessType === "dev") { ?>
@@ -541,7 +542,7 @@ function getAdminMenu() {
               <label for="new-rank-select"><strong>Select a rank to add/remove a slot to/from.</strong><p style="font-weight: 200; font-size: 12px;">Current # of <span id="currentSlotsName"></span> Slots: <span id="currentSlotsNum"></span></p></label><br>
               <select id="new-rank-select" style="width: 38%;">
               </select>
-              <input type="number" id="rankRowAmount" style="width: 8%;" placeholder="#">
+              <input type="number" id="rankRowAmount" style="width: 8%;" placeholder="#" min="1" max="25">
               <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button" style="width: 7%;">Add</button>
               <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button" style="width: 7%;">Remove</button>
             </form><br>

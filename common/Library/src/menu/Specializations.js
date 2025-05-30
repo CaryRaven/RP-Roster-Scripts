@@ -17,22 +17,40 @@ function manageSpec(title, desc, edit) {
   
   if (taken !== true && edit === "") return "Cannot have duplicate specializations";
 
-  // Meaning we're adding a new one
   if (edit === "") {
+    // Adding a new one
     LIBRARY_SETTINGS.specializations.push({
       title: title,
       desc: desc
     });
   } else {
+    // Editing an existing one
     let found = false;
     let nothingChanged = false;
+
+    // Search for the spec in the lib settings
     LIBRARY_SETTINGS.specializations.forEach((spec, i) => {
       if (spec.title === edit) {
         if (spec.title === title && spec.desc === desc) return nothingChanged = true;
+
+        // Edit on roster
+        const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+        for (let i = 15; i < roster.getMaxRows(); i++) {
+          const cell = roster.getRange(i, LIBRARY_SETTINGS.dataCols.specialization);
+          
+          if (cell.getDisplayValue() === spec.title) {
+            cell.setValue(title);
+            cell.setNote(desc);
+          }
+        }
+
+        // Edit in settings
         LIBRARY_SETTINGS.specializations.splice(i, 1, { title: title, desc: desc });
+
         found = true;
       }
     });
+
     if (nothingChanged) return "Nothing was edited"
     if (!found) return "Specialization not found";
   }

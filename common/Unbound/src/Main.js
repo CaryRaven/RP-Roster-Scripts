@@ -4,6 +4,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
   const filter = RosterService.filterQuotes(inputData);
   if (!filter) return "No special characters allowed";
 
+  // :hardcode
   if (accessType === "manager" || accessType === "admin" || accessType === "dev") {
     // Normal log
     return RosterService.processLog(inputData, userData, allowedStaff, threshold);
@@ -11,73 +12,84 @@ function ProcessLog(inputData, threshold = false, accessType) {
     // Permission Checks
     if (accessType === "visitor") inputData.email = Session.getActiveUser().getEmail();
     if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
-
-    if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal" && accessType !== "visitor") {
-      let targetDataCheck = RosterService.getUserData(inputData.email);
-      let ranks = LIBRARY_SETTINGS.ranks;
-
-      // More perm checks
-      if (!targetDataCheck.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
-      if (targetDataCheck.playerId == userData.playerId) return "You cannot manage yourself";
-      if (ranks[ranks.length - 1].includes(targetDataCheck.rank) || ranks[ranks.length - 2].includes(targetDataCheck.rank)) return "You cannot manage Senior CL4 members";
-      if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetDataCheck.email)) return "You cannot manage Staff from this menu";
-      if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetDataCheck.rank) > ranks.indexOf(userData.rank)) {
-        return "You cannot manage people with a higher rank than you."
-      }
-    }
-
-    // Submit log to the request system for review
-    let requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
-    requests = !requests ? [] : requests;
-
     let type = inputData.type === "Rank Change" ? inputData.rankchangetype : inputData.type === "Blacklist" ? inputData.blacklist_type : inputData.type;
-    const targetData = RosterService.getUserData(inputData.email);
 
-    if (inputData.type === "Requirement Log") {
-      // Check if user completed req yet
-      sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
-      let reqTitleRow = RosterService.getFirstRankRow(targetData.rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
+    for (user of inputData.users) {
+      const targetData = accessType === "visitor" ? RosterService.getUserData(inputData.email) : RosterService.getUserData(user, 5);
 
-      // Get column where req is located
-      for (let i = 8; i < sheet.getMaxColumns(); i++) {
-        if (sheet.getRange(reqTitleRow, i).getValue() === inputData.reqName) {
+      if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal" && accessType !== "visitor") {
+        let ranks = LIBRARY_SETTINGS.ranks;
 
-          // Get row where req is located
-          for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
-            if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.playerId).getValue() === targetData.playerId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
+        // More perm checks
+        if (!targetData.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
+        if (targetData.playerId == userData.playerId) return "You cannot manage yourself";
+        if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members";
+        if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
+        if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetData.rank) > ranks.indexOf(userData.rank)) {
+          return "You cannot manage people with a higher rank than you."
+        }
+      }
+
+      if (inputData.type === "Requirement Log") {
+        // Check if user completed req yet
+        sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
+        let reqTitleRow = RosterService.getFirstRankRow(targetData.rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
+
+        // Get column where req is located
+        for (let i = 8; i < sheet.getMaxColumns(); i++) {
+          if (sheet.getRange(reqTitleRow, i).getValue() === inputData.reqName) {
+
+            // Get row where req is located
+            for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
+              if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.playerId).getValue() === targetData.playerId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
+            }
           }
         }
       }
+    
+    // Stop first loop here so checks are performed seperately
+    // Only start adding requests if all of them are clear to go
     }
 
-    let prefix = "";
-    if (type === "Passed Interview") {
-      type = LIBRARY_SETTINGS.ranks[0] + " Acceptance";
-      prefix = "New";
-      targetData.name = inputData.name;
+    let requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
+
+    for (user of inputData.users) {
+      // Submit log to the request system for review
+      const targetData = accessType === "visitor" ? RosterService.getUserData(inputData.email) : RosterService.getUserData(user, 5);
+      requests = !requests ? [] : requests;
+
+      let prefix = "";
+      if (type === "Passed Interview") {
+        type = LIBRARY_SETTINGS.ranks[0] + " Acceptance";
+        prefix = "New";
+        targetData.name = inputData.name;
+      }
+
+      let logData = {
+        id: Math.random() * 1000,
+        title: `${prefix} ${LIBRARY_SETTINGS.factionName} ${type}`,
+
+        // Long description
+        // :hardcode
+        desc: `${userData.name} has requested a ${prefix} ${type} to be performed on ${type === "New Member" ? inputData.name : targetData.name} ${inputData.type === "Requirement Log" ? "with the proof" : "for the reason"}: "${inputData.reason}".
+          ${inputData.type === "Requirement Log" ? `Please make sure that the evidence provided is valid for the completion of this requirement, misuse of approvals will result in harsh repercussions.`: ""}
+          ${type === "LOA Log" ? `\nThis LOA will end on ${inputData.end_date}.` : inputData.type === "Blacklist" ? `This ${inputData.blacklist_type} will end on ${inputData.end_date}.` : ""}`,
+        logger: userData.name,
+        type: inputData.type,
+        userData: userData,
+        inputData: inputData,
+        targetName: type === "New Member" ? inputData.name : targetData.name,
+        reqName: inputData.reqName
+      };
+
+      // :hardcode
+      if (inputData.type === "Requirement Log") logData.desc += `\nRequirement Logged: ${inputData.reqName}`;
+
+      requests.push(logData);
     }
-
-    let logData = {
-      id: Math.random() * 1000,
-      title: `${prefix} ${LIBRARY_SETTINGS.factionName} ${type}`,
-
-      // Long description
-      desc: `${userData.name} has requested a ${prefix} ${type} to be performed on ${type === "New Member" ? inputData.name : targetData.name} ${inputData.type === "Requirement Log" ? "with the proof" : "for the reason"}: "${inputData.reason}".
-        ${inputData.type === "Requirement Log" ? `Please make sure that the evidence provided is valid for the completion of this requirement, misuse of approvals will result in harsh repercussions.`: ""}
-        ${type === "LOA Log" ? `\nThis LOA will end on ${inputData.end_date}.` : inputData.type === "Blacklist" ? `This ${inputData.blacklist_type} will end on ${inputData.end_date}.` : ""}`,
-      logger: userData.name,
-      type: inputData.type,
-      userData: userData,
-      inputData: inputData,
-      targetName: type === "New Member" ? inputData.name : targetData.name,
-      reqName: inputData.reqName
-    };
-
-    if (inputData.type === "Requirement Log") logData.desc += `\nRequirement Logged: ${inputData.reqName}`;
-
-    requests.push(logData);
+    
     PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
-    return "Request Submitted";
+    return "Requests Submitted";
   }
 }
 
@@ -87,6 +99,7 @@ function ProcessInputEdits(inputData, accessType) {
   const filter = RosterService.filterQuotes(inputData);
   if (!filter) return "No special characters allowed";
 
+  // :hardcode
   if (accessType === "admin" || accessType === "dev") {
     // Normal log
     return RosterService.processEdit(inputData, allowedStaff, userData);
@@ -379,6 +392,7 @@ function ToggleReqs() {
     console.log("removing")
 
     // Hide sheets related to promo reqs
+    // :hardcode
     for (sheetId of [46188961, 1535565949]) {
       const s = RosterService.getCollect(Number(sheetId));
       s.hideSheet();
@@ -386,6 +400,7 @@ function ToggleReqs() {
   } else {
     console.log("re-adding");
     // Show sheets related to promo reqs
+    // :hardcode
     for (sheetId of [46188961, 1535565949]) {
       const s = RosterService.getCollect(Number(sheetId));
       s.showSheet();
