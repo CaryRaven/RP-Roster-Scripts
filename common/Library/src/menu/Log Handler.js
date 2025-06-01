@@ -83,12 +83,10 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
     // Convert to an array so it's iterable, just in case
     if (!Array.isArray(inputData.users)) inputData.users = [inputData.users];
 
+    if (inputData.users.length > 10) return "You cannot select more than 10 members at once";
+
     valid = filterQuotes(inputData);
     if (valid !== true) return "Do not attempt to avoid answer validation";
-
-    // TODO #2: Change the selection from email to name (name is easier to remember and correspond to a player than an email,
-    // If you see somebody in-game, you can easily know who to log something for instead of having to look who's email is who)
-    let targetDatas = [];
     const ranks = LIBRARY_SETTINGS.ranks;
 
     // Only do all these calculations when needed (runtime reduction)
@@ -97,6 +95,16 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
         let targetData_check = getUserData(user, 5);
 
         if (!targetData_check.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
+
+        // If supervisors enabled & not supervisor => deny log
+        // TODO: Needs testing
+        if (!LIBRARY_SETTINGS.supervisorsDisabled) {
+          if (LIBRARY_SETTINGS.modRanks.includes(userData.rank) && LIBRARY_SETTINGS.modsOnlySupervised) {
+            if (userData.playerId !== targetData_check.supervisor_playerId) return `You cannot manage ${targetData_check.name}, you do not supervise them.`;
+          } else if (LIBRARY_SETTINGS.managerRanks.includes(userData.rank) && LIBRARY_SETTINGS.managersOnlySupervised) {
+            if (userData.playerId !== targetData_check.supervisor_playerId) return `You cannot manage ${targetData_check.name}, you do not supervise them.`;
+          }
+        }
 
         // New Member/BL => data was manually input
         if (inputData.type_check == "New Member" || inputData.blacklist_type == "Blacklist") {
@@ -344,6 +352,16 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
                 addDocAccess(0, targetData.email);
               }
               break;
+            }
+
+          // Upon Rank Change => Wipe all supervisor mentions of this person
+          if (!LIBRARY_SETTINGS.reqsDisabled) {
+            for (let i = 0; i < roster.getMaxRows(); i++) {
+              const supervisorPlayerId = roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_playerId).getValue();
+              if (targetData.playerId === supervisorPlayerId) {
+                roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).clearContent();
+              }
+            }
           }
           break;
         case "Infraction Log":

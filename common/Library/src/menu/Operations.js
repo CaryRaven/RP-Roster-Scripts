@@ -1,3 +1,5 @@
+// TODO: Organize this file into different, cleaner files. "Operations" is too broad
+
 /**
 * Protect cells when logged so data cannot be griefed
 * @param {String} type - Single character: N (normal), A (Appealable) or S (Single)
@@ -98,6 +100,9 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
 
   dataCols.forEach(col => roster.getRange(rowToSearch, col).clearContent().clearNote());
   if (destinationRow && destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i].val).setNote(moveData[i].note));
+
+  // Remove Supervisor
+  if (!LIBRARY_SETTINGS.supervisorsDisabled) roster.getRange(destinationRow, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).clearContent();
 }
 
 /**
@@ -665,7 +670,7 @@ function addFirstReqRow(s, insertRow, reqs, cellpair, numcols) {
  * Add num amount of extra slots to the rank passed in as arg
  * @param {String} rank - Name of the rank to add a slot to
  * @param {Object} userData
- * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 16], [17, 17]]
+ * @param {Array[Array]} borderPairs (optional) - default: undefined
  * @param {Number} num (optional) - default: 1
  * @param {Boolean} discordnotif (optional) - Send a discord notification or not, default: true
  * @returns {Void|String}
@@ -711,7 +716,11 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
     );
 
     insertData.push(singleData.flat());
-    promoReqData.push(LIBRARY_SETTINGS.reqsDisabled.toString() === "true" ? ["N/A"] : [`= REQS_CHECK(F${insertRow + i}, 'Promotion Progress'!F:F, 'Promotion Progress'!H:M)`])
+    promoReqData.push(LIBRARY_SETTINGS.reqsDisabled.toString() === "true" 
+      ? ["N/A"]
+      : LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length > 0 
+      ? [`= REQS_CHECK(F${insertRow + i}, 'Promotion Progress'!F:F, 'Promotion Progress'!H:M)`] 
+      : ["N/A"]);
   }
 
   sheet.insertRowsAfter(lastRankRow, num)
@@ -740,7 +749,7 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
  * @param {String} rank - Name of rank to remove a slot from
  * @param {Object} userData
  * @param {Number} num (optional) - default: 1
- * @param {Array[Array]} borderPairs (optional) - default: [[5, 8], [10, 16], [18, 18]]
+ * @param {Array[Array]} borderPairs (optional) - default: null
  * @returns {Void|String}
  */
 function removeRankRow(rank, userData, num = 1, borderPairs = null) {
@@ -941,4 +950,86 @@ function removeRank(rank, discordnotif = true, branch = 0, override = false) {
   if (discordnotif) sendDiscordNewRank(rank, false);
   if (branch === 0 && LIBRARY_SETTINGS.ranks.includes(rank)) return "Operation Failed";
   return ["Success", LIBRARY_SETTINGS];
+}
+
+/**
+ * Throws an error if there are no supervisor columns to delete
+ * @param {Boolean} value - false: enabling, true: disabling
+ */
+function supervisors_toggle(value) {
+  const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+
+  if (value) {
+    // Disabling supervisors
+    if (roster.getRange(4, LIBRARY_SETTINGS.dataCols.blacklistEnd + 1).getValue() !== "Supvr Name") throw new Error("Supervisors are not properly configured");
+    roster.deleteColumns(LIBRARY_SETTINGS.dataCols.blacklistEnd + 1, 3);
+  } else {
+    // Enabling supervisors
+    if (roster.getRange(4, LIBRARY_SETTINGS.dataCols.blacklistEnd + 1).getValue() === "Supvr Name") throw new Error("Supervisors are not properly configured");
+
+    // Add two columns (supervisor name & playerId)
+    ["", "", ""].forEach(() => roster.insertColumnAfter(LIBRARY_SETTINGS.dataCols.blacklistEnd));
+    
+    // Styling columns
+    const col1 = LIBRARY_SETTINGS.dataCols.blacklistEnd + 1;
+    const col2 = LIBRARY_SETTINGS.dataCols.blacklistEnd + 2;
+
+    roster.setColumnWidth(col1, 164);
+    roster.setColumnWidth(col2, 114);
+
+    roster.getRange(4, col1, 1, 2)
+      .setBackground("#434343")
+      .setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK)
+      .setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID)
+      .setFontColor("#ffffff")
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center")
+      .setFontWeight("bold");
+
+    roster.getRange(4, col1).setValue("Supvr Name");
+    roster.getRange(4, col2).setValue("Supvr PlayerID");
+
+    // Style supervisor slots
+    let [startcol, currRank] = [0, ""];
+    for (let i = 8; i < roster.getMaxRows(); i++) {
+      const rank = roster.getRange(i, 4).getValue();
+      const nextRank = roster.getRange(i + 1, 4).getValue();
+
+      if (rank === "") continue;
+
+      // Styling for ranks with a special supervisor (who can't be assigned one)
+      if (LIBRARY_SETTINGS.adminRanks.includes(rank)) {
+        if (rank === LIBRARY_SETTINGS.adminRanks[LIBRARY_SETTINGS.adminRanks.length - 1]) {
+          roster.getRange(i, col1, 1, 2).setValues([["N/A", "N/A"]]);
+        } else {
+          // :hardcode
+          roster.getRange(i, col1, 1, 2).setValues([["OSM Liaison", "OSM Liaison"]]);
+        }
+      }
+
+      // nex rank found? -> store and continue if nextRank is equal
+      if (!currRank) {
+        currRank = rank;
+        startcol = i;
+        if (rank === nextRank) {
+          continue;
+        }
+      }
+
+      // Found end of rank
+      if (rank !== nextRank) {
+        roster.getRange(startcol, col1, i - startcol + 1, 2)
+          .setBackground("#666666")
+          .setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK)
+          .setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID)
+          .setFontColor("#ffffff")
+          .setVerticalAlignment("middle")
+          .setHorizontalAlignment("center")
+          .setFontSize(10)
+          .setFontFamily("Lexend");
+
+        currRank = "";
+      }
+    }
+  }
 }

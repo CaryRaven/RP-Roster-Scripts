@@ -84,5 +84,6 @@ class SettingsTemplate {
     this.lockdownEnabled = true;
     this.manualEnabled = true;
     this.reqsDisabled = true;
+    // this.supervisorsDisabled = true;
   }
 }

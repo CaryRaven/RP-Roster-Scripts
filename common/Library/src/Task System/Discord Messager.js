@@ -42,7 +42,7 @@ function task_sendDiscordMessage(type, inputData, targetData = {}) {
       embedTitle = `🛠️ ${targetData.name} assigned to "${inputData.title}" 🛠️`;
       embedColor = '1143627';
       field1Name = 'Task Information';
-      info = `${inputData.description}\n\nThis task must be completed by ${ReturnDeadline(inputData.deadline)}`;
+      info = `This task must be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "Make sure you complete the task in time, as you will receive an infraction if you don't.";
       content = `<@${targetData.discordId}>`;
       break;
@@ -50,7 +50,7 @@ function task_sendDiscordMessage(type, inputData, targetData = {}) {
       embedTitle = `🛠️ ${targetData.name} unassigned from "${inputData.title}" 🛠️`;
       embedColor = '16758272';
       field1Name = 'Task Information';
-      info = `${inputData.description}\n\nThis task must be completed by ${ReturnDeadline(inputData.deadline)}`;
+      info = `This task must be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "This person is no longer assigned to this task, they won't be held accountable for it.";
       content = `<@${targetData.discordId}>`;
       break;
@@ -58,7 +58,7 @@ function task_sendDiscordMessage(type, inputData, targetData = {}) {
       embedTitle = `⌛ "${inputData.title}" Postponed ⌛`;
       embedColor = '16758272';
       field1Name = 'Task Information';
-      info = `${inputData.description}\n\nThis task must now be completed by ${ReturnDeadline(inputData.deadline)}`;
+      info = `This task must now be completed by ${ReturnDeadline(inputData.deadline)}`;
       footerMessage = "Make sure you complete the task in time, as you will receive an infraction if you don't.";
       break;
     case "Priority":

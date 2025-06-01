@@ -11,7 +11,8 @@
  * template.factionName = LIBRARY_SETTINGS.factionName;
  * template.groups = LIBRARY_SETTINGS.group;
  * template.hex = LIBRARY_SETTINGS.colorHex;
- * template.sheetId = LIBRARY_SETTINGS.spreadsheetId_main
+ * template.sheetId = LIBRARY_SETTINGS.spreadsheetId_main;
+ * template.supervisorIdentifier = LIBRARY_SETTINGS.supervisorsDisabled;
  * 
  * @returns {String}
  */
@@ -39,13 +40,6 @@ function getAdminMenu() {
     <h1>AFK Warning</h1><br>
     <h3>Please do not open the admin menu if you do not need to be here.</h3>
   </div>
-  
-  <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
-  <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
-  <p id="adminRanks" style="font-size: 0px;"><?= adminRanks ?></p>
-  <p id="groups" style="font-size: 0px;"><?= groups ?></p>
-  <p id="hex" style="font-size: 0px;"><?= hex ?></p>
-  <p id="sheetId" style="font-size: 0px;"><?= sheetId ?></p>
 
   <div class="loader" id="changeLoader"></div>
   <div id="update-popup" class="main-content" style="display: none;">
@@ -149,8 +143,7 @@ function getAdminMenu() {
             your superior for help.<br>
             This page is where all <?= factionName ?> roster edits are made, our systems do everything automatically so do not worry
             about handling permissions or such.</p><br><br>
-          <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the <?= factionName ?> Admin Menu
-          </p>
+          <p style="font-weight: bold; font-size: 17px;">Click on either one of the below options to use the <?= factionName ?> Admin Menu</p>
           <div class="box-container">
             <button class="option-box" onclick="OpenLogForm()">
               <div class="button-text-align">
@@ -351,7 +344,7 @@ function getAdminMenu() {
                   class="visible-link">HTML (CSS & JS) documentation</a> -- W3schools is one of the best online sources
                 for web development and I cannot recommend it more. For Google Web Apps, you"ll really only need to go
                 over the HTML, CSS and Javascript tutorials but there is so much more to find there.<br>
-                <i class='bx bxs-tag-alt'></i> <a href="https://boxicons.com/" target="_blank"
+                <i class='bx bxs-tag-alt'></i> <a href="https://v2.boxicons.com/" target="_blank"
                   class="visible-link">Boxicons Library</a> -- Boxicons is a free library full of amazing icons for
                 websites. All the icons on this web application come from there, imported as a font. There are many more
                 icon libraries out there, and they're all good, but I found boxicons to be the easiest to use.<br>
@@ -444,22 +437,64 @@ function getAdminMenu() {
           <button id="generalConfig" class="submitButton">General Config</button>
           <div id="generalConfigContent" class="container">
             <form id="config-form-modRanks">
-              <label for="mod-role-select"><strong>Select Rank to add/remove Mod access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Mod" access means that the person won't get acess to requests or config and all logs/edits they make via this menu will need to be approved by a manager, though they are able to perform operations on their subordinates.
-              <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="modRanks"><?= modRanks.join(", ") ?></span></span><br>
+              <label for="mod-role-select"><strong>Select Rank to add/remove Mod access to the Admin Menu</strong>
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">"Mod" access means that the person won't get access to "requests" or "config" and all logs/edits they make via this menu will need to be approved by a manager or above, though they are able to perform operations on their subordinates.<br><br>If the rank already had access, it will be removed. If it didn't, it will be added.</span>
+              </span>
+              <br><span style="font-size: 13px; font-weight: 100;">Current allowed ranks: <span id="modRanks"><?= modRanks.join(", ") ?></span></span><br>
               </label><br>
               <select id="mod-role-select" style="width: 50%;" >
               </select>
               <button id="ModRankButton" onclick="SaveRanks(event, true)" type="submit" class="submitButton-mini">Add/Remove</button>
-            </form><br><hr><br>
+              </form>
+
+              <table class="config-switches supervisedOnly">
+                <tr>
+                  <td>
+                    Manage Supervised Only: 
+                    <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                      <span class="tooltiptext">Enabling this will make it so mods are only able to perform logs on people they are supervising.</span>
+                    </span>
+                  </td>
+                  <td class="config-switch">
+                    <label class="switch">
+                      <input type="checkbox" id="supervisedOnlyMods">
+                      <span class="slider round"></span>
+                    </label>
+                  </td>
+                </tr>
+              </table>
+            <br><hr><br>
 
             <form id="config-form-managerRanks">
-              <label for="manager-role-select"><strong>Select Rank to add/remove Manager access to the Admin Menu</strong><br><span style="font-size: 13px; font-weight: 100;">"Manager" access means that the person won't get acess to the config but they will be able to accept/deny requests made by their subordinates & also manage their subordinates themselves.
-              <br>(if the rank already had access, they will be removed. If they didn't, they will be added.)<br>Current allowed ranks: <span id="managerRanks"><?= managerRanks.join(", ") ?></span></span><br>
+              <label for="manager-role-select"><strong>Select Rank to add/remove Manager access to the Admin Menu</strong>
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">"Manager" access means that the person won't get access to the config but they will be able to accept/deny requests made by their subordinates & also manage their subordinates themselves without needing to submit a request. This also means that ranks in this role <strong>must be given editor access to the roster</strong>.<br><br>If the rank already had access, it will be removed. If it didn't, it will be added.</span>
+              </span>
+              <br><span style="font-size: 13px; font-weight: 100;">Current allowed ranks: <span id="managerRanks"><?= managerRanks.join(", ") ?></span></span><br>
               </label><br>
               <select id="manager-role-select" style="width: 50%;" >
               </select>
               <button id="ManagerRankButton" onclick="SaveRanks(event, false)" type="submit" class="submitButton-mini">Add/Remove</button>
-            </form><br><hr><br>
+              </form>
+
+              <table class="config-switches supervisedOnly">
+                <tr>
+                  <td>
+                    Manage Supervised Only: 
+                    <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                      <span class="tooltiptext">Enabling this will make it so managers are only able to perform logs on people they are supervising.</span>
+                    </span>
+                  </td>
+                  <td class="config-switch">
+                    <label class="switch">
+                      <input type="checkbox" id="supervisedOnlyManagers">
+                      <span class="slider round"></span>
+                    </label>
+                  </td>
+                </tr>
+              </table>
+            <br><hr><br>
 
             <form id="config-new-folder">
               <label for="newFolderId">Enter the ID of the folder/file you want to register/deregister<br><span style="font-size: 13px; font-weight: 100;">If your folder/file was already registed, it will be deregistered instead.<br>In order to register a file/folder, it must be owned by "dontorro208@gmail.com".</span></label><br>
@@ -494,14 +529,34 @@ function getAdminMenu() {
               <label for="new-rank-group-select">Add your rank to this group:</label><br>
               <select id="new-rank-group-select" required>
               </select><br>
-              <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
+              <label for="newRankViewFolders">Add the IDs of the folders/files that this rank should have viewer access to: 
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                <span class="tooltiptext">You do not need to add every single file seperately. It is enough to only give permissions to the parent folder. This will give
+                the user permissions to all current and future documents in said folder. Only registered files/folders (see general config) can be added/removed here.
+                <br><br>File/Folder IDs can be found inside of the URL. It is a random string of characters, usually starts with a "1" and it doesn't make any sense.
+                <br><br><strong>Make sure you seperate the different IDs with a comma</strong></span>
+              </span>
+              <br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
               <input type="text" id="newRankViewFolders" placeholder="Add the file & folder IDs seperated by a comma"><br>
-              <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to:<br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
+              <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to: 
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                <span class="tooltiptext">You do not need to add every single file seperately. It is enough to only give permissions to the parent folder. This will give
+                the user permissions to all current and future documents in said folder.
+                <br><br>File/Folder IDs can be found inside of the URL. It is a random string of characters, usually starts with a "1" and it doesn't make any sense.
+                <br><br><strong>Make sure you seperate the different IDs with a comma</strong></span>
+              </span>
+              <br><span style="font-size: 13px; font-weight: 100;">Seperate the IDs with a comma, <?= factionName ?> related files/folders ONLY</span></label><br>
               <input type="text" id="newRankEditFolders" placeholder="Add the file & folder IDs seperated by a comma">
               <table class="config-switches">
                 <tr>
                   <td>
-                    Does this rank require an interview:
+                    Does this rank require an interview: 
+                    <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                      <span class="tooltiptext">In order to make an interview document, you will head to the roster under "Rank Changes" and press the checkbox at the 
+                      top-left corner. This will give you a UI to generate a document with random questions for your chosen rank. Each department/regiment has an interview folder where these documents will be stored.
+                      <br><br>If you decide to check this config option, make sure that the rank can be selected inside of the "Generate Interview" UI. If not, you won't be able to 
+                      promote anybody to your new rank. In order to configure this, contact a member of Community Leadership.</span>
+                    </span>
                   </td>
                   <td class="config-switch">
                     <label class="switch">
@@ -520,7 +575,13 @@ function getAdminMenu() {
                 </tr>
                 <tr id="addReqButton">
                   <td>
-                    Add Promotion Requirements<br><span style="font-weight: 200; font-size: 12px;">Max 5, Min 0 (set to 0 for no promo reqs)</span>
+                    Add Promotion Requirements 
+                    <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                      <span class="tooltiptext">The sheets formula that calculates whether or not a requirement has been completed relies on the title of a requirement
+                      to differentiate each log. Thus, be warned that changing the title of an existing requirement will invalidate all of its logs, possibly wiping
+                      a lot of progress.</span>
+                    </span>
+                    <br><span style="font-weight: 200; font-size: 12px;">Max 5, Min 0 (set to 0 for no promo reqs)</span>
                   </td>
                   <td class="config-switch">
                     <button onclick="AddReq(event)" class="submitButton-mini" style="width: 100%; font-size: 20px; text-align: center;">+</button>
@@ -554,7 +615,12 @@ function getAdminMenu() {
               <label for="editSpecSelect">Select if you want to edit an existing specialization:</label><br>
               <select id="editSpecSelect" onchange="FillSpec(event)">
               </select><br>
-              <label for="specTitle">Give your specialization a name:</label><br>
+              <label for="specTitle">Give your specialization a name:</label> 
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                <span class="tooltiptext">Specializations don't have any functional use <em>(yet)</em>, they are just here for easier visual oversight
+                of your member's duties and capabilities.</span>
+              </span>
+              <br>
               <input type="text" id="specTitle" placeholder="Add a name to your specialization" maxlength="20" required><br>
               <label for="specDesc">Give your specialization a description:</label><br>
               <input type="text" id="specDesc" placeholder="Add a description to your specialization" maxlength="250" required>
@@ -620,10 +686,14 @@ function getAdminMenu() {
             </form>
           </div>
 
-          <table class="config-switches" style="margin-top: 30px;">
+          <table id="config-toggles" class="config-switches" style="margin-top: 30px;">
             <tr>
               <td>
-                Enable Manual Editing of the roster:
+                Enable Manual Editing of the roster: 
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">For the safety of your roster and your sanity (you don't want to have to make a roster, trust me) it is advised
+                  you keep this disabled at all times. There should be no scenarios where you will need to edit the roster manually.</span>
+                </span>
               </td>
               <td class="config-switch" style="text-align: center;">
                 <label class="switch">
@@ -666,7 +736,12 @@ function getAdminMenu() {
             </tr>
             <tr>
               <td>
-                Restore the roster to its latest backup:<br><span id="backupTime" style="font-weight: 200; font-size: 12px;" onclick="RefreshBackupTime(event)"></span>
+                Restore the roster to its latest backup:
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">Any IMPORTRANGE formulas on the roster will break as their ranges are overwritten. Contact a member of 
+                  Community Leadership to fix this.</span>
+                </span>
+                <br><span id="backupTime" style="font-weight: 200; font-size: 12px;" onclick="RefreshBackupTime(event)"></span>
               </td>
               <td class="config-switch">
                 <button class="submitButton-mini-mini" id="restoreBackupButton" onclick="RestoreBackup(event)">Restore</button>
@@ -676,10 +751,28 @@ function getAdminMenu() {
             
             <tr>
               <td>
-                <span id="reqIdentifier"></span> <?= factionName ?> Promotion Requirements:<br><span style="font-weight: 200; font-size: 12px;">Disabling this will hide sheets/inputs regarding promotion requirements</span>
+                <span id="reqIdentifier"></span> <?= factionName ?> Promotion Requirements:
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">They are configurable under "Manage Ranks". Members must now also complete all of their promotion requirements
+                  in order to be able to be promoted to the next rank.</span>
+                </span>
+                <br><span style="font-weight: 200; font-size: 12px;">Disabling this will hide sheets/inputs regarding promotion requirements</span>
               </td>
               <td class="config-switch">
                 <button class="submitButton-mini-mini" id="toggleReqsButton" onclick="ToggleReqsDisabled(event)">Requirements</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span id="supervisorIdentifier"></span> Supervisors:
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">Standalone, this option is purely visual for users to keep track of who to consult first with questions or concerns, 
+                  though it doesn't have any functional use. Under "General Config" (if enabled) you will find a few options that allow you to materialize this, for example:
+                  mods are only able to log for the people they supervise etc...</span>
+                </span>
+              </td>
+              <td class="config-switch">
+                <button class="submitButton-mini-mini" id="toggleSupervisorButton" onclick="ToggleSupervisors(event)">Supervisors</button>
               </td>
             </tr>
             <tr>
@@ -692,7 +785,11 @@ function getAdminMenu() {
             </tr>
             <tr>
               <td>
-                <span id="lockdownIdentifier"></span> a full Lockdown of all <?= factionName ?> Documentation:
+                <span id="lockdownIdentifier"></span> a full Lockdown of all <?= factionName ?> Documentation: 
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">This will not apply to any Sr CL4 or external staff (such as OSM members or Community Leadership) that have access
+                  to the documentation. Only use this lockdown under extreme circumstances to protect your documentation.</span>
+                </span>
               </td>
               <td class="config-switch">
                 <button class="submitButton-mini-mini" style="background-color: red;" id="lockdownButton" onclick="LockdownInit(event)">Lockdown</button>
@@ -750,7 +847,15 @@ function getAdminMenu() {
                 to appeal is located.</label>
               <input type="number" placeholder="Log ID; minimum 7, up to 1003" id='idfield' min="7" max="1003"
                 style="display: none;" required />
-              <label for="infrtypelist" id="infrlabel" style="display: none;">Select an Infraction Type:</label>
+              <label for="infrtypelist" id="infrlabel" style="display: none;">Select an Infraction Type: 
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                <span class="tooltiptext">Different severities of infraction take longer to expire, staying on your record for:
+                <br><br><strong>Minor Infraction:</strong> 21 days
+                <br><strong>Regular Infraction:</strong> 42 days
+                <br><strong>Severe Infraction:</strong> Until Appealed
+              </span>
+              </span>
+              </label>
               <select type="text" id='infrtypelist' style="display: none;" required>
                 <option value=''></option>
                 <option value="Minor">Minor</option>
@@ -774,7 +879,13 @@ function getAdminMenu() {
               <input type="text" placeholder="5-hex Player ID" id='playerIdfield' maxlength="5" style="display: none;" required />
               <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
               <input type="text" placeholder="Email Address" id='newMemberEmailField' maxlength="40" style="display: none;" required />
-              <label for="userSelect" id="userSelectlabel">Select which members this log applies to:</label>
+              <label for="userSelect" id="userSelectlabel">Select which members this log applies to:
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">You can press <em>shift</em> to select a range of members at once or <em>control</em> to select multiple
+                  members one by one.<br><br>The log will be executed on all selected members, which means the more members you select the longer the execution
+                  time will be, so please be patient when selecting a lot of members <em>(though there is a built in limit of 10)</em>.</span>
+                </span>
+              </label>
               <select id="userSelect" required multiple />
               </select>
               <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
@@ -821,6 +932,7 @@ function getAdminMenu() {
                 <option value="Edit Email">Edit Email Address</option>
                 <option value="Edit Specialization">Edit Specialization</option>
                 <option value="Edit Note">Edit Notes</option>
+                <option value="Edit Supervisor">Edit Supervisor</option>
               </select>
               <hr>
               <label for="curruserSelect" id="curremaillabel">Select the member you want to apply an
@@ -841,6 +953,10 @@ function getAdminMenu() {
               </select>
               <input type="text" placeholder="Enter new Extra Notes" id="newnotesfield" style="display: none;"
                 maxlength="125" required />
+              <label for="supervisorSelect" id="supervisorSelectLabel" style="display: none;">Select a (new) supervisor:</label>
+              <select id="supervisorSelect" style="display: none;"/>
+                <option value=''></option>
+              </select>
               <button onclick="SubmitEdit(event)" type="submit" class="submitButton" id="editSubmitButton">Submit</button>
             </form>
           </div>
@@ -848,6 +964,16 @@ function getAdminMenu() {
       </div>
     </div>
   </div>
+
+  <!-- metadata: I can't figure out how to get the template variables directly into javascript without doing it this way :( 
+    These are only used in the split second after the app has loaded though, so shouldn't be a problem as they become useless after -->
+  <p id="viewChange" style="font-size: 0px;"><?= viewChange ?></p>
+  <p id="accessType" style="font-size: 0px;"><?= accessType ?></p>
+  <p id="adminRanks" style="font-size: 0px;"><?= adminRanks ?></p>
+  <p id="groups" style="font-size: 0px;"><?= groups ?></p>
+  <p id="hex" style="font-size: 0px;"><?= hex ?></p>
+  <p id="sheetId" style="font-size: 0px;"><?= sheetId ?></p>
+  <p id="supervisorIder" style="font-size: 0px;"><?= supervisorIdentifier ?></p>
 </body>
 
 </html>`

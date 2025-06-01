@@ -16,24 +16,23 @@ function processEdit(inputData, allowedStaff, userData = {}) {
     let valid = false;
     switch (inputData.type) {
       case 'Edit Name':
-        if (inputData.name != '' && inputData.current_user != '') valid = true;
+        if (inputData.name != '') valid = true;
         break;
       case 'Edit playerId':
-        if (inputData.playerId != '' && inputData.current_user != '') valid = true;
+        if (inputData.playerId != '') valid = true;
         break;
       case 'Edit discordID':
-        if (inputData.discordid != '' && inputData.current_user != '') valid = true;
+        if (inputData.discordid != '') valid = true;
         break;
       case 'Edit Email':
-        if (inputData.email != '' && inputData.current_user != '') valid = true;
-        break;
-      case 'Edit Specialization':
-        if (inputData.current_user != '') valid = true;
+        if (inputData.email != '') valid = true;
         break;
       case 'Edit Note':
-        if (inputData.notes != '' && inputData.current_user != '') valid = true;
+        if (inputData.notes != '') valid = true;
         break;
     }
+
+    if (inputData.current_user === '') valid = false;
 
     valid = filterQuotes(inputData);
 
@@ -49,10 +48,28 @@ function processEdit(inputData, allowedStaff, userData = {}) {
 
     switch (inputData.type) {
       case "Edit Name":
+        const prevName = roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.name).getValue();
         roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.name).setValue(inputData.name);
+
+        // Edit in case of supervisors
+        if (LIBRARY_SETTINGS.supervisorsDisabled.toString() === "false") {
+          for (let i = 15; i < roster.getMaxRows(); i++) {
+            const supervisorName = roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_name).getValue();
+            if (supervisorName === prevName) roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_name).setValue(inputData.name);
+          }
+        }
         break;
       case "Edit playerId":
+        const prevPlayerId = roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.playerId).getValue();
         roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.playerId).setValue(inputData.playerId);
+
+        // Edit in case of supervisors
+        if (LIBRARY_SETTINGS.supervisorsDisabled.toString() === "false") {
+          for (let i = 15; i < roster.getMaxRows(); i++) {
+            const supervisorPlayerId = roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_playerId).getValue();
+            if (supervisorPlayerId === prevPlayerId) roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_playerId).setValue(inputData.playerId);
+          }
+        }
         break;
       case "Edit discordID":
         roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordid);
@@ -95,8 +112,25 @@ function processEdit(inputData, allowedStaff, userData = {}) {
       case "Edit Note":
         roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.notes).setValue(inputData.notes);
         break;
-    }
+      case 'Edit Supervisor':
+        if (inputData.supervisor === "") {
+          roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).clearContent();
+        } else {
+          const supervisorData = getUserData(inputData.supervisor, 5);
+          if (targetData.name === supervisorData.name) return `${targetData.name} cannot supervise themselves`;
+          if (LIBRARY_SETTINGS.ranks.indexOf(targetData.rank) >= LIBRARY_SETTINGS.ranks.indexOf(supervisorData.rank))
+            return "Supervisors must have a higher rank than their supervised";
+          
+          // How did they log edit supervisor while it as disabled??? report error
+          if (LIBRARY_SETTINGS.supervisorsDisabled.toString() === "true") {
+            sendDiscordError("Edit Supervisor was logged while supervisors are disabled, something went wrong", "processEdit");
+            return "Supervisors are disabled, something went wrong"
+          }
 
+          roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).setValues([[supervisorData.name, supervisorData.playerId]]);
+        }
+        break;
+    }
     return "Information Edited";
   } catch(e) {
     sendDiscordError(e.toString(), "processEdit");

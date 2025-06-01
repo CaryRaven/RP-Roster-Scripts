@@ -23,9 +23,21 @@ function ProcessLog(inputData, threshold = false, accessType) {
         // More perm checks
         if (!targetData.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
         if (targetData.playerId == userData.playerId) return "You cannot manage yourself";
-        if (ranks[ranks.length - 1].includes(targetData.rank) || ranks[ranks.length - 2].includes(targetData.rank)) return "You cannot manage Senior CL4 members";
+
+        // If supervisors enabled & not supervisor => deny log
+        // TODO: Needs testing
+        if (!LIBRARY_SETTINGS.supervisorsDisabled) {
+          if (LIBRARY_SETTINGS.modRanks.includes(userData.rank) && LIBRARY_SETTINGS.modsOnlySupervised) {
+            if (userData.playerId !== targetData.supervisor_playerId) return `You cannot manage ${targetData.name}, you do not supervise them.`;
+          } else if (LIBRARY_SETTINGS.managerRanks.includes(userData.rank) && LIBRARY_SETTINGS.managersOnlySupervised) {
+            if (userData.playerId !== targetData.supervisor_playerId) return `You cannot manage ${targetData.name}, you do not supervise them.`;
+          }
+        }
+
+        if (targetData_check.status === "Missing Data") return "You cannot perform logs on people with missing data";
+        if (LIBRARY_SETTINGS.adminRanks.includes(targetData.rank)) return "You cannot manage Senior CL4 members";
         if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
-        if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetData.rank) > ranks.indexOf(userData.rank)) {
+        if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank)) {
           return "You cannot manage people with a higher rank than you."
         }
       }
@@ -316,11 +328,13 @@ function ToggleManualEditing(value) {
 }
 
 function ReturnSliders() {
-  let manualValue = LIBRARY_SETTINGS.manualEnabled.toString();
-  let backupValue = LIBRARY_SETTINGS.backupEnabled.toString();
-  let lockdownValue = LIBRARY_SETTINGS.lockdownEnabled.toString();
+  const manualValue = LIBRARY_SETTINGS.manualEnabled.toString();
+  const backupValue = LIBRARY_SETTINGS.backupEnabled.toString();
+  const lockdownValue = LIBRARY_SETTINGS.lockdownEnabled.toString();
+  const modsOnlySupervised = LIBRARY_SETTINGS.modsOnlySupervised.toString();
+  const managersOnlySupervised = LIBRARY_SETTINGS.managersOnlySupervised.toString();
 
-  return JSON.stringify([manualValue, LIBRARY_SETTINGS.pings.toString(), backupValue, lockdownValue]);
+  return JSON.stringify([manualValue, LIBRARY_SETTINGS.pings.toString(), backupValue, lockdownValue, modsOnlySupervised, managersOnlySupervised]);
 }
 
 function ReturnCooldown() {
@@ -345,7 +359,6 @@ function TogglePings(value) {
   LIBRARY_SETTINGS.pings = Boolean(value);
   RosterService.init(LIBRARY_SETTINGS);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
-  Utilities.sleep(500);
   RosterService.sendDiscordConfig("pingChange", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
 }
 
@@ -812,4 +825,50 @@ function GetAllNames() {
   }
 
   return JSON.stringify(names);
+}
+
+/**
+ * Toggles the option for supervisors, if enabled you will see a bunch of new config options
+ * and you will be able to assign a supervisors to everybody
+ * @returns {Boolean}
+ */
+function ToggleSupervisors() {
+  let value = LIBRARY_SETTINGS.supervisorsDisabled.toString();
+  value = value === "true" ? false : true;
+
+  RosterService.supervisors_toggle(value);
+
+  if (value) {
+    LIBRARY_SETTINGS.dataCols.notes = 19;
+    LIBRARY_SETTINGS.dataCols.supervisor_name = 1;
+    LIBRARY_SETTINGS.dataCols.supervisor_playerId = 1;
+  } else {
+    LIBRARY_SETTINGS.dataCols.notes = 22;
+    LIBRARY_SETTINGS.dataCols.supervisor_name = 19;
+    LIBRARY_SETTINGS.dataCols.supervisor_playerId = 20;
+  }
+
+  LIBRARY_SETTINGS.supervisorsDisabled = value;
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  RosterService.sendDiscordConfig("supervisorToggle", value, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
+  return value;
+}
+
+/**
+ * Toggle whether or not mods are allowed to perform operations on members they do not supervise.
+ */
+function ToggleSupervisedMods(value) {
+  LIBRARY_SETTINGS.modsOnlySupervised = Boolean(value);
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+}
+
+/**
+ * Toggle whether or not mods are allowed to perform operations on members they do not supervise.
+ */
+function ToggleSupervisedManagers(value) {
+  LIBRARY_SETTINGS.managersOnlySupervised = Boolean(value);
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
 }

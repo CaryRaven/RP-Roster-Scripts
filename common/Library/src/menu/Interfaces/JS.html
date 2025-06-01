@@ -75,7 +75,7 @@
         names = JSON.parse(names);
         if (names.length <= 0) return console.error("No names were found on any roster.");
 
-        ["userSelect", "curruserSelect"].forEach(id => {
+        ["userSelect", "curruserSelect", "supervisorSelect"].forEach(id => {
 
           const select = document.getElementById(id);
           id !== "userSelect" ? select.innerHTML = "<option value=''></option>" : select.innerHTML = "";
@@ -201,6 +201,8 @@
         document.getElementById('manualEditingSlider').checked = !(r[0] === "true");
         document.getElementById('pingSlider').checked = (r[1] === "true");
         document.getElementById('backupSlider').checked = (r[2] === "true");
+        document.getElementById("supervisedOnlyMods").checked = (r[4] === "true");
+        document.getElementById("supervisedOnlyManagers").checked = (r[5] === "true");
         if (r[3] === "true") {
           document.getElementById('lockdown-topbanner').style.display = "block";
           document.getElementById('lockdownIdentifier').innerText = "Disable";
@@ -238,14 +240,24 @@
     // Function to handle people going AFK (since there is a limit of 30 active members on web apps)
     let afkTimer = window.setTimeout(() => {
       document.getElementById("afkBanner").style.display = "";
-    }, 300000);
+
+      // Stop filling requests if AFK
+      clearInterval(requestInterval);
+    }, 120000);
 
     document.addEventListener("click", () => {
       window.clearTimeout(afkTimer);
       document.getElementById("afkBanner").style.display = "none";
+
+      FillRequests();
+      requestInterval = setInterval(() => {
+          FillRequests();
+        }, 10000);
+
       afkTimer = window.setTimeout(() => {
         document.getElementById("afkBanner").style.display = "";
-      }, 300000);
+        clearInterval(requestInterval);
+      }, 120000);
     });
 
     /*
@@ -259,7 +271,7 @@
 
       SetSpecSelects();
       SetRankSelects(true);
-      SetSliders();
+      // SetSliders();
       configupdate = setInterval(() => {
         SetSpecSelects();
         SetRankSelects();
@@ -710,6 +722,24 @@
         document.getElementById('config-loading').innerHTML = '';
         StartConfigInterval();
       }).TogglePings(this.checked);
+    });
+
+    document.getElementById('supervisedOnlyMods').addEventListener('change', function () {
+      try { clearInterval(configupdate) } catch(e) {  }
+      document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('config-loading').innerHTML = '';
+        StartConfigInterval();
+      }).ToggleSupervisedMods(this.checked);
+    });
+
+    document.getElementById('supervisedOnlyManagers').addEventListener('change', function () {
+      try { clearInterval(configupdate) } catch(e) {  }
+      document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('config-loading').innerHTML = '';
+        StartConfigInterval();
+      }).ToggleSupervisedManagers(this.checked);
     });
 
     try {
@@ -2113,6 +2143,87 @@
       SetReqVis(value, true)
     }).ReturnReqsDisabled();
 
+    // ****** CONFIG ENABLING/DISABLING SUPERVISORS *********************************************************
+
+    window.ToggleSupervisors = function(event) {
+      event.preventDefault();
+      const button = document.getElementById("toggleSupervisorButton");
+      const configLoading = document.getElementById("config-loading");
+
+      if (configLoading.innerHTML == '<div class="loader"></div>') return Shake();
+
+      configLoading.innerHTML = '<div class="loader"></div>';
+      button.disabled = true;
+      google.script.run.withSuccessHandler(value => {
+        button.classList.add("green");
+        if (value) {
+          button.innerText = "Disabled";
+        } else {
+          button.innerText = "Enabled";
+        }
+
+        SetSupervisorVisibility(value, false);
+
+        configLoading.innerHTML = "";
+        setTimeout(() => {
+          button.classList.remove("green");
+          button.innerText = "Supervisors";
+          button.disabled = false;
+        }, 3000);
+
+      }).withFailureHandler(err => {
+        button.classList.add("red");
+        button.innerText = "Error";
+        configLoading.innerHTML = "";
+        console.log(err);
+        Shake();
+
+        setTimeout(() => {
+          button.classList.remove("red");
+          button.innerText = "Supervisors";
+          button.disabled = false;
+        }, 3000);
+      }).ToggleSupervisors();
+    }
+
+    window.SetSupervisorVisibility = function(value, onOpen) {
+      const identifier = document.getElementById("supervisorIdentifier");
+      const infoTypeList = document.getElementById("infoTypeList");
+
+      if (typeof value === "string") value = value === "true" ? true : false;
+      const els = document.getElementsByClassName("supervisedOnly");
+
+      if (value) {
+        // Disabled
+        identifier.innerText = "Enable";
+
+        [...infoTypeList.options].forEach(option => {
+          if (option.value === "Edit Supervisor") option.remove();
+        });
+
+        for (let i = 0; i < els.length; i++) {
+          els[i].style.display = "none";
+        }
+      } else {
+        // Enabled
+        identifier.innerText = "Disable";
+        if (onOpen) return;
+
+        for (let i = 0; i < els.length; i++) {
+          els[i].style.display = "block";
+        }
+
+        const option = document.createElement("option");
+        option.value = "Edit Supervisor";
+        option.innerText = "Edit Supervisor";
+        infoTypeList.appendChild(option);
+      }
+    }
+
+    // Set visibility on open
+    let supervisorIder = document.getElementById("supervisorIder").innerText;
+    SetSupervisorVisibility(supervisorIder, true);
+
     // ******************************************************************************************************
 
     // GENERAL LOG HANDLERS *********************************************************************************
@@ -2408,6 +2519,17 @@
         meritAction: document.getElementById("meritfield").value
       };
 
+      if (dataToSubmit.users.length > 10) {
+        Shake();
+        button.innerText = "You cannot select more than 10 members at once";
+        button.classList.add("red");
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerText = "Submit";
+          button.classList.remove("red");
+        }, 2000); 
+      }
+
       // Data validation -> check if correct data has been inputted
       let valid = false;
       switch (dataToSubmit.type_check) {
@@ -2622,55 +2744,38 @@
     // MANAGE VISIBILITY ON EDITS
     window.InfoHideCheck = function () {
       const infotype = document.getElementById('infoTypeList').value;
+      document.getElementById('newnamefield').setAttribute('style', 'display: none;');
+      document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
+      document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
+      document.getElementById('newemailfield').setAttribute('style', 'display: none;');
+      document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
+      document.getElementById('specfield').setAttribute('style', 'display: none;');
+      document.getElementById('supervisorSelect').setAttribute('style', 'display: none;');
+      document.getElementById('supervisorSelectLabel').setAttribute('style', 'display: none;');
+
       switch (infotype) {
         case 'Edit Name':
           document.getElementById('newnamefield').setAttribute('style', 'display: block;');
-          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
-          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
-          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
-          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
-          document.getElementById('specfield').setAttribute('style', 'display: none;');
           break;
         case 'Edit playerId':
-          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
           document.getElementById('newplayerIdfield').setAttribute('style', 'display: block;');
-          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
-          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
-          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
-          document.getElementById('specfield').setAttribute('style', 'display: none;');
           break;
         case 'Edit discordID':
-          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
           document.getElementById('newsdiscidfield').setAttribute('style', 'display: block;');
-          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
-          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
-          document.getElementById('specfield').setAttribute('style', 'display: none;');
           break;
         case 'Edit Email':
-          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
-          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
           document.getElementById('newemailfield').setAttribute('style', 'display: block;');
           document.getElementById('newemailfield').maxlength = 70;
-          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
-          document.getElementById('specfield').setAttribute('style', 'display: none;');
           break;
         case 'Edit Specialization':
-          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
-          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
-          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
-          document.getElementById('newnotesfield').setAttribute('style', 'display: none;');
           document.getElementById('specfield').setAttribute('style', 'display: block;');
           break;
         case 'Edit Note':
-          document.getElementById('newnamefield').setAttribute('style', 'display: none;');
-          document.getElementById('newplayerIdfield').setAttribute('style', 'display: none;');
-          document.getElementById('newsdiscidfield').setAttribute('style', 'display: none;');
-          document.getElementById('newemailfield').setAttribute('style', 'display: none;');
           document.getElementById('newnotesfield').setAttribute('style', 'display: block;');
-          document.getElementById('specfield').setAttribute('style', 'display: none;');
+          break;
+        case 'Edit Supervisor':
+          document.getElementById("supervisorSelect").setAttribute('style', 'display: block;');
+          document.getElementById("supervisorSelectLabel").setAttribute('style', 'display: block;');
           break;
       }
     }
@@ -2690,29 +2795,32 @@
         discordid: document.getElementById('newsdiscidfield')?.value || '',
         email: document.getElementById('newemailfield')?.value || '',
         specialization: document.getElementById('specfield')?.value || '',
-        notes: document.getElementById('newnotesfield')?.value || ''
+        notes: document.getElementById('newnotesfield')?.value || '',
+        supervisor: document.getElementById("supervisorSelect")?.value || ''
       };
 
       let validEdit = false;
       switch (editdata.type) {
         case 'Edit Name':
-          if (editdata.name != '' && editdata.current_user != '') { validEdit = true; }
+          if (editdata.name != '' && editdata.current_user != '') validEdit = true;
           break;
         case 'Edit playerId':
-          if (editdata.playerId != '' && editdata.current_user != '') { validEdit = true; }
+          if (editdata.playerId != '' && editdata.current_user != '') validEdit = true;
           break;
         case 'Edit dicsordID':
-          if (editdata.discordid != '' && editdata.current_user != '') { validEdit = true; }
+          if (editdata.discordid != '' && editdata.current_user != '') validEdit = true;
           break;
         case 'Edit Email':
-          if (editdata.email != '' && editdata.current_user != '') { validEdit = true; }
+          if (editdata.email != '' && editdata.current_user != '') validEdit = true;
           break;
         case 'Edit Specialization':
           if (editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit Note':
-          if (editdata.notes != '' && editdata.current_user != '') { validEdit = true; }
+          if (editdata.notes != '' && editdata.current_user != '') validEdit = true;
           break;
+        case 'Edit Supervisor':
+          if (editdata.current_user != '') validEdit = true;
       }
 
       Object.values(editdata).forEach(value => {

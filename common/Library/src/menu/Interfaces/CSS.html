@@ -537,8 +537,8 @@
         position: fixed;
     }
 
-    #restoreBackupButton, #resetButton, #backupButton, #lockdownButton, #toggleReqsButton, #toggleMeritButton {
-        width: 100%;
+    #config-toggles button {
+      width: 100%
     }
 
     #backupTime:hover {
@@ -878,5 +878,50 @@
       transition: opacity .2s;
       border: black 3px;
       border-radius: 50px;
+    }
+
+    .tooltip2 {
+      position: relative;
+      display: inline;
+    }
+
+    .tooltip2 i {
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .tooltip2 .tooltiptext {
+      visibility: hidden;
+      font-size: 13px;
+      box-shadow: 0 0.5rem 0.8rem black;
+      width: 450px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 135%;
+      left: 50%;
+      margin-left: -60px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip2 .tooltiptext::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 13.2%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #555 transparent transparent transparent;
+    }
+
+    .tooltip2:hover .tooltiptext {
+      visibility: visible;
+      opacity: 0.9;
     }
 </style>

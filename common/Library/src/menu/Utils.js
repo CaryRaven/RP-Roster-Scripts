@@ -348,9 +348,9 @@ function getSpreadsheetData(inputValue) {
       }
 
       // Get headers & data
-      const headersRaw = sheet.getRange(6, 3, 1, sheet.getMaxColumns()).getValues();
+      const headersRaw = sheet.getRange(6, 3, 1, sheet.getMaxColumns() - 3).getValues();
       const headers = headersRaw[0].filter(Boolean);
-      const data = sheet.getRange(7, 3, sheet.getLastRow() - 6, 11).getValues();
+      const data = sheet.getRange(7, 3, sheet.getLastRow() - 6, sheet.getMaxColumns() - 3).getValues();
 
       const matchingData = data
         .filter(row => {
@@ -362,12 +362,14 @@ function getSpreadsheetData(inputValue) {
         })
         .map(row => {
           // compose object
+          row = row.filter(Boolean);
           const rowObject = { sheetLabel: sheetInfo.label };
           headers.forEach((header, index) => {
             rowObject[header] = row[index] !== undefined ? row[index] : null;
           });
           return rowObject;
         });
+
       results.push(...matchingData);
     } catch (error) {
       Logger.log(`Error processing sheet ${sheetName}: ${error.message}`);
@@ -443,9 +445,9 @@ function isUserBlacklisted(playerId) {
  * Get the Menu/JS file and add it to the web apps, this way I can have one centralized JS file in the library and distribute it across all web apps.
  */
 function includeJS() {
-  return HtmlService.createHtmlOutputFromFile('Menu/Interfaces/JS').getContent();
+  return HtmlService.createHtmlOutputFromFile('menu/Interfaces/JS').getContent();
 }
 
 function includeCSS() {
-  return HtmlService.createHtmlOutputFromFile('Menu/Interfaces/CSS').getContent();
+  return HtmlService.createHtmlOutputFromFile('menu/Interfaces/CSS').getContent();
 }

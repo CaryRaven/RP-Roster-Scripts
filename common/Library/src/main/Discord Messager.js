@@ -18,15 +18,8 @@ function sendDiscordLog(inputData, targetData, userData) {
   // if (!accessFolders || !Array.isArray(accessFolders)) throw new Error("sendDiscordLog: no access folders provided");
   
   // Variable init
-  let embedTitle = '';
-  let embedColor = '';
-  let field1Name = '';
-  let info = '';
-  let inline2 = false;
-  let content = '';
-  let reason = inputData.reason;
-  let footerMessage = '';
-  let end_date;
+  let [embedTitle, embedColor, field1Name, info, content, footerMessage, end_date, reason] = ['', '', '', '', '', '', '', inputData.reason];
+
   // let folderChanges = accessFolders.map(folder => ` ${folder.folderName} - ${folder.permission} access /`);
   let date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
   let appealTo = "the Office of Office of Site Management";
@@ -151,17 +144,12 @@ function sendDiscordLog(inputData, targetData, userData) {
           inline: true
         },
         {
-          name: `Issued by ${Number(userData.discordId) ? `<@${userData.discordId}>` : `${userData.rank}`}`,
-          value: "",
-          inline: inline2
-        },
-        {
           name: 'Why?',
           value: reason || "No reason provided",
           inline: false
         }
       ],
-      footer: { text: footerMessage + '\nLogged on ' + date }
+      footer: { text: footerMessage + '\nLogged on ' + date + `Issued by ${Number(userData.discordId) ? ` by <@${userData.discordId}>` : ` by ${userData.rank}`}` }
     }]
   });
 
@@ -335,12 +323,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
 
   const authKey = PropertiesService.getScriptProperties().getProperty("authKey");
   const webhookURLs = getDiscordWebhookUrls(authKey);
-
-  let userInfo = `Name: ${userData.name}\nPlayerID: ${userData.playerId}\nDiscordID: ${userData.discordId}`;
-  let embedTitle;
-  let embedColor;
-  let info;
-  let footerMessage;
+  let [embedTitle, embedColor, info, footerMessage] = ["", "", "", ""];
 
   switch (type) {
     case "manualEdit":
@@ -461,6 +444,12 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       info = value === true ? `All promotion requirements for all ranks have been disabled` : `Promotions requirements for ${LIBRARY_SETTINGS.factionName} have been enabled, please check the roster to see what tasks you need to complete in order to be eligible for promotion.`;
       footerMessage = "";
       break;
+    case "supervisorToggle":
+      embedTitle = value === true ? `[🛠️] ${LIBRARY_SETTINGS.factionName} Supervisors Disabled.` : `[🛠️] ${LIBRARY_SETTINGS.factionName} Supervisors Enabled.`;
+      embedColor = value === true ? "16497668" : "1143627";
+      info = value === true ? `Supervisors feature has been disabled, meaning the standard hierarchy applies but you no longer have a specific person supervising you.` : `Supervisors feature has been enabled. You can now be assigned a supervisor who will help you with questions, concerns or tasks. Consult them first if possible before going to anybody else.`;
+      footerMessage = "";
+      break;
     default:
       throw new Error("This type is not supported");
   }
@@ -476,19 +465,15 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
           {
             name: "Change Info",
             value: info,
-            inline: false,
-          },
-          {
-            name: "Edited by",
-            value: userInfo,
-            inline: false,
-          },
+            inline: true,
+          }
         ],
         footer: {
           text:
             footerMessage +
             "\nLogged on " +
-            Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
+            Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy") + 
+            `${userData.discordId === "N/A" ? ` by ${userData.rank}` : ` by <@${userData.discordId}>`}`,
         }
       }
     ]
@@ -524,17 +509,11 @@ function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
       {
         title: `[🛠️] ${num} ${rank} Slot${num > 1 ? "s" : ""} ${added ? "Added" : "Removed"}`,
         color: `${added ? "1143627" : "11600386"}`,
-        fields: [
-          {
-            name: "Configured by",
-            value: `Name: ${userData.name}\nplayerId: ${userData.playerId}\nDiscord ID: ${userData.discordId}`,
-            inline: false,
-          },
-        ],
         footer: {
           text:
             "Logged on " +
-            Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy"),
+            Utilities.formatDate(new Date(), "GMT", "dd MMMM yyyy") +
+            `${userData.discordId === "N/A" ? ` by ${userData.rank}` : ` by <@${userData.discordId}>`}`,
         },
       },
     ],
@@ -650,6 +629,10 @@ function sendDiscordChangeLog(notes, url = '') {
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
 }
 
+/**
+ * Report manual edits on the roster
+ * @param {Object} range
+ */
 function sendDiscordManualEdit(range) {
   if (!isInit) throw new Error("Library is not yet initialized");
 
