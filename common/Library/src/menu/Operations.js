@@ -183,7 +183,7 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
   console.log(inputData.promoReqs);
 
   // Set data for promo reqs
-  const reqFormulas = inputData.promoReqs.map((_, i) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow}, 'Requirement Logs'!G:G, D${insertRow}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + i)}$${insertRow - 1}, 'Requirement Logs'!C:C)`);
+  const reqFormulas = inputData.promoReqs.map((v, i) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow}, 'Requirement Logs'!G:G, D${insertRow}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + i)}$${insertRow - 1}, 'Requirement Logs'!C:C, ${Number(v.logcount)}, ${Number(v.expirydays)})`);
   hasMinMerits === 1 && reqFormulas.push(`= HAS_MIN_MERITS(GET_MERIT_COUNT(F${insertRow}, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E), ${Number(inputData.minMeritScore)})`);
   const preData = [[inputData.title, inputData.title, "", "", ""]];
   let insertData = [preData[0].concat(reqFormulas)];
@@ -334,7 +334,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
   if (rankBeforeIndex !== 0) {
     rankBeforeGroup2 = LIBRARY_SETTINGS.group[rankBeforeIndex - 1];
-    console.log(`rankBeforeGroup2: ${rankBeforeGroup2}`);
+
     if ((rankBeforeGroup === rankBeforeGroup2 && inputData.group !== rankBeforeGroup2)
       || (inputData.group !== rankBeforeGroup && inputData.group !== rankBeforeGroup2)
       || rankBeforeIndex === 0 && inputData.group !== rankBeforeGroup) return "Invalid group";
@@ -831,7 +831,7 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
 
   let reqs = [];
   for (let i = 0; i < num; i++) {
-    let reqFormulas = promoReqs.map((_, j) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow + i}, 'Requirement Logs'!G:G, D${insertRow + i}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + j)}$${startRow - 1}, 'Requirement Logs'!C:C)`);
+    let reqFormulas = promoReqs.map((v, j) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow + i}, 'Requirement Logs'!G:G, D${insertRow + i}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + j)}$${startRow - 1}, 'Requirement Logs'!C:C, ${Number(v.logcount)}, ${Number(v.expirydays)})`);
     hasMinMerits === 1 && reqFormulas.push(`= HAS_MIN_MERITS(GET_MERIT_COUNT(F${insertRow + i}, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E), ${Number(minMeritScore)})`);
     const preData = [rank, "", "", ""];
     const insertData = preData.concat(reqFormulas);

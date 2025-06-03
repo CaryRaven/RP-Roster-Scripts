@@ -29,14 +29,14 @@ function getUserData(query, colToSearch = null, stringify = false) {
   let data = {};
 
   LIBRARY_SETTINGS.rosterIds.forEach((rosterId, index) => {
-
+    if (index === LIBRARY_SETTINGS.rosterIds.length - 1) return;
     const s = getCollect(rosterId);
     const r = s.getRange(LIBRARY_SETTINGS.firstMemberRow, colToSearch ? colToSearch : LIBRARY_SETTINGS.dataCols.email, s.getMaxRows(), 1).getValues();
 
-    r.forEach((email, i) => {
-      email = email[0];
+    r.forEach((searchValue, i) => {
+      searchValue = searchValue[0];
       i = i + LIBRARY_SETTINGS.firstMemberRow;
-      if (email == query) {
+      if (searchValue == query) {
 
         data = {
           row: i,
@@ -195,7 +195,8 @@ function getAllEmails() {
 
   let emails = [];
 
-  LIBRARY_SETTINGS.rosterIds.forEach(rosterId => {
+  LIBRARY_SETTINGS.rosterIds.forEach((rosterId, i) => {
+    if (i === LIBRARY_SETTINGS.rosterIds.length - 1) return;
     const sheet = getCollect(rosterId);
     sheet.getRange(LIBRARY_SETTINGS.firstMemberRow, LIBRARY_SETTINGS.dataCols.email, (sheet.getMaxRows() - LIBRARY_SETTINGS.firstMemberRow), 1).getValues().forEach(email => {
       if (!email[0] || email[0].toLowerCase() == "n/a" || !email[0].includes("@")) return;

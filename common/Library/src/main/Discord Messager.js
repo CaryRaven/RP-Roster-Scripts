@@ -31,7 +31,7 @@ function sendDiscordLog(inputData, targetData, userData) {
     case "Rank Change":
       switch (inputData.rankchangetype) {
         case 'Promotion':
-          embedTitle = `👔 New ${targetData.newRank} 👔`;
+          embedTitle = `👔 New ${targetData.newRank}`;
           embedColor = '1143627';
           field1Name = 'Please congratulate 🥁...'; // drumrolls
           info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscord ID: ${targetData.discordId}`;
@@ -39,7 +39,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case 'Demotion':
-          embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Demotion ❌`;
+          embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Demotion`;
           embedColor = '11600386';
           field1Name = 'General Information';
           info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDemoted from: ${targetData.rank}\nNew Rank: ${targetData.newRank}`;
@@ -47,7 +47,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case 'Passed Interview':
-          embedTitle = `👔 New ${LIBRARY_SETTINGS.ranks[0]} 👔`;
+          embedTitle = `👔 New ${LIBRARY_SETTINGS.ranks[0]}`;
           embedColor = '39423';
           field1Name = 'Please Congratulate 🥁...'; // more drumrolls
           info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}`;
@@ -55,7 +55,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
           break;
         case "Removal":
-          embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Removal  ❌`;
+          embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} Removal`;
           embedColor = '11600386';
           field1Name = 'General Information';
           info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nRemoved from: ${targetData.rank}`;
@@ -65,7 +65,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       }
       break;
     case 'Infraction Log':
-      embedTitle = `❌ ${inputData.infraction_type} Infraction Issued ❌`;
+      embedTitle = `❌ ${inputData.infraction_type} Infraction Issued`;
       embedColor = '11600386';
       field1Name = 'Infraction Information';
       info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nRank: ${targetData.rank}`;
@@ -73,7 +73,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
     case 'Blacklist':
-      embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} ${inputData.blacklist_type} Issued ❌`;
+      embedTitle = `❌ ${LIBRARY_SETTINGS.factionName} ${inputData.blacklist_type} Issued`;
       embedColor = '0';
       field1Name = `${inputData.blacklist_type} Information`;
       end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
@@ -82,7 +82,7 @@ function sendDiscordLog(inputData, targetData, userData) {
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
     case 'LOA Log':
-      embedTitle = '💤 LOA Started 💤';
+      embedTitle = '💤 LOA Started';
       embedColor = '12658943';
       field1Name = 'LOA Information';
       end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
@@ -90,14 +90,14 @@ function sendDiscordLog(inputData, targetData, userData) {
       footerMessage = `Enjoy your time off, ${targetData.name}`;
       break;
     case 'Infraction Appeal':
-      embedTitle = '🔄 Infraction Appealed 🔄';
+      embedTitle = '🔄 Infraction Appealed';
       embedColor = '1143627';
       field1Name = 'Appeal Information';
-      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nAppealed Infraction ID: ${inputData.log_id}`;
+      info = `For <@${targetData.discordId}>\nAppealed Infraction ID: ${inputData.log_id}`;
       footerMessage = 'This infraction is no longer of effect.';
       break;
     case 'Blacklist Appeal':
-      embedTitle = `🔄 ${LIBRARY_SETTINGS.factionName} Blacklist/Suspension Appealed 🔄`;
+      embedTitle = `🔄 ${LIBRARY_SETTINGS.factionName} Blacklist/Suspension Appealed`;
       embedColor = '1143627';
       field1Name = 'Appeal Information';
       info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nAppealed Log ID: ${inputData.log_id}`;
@@ -108,19 +108,17 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedColor = '1143627';
       field1Name = "Role Description";
       info = inputData.desc;
-      footerMessage = 'Congratulations!';
-      inline2 = false;
-      break;
-    case "Requirement Log":
-      embedTitle = `✅ ${LIBRARY_SETTINGS.factionName} Requirement Completed ✅`;
-      embedColor = '1143627';
-      field1Name = 'Requirement Information';
-      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nRequirement Completed: ${inputData.reqName}`;
-      footerMessage = `Congratulations on having your requirement completed.`;
       if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
       break;
+    case "Requirement Log":
+      embedTitle = `🟩 ${LIBRARY_SETTINGS.factionName} Requirement Logged`;
+      embedColor = '1143627';
+      field1Name = 'Information';
+      info = `For <@${targetData.discordId}>\nReq Name: ${inputData.reqName}`;
+      footerMessage = `Congratulations on the progress!`;
+      break;
     case "Merit Log":
-      embedTitle = `🟩 ${inputData.meritCount} Merits Allocated 🟩`;
+      embedTitle = `🟩 ${inputData.meritCount} Merits Allocated`;
       embedColor = '1143627';
       field1Name = 'Merit Log Information';
       info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nMerit Action Completed: ${inputData.meritAction}\nMerits Allocated: ${inputData.meritCount}`;
@@ -329,8 +327,8 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
     case "manualEdit":
       embedTitle =
         value === true
-          ? "[🛠️] 🟩 Manual Editing Protections Enabled 🟩"
-          : "[🛠️] ⚠️ Manual Editing Protections Disabled ⚠️";
+          ? "[🛠️] Manual Editing Protections Enabled"
+          : "[🛠️] ⚠️ Manual Editing Protections Disabled";
       embedColor = value === true ? "1143627" : "16497668";
       info = !(value === true)
         ? "The roster can now be edited manually, no reports will be sent of said manual edits."
@@ -341,8 +339,8 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
     case "backup":
       embedTitle =
         value === true
-          ? `[🛠️] 🟩 ${LIBRARY_SETTINGS.factionName} Roster Backups Enabled 🟩`
-          : `[🛠️] 🛑 ${LIBRARY_SETTINGS.factionName} Roster Backups Disabled 🛑`;
+          ? `[🛠️] ${LIBRARY_SETTINGS.factionName} Roster Backups Enabled`
+          : `[🛠️] 🛑 ${LIBRARY_SETTINGS.factionName} Roster Backups Disabled`;
       embedColor = !(value === true) ? "11600386" : "1143627";
       info =
         value === true
@@ -363,7 +361,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       footerMessage = "Thank you for your patience.";
       break;
     case "restoreType":
-      embedTitle = value === true ? "[🛠️] 🟩 Restoration Type: Full Sheet 🟩" : "[🛠️] ⚠️ Restoration Type: Edited Cells ⚠️";
+      embedTitle = value === true ? "[🛠️] Restoration Type: Full Sheet" : "[🛠️] ⚠️ Restoration Type: Edited Cells";
       embedColor = value === true ? "1143627" : "16497668";
       info = value === true 
         ? "Whenever the roster is manually edited (if manual editing protections are enabled), the entire sheet where a range was edited will be restored. This is the recommended option as it is more safe."
@@ -371,19 +369,19 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       footerMessage = "";
       break;
     case "resetPerms":
-      embedTitle = `[🛠️] ⚠️ ${LIBRARY_SETTINGS.factionName} Document Permissions Reset ⚠️`;
+      embedTitle = `[🛠️] ${LIBRARY_SETTINGS.factionName} Document Permissions Reset`;
       embedColor = "16497668";
       info = "All documentation permissions have been wiped & re-added, basically resetting them to get rid of any flaws quickly.";
       footerMessage = "If anything went wrong during this process, contact a member of the Office of Site Management";
       break;
     case "restoreSpreadSheet":
-      embedTitle = `[🛠️] 🟩 ${LIBRARY_SETTINGS.factionName} Roster Restored 🟩`;
+      embedTitle = `[🛠️] ${LIBRARY_SETTINGS.factionName} Roster Restored`;
       embedColor = "1143627";
       info = `The roster has been fully restored to its latest backup, which was made ${timeSinceBackup} minutes ago.`;
       footerMessage = "";
       break;
     case "rankEdit":
-      embedTitle = `[🛠️] 🟩 ${userData.editRank} Edited 🟩`;
+      embedTitle = `[🛠️] ${userData.editRank} Edited`;
       embedColor = "1143627";
 
       userData.viewerAccess = userData.viewerAccess.map(id => {
@@ -420,7 +418,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
       footerMessage = "Not all change info listen above is necessarily new";
       break;
     case "folderEdit":
-      embedTitle = value === true ? `[🛠️] 🟩 Registered ${userData.title} 🟩` : `[🛠️] ⚠️ Unregistered ${userData.title} ⚠️`;
+      embedTitle = value === true ? `[🛠️] Registered ${userData.title}` : `[🛠️] ⚠️ Unregistered ${userData.title}`;
       embedColor = value === true ? "1143627" : "16497668";
       info = value === true ? `${userData.title} is now recognized by the Admin Menu and its functions. It can be added to ranks in the config menu and will no longer be flagged.` 
         : `${userData.title} is no longer recognized by the Admin Menu and its functions. This file/folder has been moved to "Pending Documents", where it can be archived or removed.`;

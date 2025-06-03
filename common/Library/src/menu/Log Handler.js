@@ -62,7 +62,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
               valid = true;
               break;
             case "Blacklist":
-              if (inputData.name != '' && inputData.playerId != '' && inputData.discordid != '' && inputData.blacklist_type != '') valid = true;
+              if (inputData.name != '' && inputData.playerId != '' && inputData.discordId != '' && inputData.blacklist_type != '') valid = true;
               break;
           }
         }
@@ -110,7 +110,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
         if (inputData.type_check == "New Member" || inputData.blacklist_type == "Blacklist") {
           targetData_check.name = inputData.name;
           targetData_check.playerId = inputData.playerId;
-          targetData_check.discordId = inputData.discordid;
+          targetData_check.discordId = inputData.discordId;
           targetData_check.rank = ranks[0];
         } else {
           if (targetData_check.status === "Missing Data") return "You cannot perform logs on people with missing data";
@@ -136,7 +136,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
       if (inputData.type_check == "New Member" || inputData.blacklist_type == "Blacklist") {
         targetData.name = inputData.name;
         targetData.playerId = inputData.playerId;
-        targetData.discordId = inputData.discordid;
+        targetData.discordId = inputData.discordId;
         targetData.email = inputData.email
         targetData.rank = ranks[0];
       }

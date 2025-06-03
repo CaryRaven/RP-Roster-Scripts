@@ -643,9 +643,9 @@ function ManageThreshold(threshold, action) {
  * @param {String} email - Check for an email if you're not logging your own prom req
  * @returns {JSON.Array}
  */
-function GetReqs(rank, email = null) {
-  if (email) {
-    let data = RosterService.getUserData(email);
+function GetReqs(rank, name = null) {
+  if (name) {
+    let data = RosterService.getUserData(name, LIBRARY_SETTINGS.dataCols.name);
     rank = data.rank;
   }
 

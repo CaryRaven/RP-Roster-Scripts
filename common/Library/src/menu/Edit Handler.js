@@ -22,7 +22,7 @@ function processEdit(inputData, allowedStaff, userData = {}) {
         if (inputData.playerId != '') valid = true;
         break;
       case 'Edit discordID':
-        if (inputData.discordid != '') valid = true;
+        if (inputData.discordId != '') valid = true;
         break;
       case 'Edit Email':
         if (inputData.email != '') valid = true;
@@ -72,7 +72,7 @@ function processEdit(inputData, allowedStaff, userData = {}) {
         }
         break;
       case "Edit discordID":
-        roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordid);
+        roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.discordId).setValue(inputData.discordId);
         break;
       case "Edit Email":
         if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {

@@ -38,7 +38,7 @@ function getAdminMenu() {
   </div>
   <div id="afkBanner" class="hazard-background" style="display: none;">
     <h1>AFK Warning</h1><br>
-    <h3>Please do not open the admin menu if you do not need to be here.</h3>
+    <h3>Please do not open the admin menu if you do not need to be here. You are slowing down other users.</h3>
   </div>
 
   <div class="loader" id="changeLoader"></div>
@@ -579,7 +579,10 @@ function getAdminMenu() {
                     <span class="tooltip2"><i class="bx bxs-help-circle"></i>
                       <span class="tooltiptext">The sheets formula that calculates whether or not a requirement has been completed relies on the title of a requirement
                       to differentiate each log. Thus, be warned that changing the title of an existing requirement will invalidate all of its logs, possibly wiping
-                      a lot of progress.</span>
+                      a lot of progress.
+                      <br><br><strong>Log # clarification:</strong> The "log #" indicates how many logs of this promotion requirement must be submitted in order for it to be
+                      considered completed. I.e. if you want it to complete immediately after logging, you put 1. If you want people to need to log this promotion req
+                      at least 4 times, you put 4 etc... <em>I think all the other inputs are pretty self-explanatory</em></span>
                     </span>
                     <br><span style="font-weight: 200; font-size: 12px;">Max 5, Min 0 (set to 0 for no promo reqs)</span>
                   </td>
@@ -888,6 +891,9 @@ function getAdminMenu() {
               </label>
               <select id="userSelect" required multiple />
               </select>
+              <label for="userSelectPromoReqs" id="userSelectPromoReqsLabel">Select which member has completed the requirement</label>
+              <select id="userSelectPromoReqs" required/>
+              </select>
               <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
               <select id="rctypefield" style='display: block;' required>
                 <option value=''></option>
@@ -899,11 +905,28 @@ function getAdminMenu() {
               <label for="enddatefield" id="enddatelabelBL" style="display: none;">Select expiry date of
                 Blacklist:</label>
               <input type="date" placeholder="dd-mm-yyyy" id='enddatefield' style="display: none;" required />
-              <label for="reqfield" id="reqfieldlabel" style="display: none;">Select which requirement you have completed:</label>
+              <label for="reqfield" id="reqfieldlabel" style="display: none;">Select which requirement 
+              <? if(accessType === "visitor") { ?>
+                you
+              <? } else { ?>
+                they
+              <? } ?> 
+              have completed/made progress in:
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">Promotion requirements can require multiple logs to complete. For example "Host 4 Trainings" might require 4 different logs of the 
+                  same requirement in order to be marked as done.</span>
+              </span>
+              </label>
               <select id="reqfield" style='display: none;' required>
                 <option value=''></option>
               </select>
-              <label for="meritfield" id="meritfieldlabel" style="display: none;">Select which merit action you have completed:</label>
+              <label for="meritfield" id="meritfieldlabel" style="display: none;">Select which merit action 
+              <? if(accessType === "visitor") { ?>
+                you
+              <? } else { ?>
+                they
+              <? } ?> 
+              have completed:</label>
               <select id="meritfield" style='display: none;' required>
               </select>
               <div id="meritinfofield" style="display: none;">

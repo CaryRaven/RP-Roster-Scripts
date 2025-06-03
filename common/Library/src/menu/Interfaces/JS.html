@@ -75,8 +75,7 @@
         names = JSON.parse(names);
         if (names.length <= 0) return console.error("No names were found on any roster.");
 
-        ["userSelect", "curruserSelect", "supervisorSelect"].forEach(id => {
-
+        ["userSelect", "curruserSelect", "supervisorSelect", "userSelectPromoReqs"].forEach(id => {
           const select = document.getElementById(id);
           id !== "userSelect" ? select.innerHTML = "<option value=''></option>" : select.innerHTML = "";
           names.forEach(name => {
@@ -249,7 +248,7 @@
       window.clearTimeout(afkTimer);
       document.getElementById("afkBanner").style.display = "none";
 
-      FillRequests();
+      clearInterval(requestInterval);
       requestInterval = setInterval(() => {
           FillRequests();
         }, 10000);
@@ -1300,10 +1299,12 @@
         const desc = task.querySelector(".description").value;
         const completionType = task.querySelector(".completion_type").value;
         const formula = completionType === "formula" ? task.querySelector(".formula").value : "";
+        const logcount = task.querySelector(".logcount").value;
+        const expirydays = task.querySelector(".expirydays").value;
 
-        if (!title || !desc || title.length > 16 || desc.length > 300 || !completionType) return valid = false;
+        if (!title || !desc || title.length > 16 || desc.length > 300 || !completionType || logcount > 10 || expirydays > 60) return valid = false;
         
-        reqs.push({ title, desc, completion_type: completionType, formula });
+        reqs.push({ title, desc, completion_type: completionType, formula, logcount, expirydays });
       });
 
       if (!valid) return "invalid";
@@ -2014,7 +2015,9 @@
           title: '',
           desc: '',
           completion_type: 'manual',
-          formula: ''
+          formula: '',
+          logcount: '',
+          expirydays: ''
         };
       }
 
@@ -2026,14 +2029,16 @@
       
       // I've removed the option to add a custom formula (completion_type select is hidden & no option for formula)
       reqDiv.innerHTML = `
-        <input type="text" class="title" placeholder="Promotion Requirement Name" maxlength="16" style="font-weight: bold; display: block; width: 40%;" value="${data.title}" required/>
+        <input type="text" class="title" placeholder="Requirement Title" maxlength="16" style="font-weight: bold; display: block; margin-left: 50px; width: 40%; max-width: 300px;" value="${data.title}" required/>
+        <input type="number" class="logcount" placeholder="log #" style="display: block; position: absolute; width: 20%; margin-top: 5px; top:5px; left: 5px; max-width: 150px;" min="1" max="10" value="${data.logcount}" required/>
+        <input type="number" class="expirydays" placeholder="expiry day #" style="display: block; position: absolute; width: 20%; margin-top: 5px; top: 5px; left: 165px; max-width: 150px;" min="1" max="60" value="${data.expirydays}" required/>
         <input type="text" class="description" placeholder="Promotion Requirement Description" maxlength="300" style="display: block; width: 100%; margin-top: 5px;" value="${data.desc}" required/>
-        <select class="completion_type" style="display: none; margin-top: 5px; width: 100%;" required>
+        <!-- <select class="completion_type" style="display: none; margin-top: 5px; width: 100%;" required>
           <option value="manual">Manual</option>
         </select>
-        <input type="text" class="formula" placeholder="Enter custom formula" style="display: none; margin-top: 5px; width: 100%;" value="${data.formula}"/>
-        <button class="submitButton-mini" style="position: absolute; top: 5px; right: 5px; background-color: red;">Delete</button>
-      `;
+        <input type="text" class="formula" placeholder="Enter custom formula" style="display: none; margin-top: 5px; width: 100%;" value="${data.formula}"/> -->
+        <button class="submitButton-mini" style="position: absolute; top: 5px; right: 5px; max-width: 150px; background-color: red;">Delete</button>
+        `;
       
       reqDiv.style = "position: relative; padding: 10px; margin-bottom: 20px; width: 80%;";
       
@@ -2043,7 +2048,7 @@
       //   formulaInput.style.display = this.value === "formula" ? "block" : "none";
       // });
 
-      reqDiv.querySelector(".completion_type").value = data.completion_type;
+      // reqDiv.querySelector(".completion_type").value = data.completion_type;
       
       reqDiv.querySelector(".submitButton-mini").addEventListener("click", function() {
         reqDiv.remove();
@@ -2280,6 +2285,8 @@
       document.getElementById('meritfield').setAttribute('style', 'display: none;');
       document.getElementById('meritfieldlabel').setAttribute('style', 'display: none;');
       document.getElementById("meritinfofield").setAttribute('style', 'display: none;');
+      document.getElementById("userSelectPromoReqs").setAttribute('style', 'display: none');
+      document.getElementById("userSelectPromoReqsLabel").setAttribute('style', 'display: none');
       document.getElementById('reasonfield').placeholder = "Provide a reason for this log.";
 
       switch (logtype) {
@@ -2327,8 +2334,8 @@
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           break;
         case "Requirement Log":
-          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
-          document.getElementById('userSelect').setAttribute('style', 'display: block;');
+          document.getElementById("userSelectPromoReqs").setAttribute('style', 'display: block');
+          document.getElementById("userSelectPromoReqsLabel").setAttribute('style', 'display: block');
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('reqfieldlabel').setAttribute('style', 'display: block;');
           document.getElementById('reqfield').setAttribute('style', 'display: block;');
@@ -2358,20 +2365,23 @@
     window.GetReqTitles = function() {
       // Get reqs of user's rank
       let rank = document.getElementById("rank").innerText;
-      let email;
+      let name;
 
       // TODO: possibly change to dynamic check
       if (accessType === "admin" || accessType === "dev") {
         rank = null;
-        email = document.getElementById('userSelect').value;
+        name = document.getElementById('userSelectPromoReqs').value;
       }
-      
+
+      const reqField = document.getElementById("reqfield");
+      reqField.disabled = true;
+
       google.script.run.withSuccessHandler(response => {
         response = JSON.parse(response);
         if (typeof response === "string") return "Returned";
         
         try {
-          const reqField = document.getElementById("reqfield");
+          // Fill titles into select based on user ran
           reqField.innerHTML = "<option value=''></option>";
           response.forEach(req => {
             const reqOption = document.createElement("option");
@@ -2379,10 +2389,12 @@
             reqOption.innerText = req.title;
             reqField.appendChild(reqOption);
           });
+
+          reqField.disabled = false;
         } catch(e) {
           console.log("Getting req titles failed: " + e);
         }
-      }).GetReqs(rank, email);
+      }).GetReqs(rank, name);
     }
 
     document.getElementById("meritfield").addEventListener("change", () => {
@@ -2435,12 +2447,10 @@
     GetReqTitles();
 
     // If you're not logging a req for yourself -> check the reqs of the person on every input change
-    document.getElementById("userSelect").addEventListener("change", () => {
+    // TODO
+    document.getElementById("userSelectPromoReqs").addEventListener("change", () => {
       if (accessType === "visitor") return;
       if (document.getElementById("logTypeList").value !== "Requirement Log") return;
-      if (!document.getElementById("userSelect").value.includes("@")) return;
-      if (!document.getElementById("userSelect").value.includes(".")) return;
-
       try {
         GetReqTitles();
       } catch(e) {
@@ -2495,9 +2505,13 @@
       if (value == "New Member") {
         data_users = [document.getElementById('namefield').value];
       } else {
-        const uSelect = document.getElementById('userSelect');
-        const selected = [...uSelect.selectedOptions].map(option => option.value);
-        data_users = selected.filter(Boolean);
+        if (value === "Requirement Log") {
+          data_users = [document.getElementById("userSelectPromoReqs").value];
+        } else {
+          const uSelect = document.getElementById('userSelect');
+          const selected = [...uSelect.selectedOptions].map(option => option.value);
+          data_users = selected.filter(Boolean);
+        }
       }
 
       const dataToSubmit = {
@@ -2505,7 +2519,7 @@
         type_check: data_type_check,
         name: document.getElementById('namefield').value,
         playerId: document.getElementById('playerIdfield').value,
-        discordid: document.getElementById('discordidfield').value,
+        discordId: document.getElementById('discordidfield').value,
         email: document.getElementById("newMemberEmailField").value,
         users: data_users, // Array
         rankchangetype: data_rankchangetype,
@@ -2552,7 +2566,7 @@
                 valid = true;
                 break;
               case "Blacklist":
-                if (dataToSubmit.name != '' && dataToSubmit.playerId != '' && dataToSubmit.discordid != '' && dataToSubmit.blacklist_type != '') valid = true;
+                if (dataToSubmit.name != '' && dataToSubmit.playerId != '' && dataToSubmit.discordId != '' && dataToSubmit.blacklist_type != '') valid = true;
                 break;
               default:
                 return Shake();
@@ -2792,7 +2806,7 @@
         current_user: document.getElementById('curruserSelect')?.value || '',
         name: document.getElementById('newnamefield')?.value || '',
         playerId: document.getElementById('newplayerIdfield')?.value || '',
-        discordid: document.getElementById('newsdiscidfield')?.value || '',
+        discordId: document.getElementById('newsdiscidfield')?.value || '',
         email: document.getElementById('newemailfield')?.value || '',
         specialization: document.getElementById('specfield')?.value || '',
         notes: document.getElementById('newnotesfield')?.value || '',
@@ -2808,7 +2822,7 @@
           if (editdata.playerId != '' && editdata.current_user != '') validEdit = true;
           break;
         case 'Edit dicsordID':
-          if (editdata.discordid != '' && editdata.current_user != '') validEdit = true;
+          if (editdata.discordId != '' && editdata.current_user != '') validEdit = true;
           break;
         case 'Edit Email':
           if (editdata.email != '' && editdata.current_user != '') validEdit = true;

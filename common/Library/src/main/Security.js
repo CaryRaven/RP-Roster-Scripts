@@ -145,6 +145,7 @@ function processPermissions(users, authed, exemptUsers, accessType, doc) {
     }
 
   });
+  
   return flagArray;
 }
 
