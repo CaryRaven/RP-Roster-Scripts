@@ -17,7 +17,7 @@ function merit_manageAction(title, desc, meritCount, editTitle) {
   if (meritCount < 1 || meritCount > 5) return "Invalid Merit Count";
 
   if (editTitle) {
-    // Editing existing action
+    // If editing existing action
     let actionIndex;
     for (let i = 0; i < actions.length; i++) {
       if (actions[i].title === editTitle) {
@@ -32,11 +32,11 @@ function merit_manageAction(title, desc, meritCount, editTitle) {
     message = "Edited Merit Action";
 
     // Change on sheet
-    for (let j = 7; j <= 104; j += 2) {
-      if (sheet.getRange(j, 17).getValue() === editTitle) {
-        sheet.getRange(j, 17).setValue(title);
-        sheet.getRange(j, 18).setValue(desc);
-        sheet.getRange(j, 19).setValue(meritCount);
+    for (let j = 7; j <= 57; j++) {
+      if (sheet.getRange(j, 3).getValue() === editTitle) {
+        sheet.getRange(j, 3).setValue(title);
+        sheet.getRange(j, 6).setValue(desc);
+        sheet.getRange(j, 14).setValue(meritCount);
         break;
       }
     }
@@ -53,16 +53,34 @@ function merit_manageAction(title, desc, meritCount, editTitle) {
       if (title === action.title) return "Merit Action already exists";
     }
 
-    // Add to sheet
-    for (let k = 7; k <= 104; k += 2) {
-      if (sheet.getRange(k, 17).getValue() === "") {
-        sheet.getRange(k, 17).setValue(title);
-        sheet.getRange(k, 18).setValue(desc);
-        sheet.getRange(k, 19).setValue(meritCount);
-        break;
-      }
+    // Add row to sheet + styling
+    const newLoc = 6 + LIBRARY_SETTINGS.meritActions.length + 1;
+    sheet.insertRowAfter(newLoc - 1);
+    sheet.getRange(newLoc, 3, 1, 12)
+      .setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK)
+      .setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID)
+      .setBackground("#666666")
+      .setFontColor("white")
+      .setFontFamily("Lexend")
+      .setFontSize(12);
+    
+    // Set border style of top to thick in case of first action
+    if (LIBRARY_SETTINGS.meritActions.length === 0) {
+      sheet.getRange(newLoc, 3, 1, 12).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     }
 
+    sheet.setRowHeight(newLoc, 35);
+
+    // Merge columns together
+    sheet.getRange(newLoc, 3, 1, 3).merge();
+    sheet.getRange(newLoc, 6, 1, 8).merge();
+
+    // Add the data
+    sheet.getRange(newLoc, 3).setValue(title);
+    sheet.getRange(newLoc, 6).setValue(desc);
+    sheet.getRange(newLoc, 14).setValue(meritCount);
+
+    // Add to settings
     LIBRARY_SETTINGS.meritActions.push({
       title: title,
       desc: desc,
@@ -99,34 +117,17 @@ function merit_removeAction(title) {
   if (actionIndex < 0) return "Invalid Title";
 
   // Get location on sheet
-  let deletedActionRow;
-  let moveActionRow;
   for (let i = 7; i <= 104; i += 2) {
-
-    // Location of action being deleted
-    if (sheet.getRange(i, 17).getValue() === title) {
-      deletedActionRow = i;
-    }
-
-    // Location of action to move to the deleted row to prevent any ugly gaps
-    if (sheet.getRange(i, 17).getValue() === "") {
-      moveActionRow = i - 2;
+    // Delete row
+    if (sheet.getRange(i, 3).getValue() === title) {
+      sheet.deleteRow(i);
+      if (i === 7) sheet.getRange(7, 3, 1, 12).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       break;
     }
   }
 
-  // Remove/Move from sheet
-  if (deletedActionRow !== moveActionRow) {
-    sheet.getRange(deletedActionRow, 17).setValue(sheet.getRange(moveActionRow, 17).getValue());
-    sheet.getRange(deletedActionRow, 18).setValue(sheet.getRange(moveActionRow, 18).getValue());
-    sheet.getRange(deletedActionRow, 19).setValue(sheet.getRange(moveActionRow, 19).getValue());
-  }
-  sheet.getRange(moveActionRow, 17).clearContent();
-  sheet.getRange(moveActionRow, 18).clearContent();
-  sheet.getRange(moveActionRow, 19).clearContent();
-
   // Remove from settings
   LIBRARY_SETTINGS.meritActions.splice(actionIndex, 1);
 
-  return ["Action Deleted", LIBRARY_SETTINGS];
+  return ["Deleted", LIBRARY_SETTINGS];
 }

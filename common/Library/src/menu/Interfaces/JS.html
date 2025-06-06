@@ -242,6 +242,7 @@
 
       // Stop filling requests if AFK
       clearInterval(requestInterval);
+      clearInterval(configupdate)
     }, 120000);
 
     document.addEventListener("click", () => {
@@ -249,13 +250,16 @@
       document.getElementById("afkBanner").style.display = "none";
 
       clearInterval(requestInterval);
+      clearInterval(configupdate)
       requestInterval = setInterval(() => {
           FillRequests();
+          if (configOpened) StartConfigInterval();
         }, 10000);
 
       afkTimer = window.setTimeout(() => {
         document.getElementById("afkBanner").style.display = "";
         clearInterval(requestInterval);
+        clearInterval(configupdate)
       }, 120000);
     });
 
@@ -279,6 +283,7 @@
     }
 
     window.ShowDash = function () {
+      configOpened = false;
       document.getElementById('dashboard').setAttribute('style', 'display: block;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
       document.getElementById('usermanual').setAttribute('style', 'display: none;');
@@ -297,6 +302,7 @@
     }
 
     window.ShowManual = function () {
+      configOpened = false;
       document.getElementById('dashboard').setAttribute('style', 'display: none;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
       document.getElementById('usermanual').setAttribute('style', 'display: block;');
@@ -310,6 +316,7 @@
     }
 
     window.ShowConnections = function () {
+      configOpened = false;
       document.getElementById('dashboard').setAttribute('style', 'display: none;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
       document.getElementById('usermanual').setAttribute('style', 'display: none;');
@@ -323,6 +330,7 @@
     }
 
     window.ShowSearch = function () {
+      configOpened = false;
       document.getElementById('dashboard').setAttribute('style', 'display: none;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
       document.getElementById('usermanual').setAttribute('style', 'display: none;');
@@ -336,6 +344,7 @@
       } catch (e) {  }
     }
 
+    let configOpened = false;
     window.ShowConfig = function () {
       document.getElementById('dashboard').setAttribute('style', 'display: none;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
@@ -345,9 +354,11 @@
       document.getElementById('config').setAttribute('style', 'display: block;');
       document.getElementById("requests-panel").setAttribute("style", "display: none;");
       StartConfigInterval();
+      configOpened = true;
     }
 
     window.ShowRequests = function () {
+      configOpened = false;
       document.getElementById('dashboard').setAttribute('style', 'display: none;');
       document.getElementById('data-forms').setAttribute('style', 'display: none;');
       document.getElementById('usermanual').setAttribute('style', 'display: none;');
@@ -1217,21 +1228,33 @@
     });
 
     let coll5 = document.getElementById("registeredListButton");
+    let openCooldown = false;
     let coll5Hidden = true;
 
+    setInterval(() => {
+      openCooldown = false;
+    }, 10000);
+
     coll5.addEventListener("click", function() {
-      coll5Hidden = !coll5Hidden;
       this.classList.toggle("active");
       const wrapper = document.getElementById("docListWrapper");
       const content = document.getElementById("registeredListContent");
-      content.innerHTML = '<div class="loader"></div>';
 
-      console.log(coll5Hidden);
+      coll5Hidden = !coll5Hidden;
+
       if (coll5Hidden) {
         return wrapper.style.display = "none";
       } else {
         wrapper.style.display = "block";
       }
+
+      if (openCooldown) {
+        return;
+      } else {
+        content.innerHTML = '<div class="loader"></div>';
+      }
+        
+      openCooldown = true;
 
       google.script.run.withSuccessHandler(r => {
         r = JSON.parse(r);
@@ -1724,7 +1747,11 @@
       const meritCount = document.getElementById("meritActionPoints");
       const meritOutput = document.getElementById("meritSliderOutput");
 
-      if (!action || action === "") return;
+      if (!action || action === "") {
+        document.getElementById("manageMerit-form").reset();
+        meritOutput.innerText = 1;
+        return;
+      }
 
       button.disabled = true;
       button.innerHTML = '<div class="loader"></div>';
@@ -1910,6 +1937,7 @@
       const title = document.getElementById("meritActionTitle").value;
       const desc = document.getElementById("meritActionDesc").value;
       let meritCount = document.getElementById("meritActionPoints").value;
+      const meritSliderOutput = document.getElementById("meritSliderOutput");
 
       meritCount = Number(meritCount);
 
@@ -1926,7 +1954,9 @@
         if (!response.includes("already")
           || !response.includes("Invalid")
           || !response.includes("Nothing")) {
+          
           button.classList.add("green");
+          meritSliderOutput.innerText = 1;
           GetMeritTitles();
           document.getElementById("manageMerit-form").reset();
 
@@ -2663,6 +2693,7 @@
         google.script.run.withSuccessHandler(oResponse => {
           try {
             oResponse = JSON.parse(oResponse);
+            console.log(oResponse);
 
             // Redir to the catch
             // if (!Array.isArray(oResponse)) throw new Error("bad bad response");

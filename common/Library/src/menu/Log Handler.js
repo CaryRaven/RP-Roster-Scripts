@@ -83,6 +83,16 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
     // Convert to an array so it's iterable, just in case
     if (!Array.isArray(inputData.users)) inputData.users = [inputData.users];
 
+    // For appeals, no users are provided
+    if (inputData.type.includes("Appeal")) {
+      const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+
+      for (let i = 6; i <= roster.getMaxRows(); i++) {
+        const name = roster.getRange(i, 5).getValue();
+        if (name !== "") inputData.users = [name];
+      }
+    }
+
     if (inputData.users.length > 10) return "You cannot select more than 10 members at once";
 
     valid = filterQuotes(inputData);
@@ -129,8 +139,10 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
 
     // used when moving members around
     let targetData;
+
     for (user of inputData.users) {
       targetData = getUserData(user, 5);
+      let dataToInsert;
 
       // Data was manually input
       if (inputData.type_check == "New Member" || inputData.blacklist_type == "Blacklist") {
@@ -149,7 +161,6 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
       firstRankRow[0] = firstRankRow[0] == 0 ? getLastRankRow(targetData.rank) : firstRankRow[0] - 1;
 
       let sheet;
-      let insertLogRow;
       // Main case
       switch (inputData.type) {
         case "Rank Change":
@@ -158,7 +169,6 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
           const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
           let isBlacklisted;
-          insertLogRow = getLastRow(sheet);
 
           switch (inputData.rankchangetype) {
             case "Promotion":
@@ -225,11 +235,16 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
               if (rowDestination[0] == 0) return `Cannot promote ${targetData.name}, ${promotionDestination} has reached capacity`;
               targetData["newRank"] = promotionDestination;
 
+              // Move person on roster
               moveMember(targetData.row, rowDestination[0]);
               moveMember(firstRankRow[0], targetData.row);
-              insertRankChangeLog(inputData, userData, targetData, promotionDestination, insertLogRow);
-              protectRange("N", sheet, null, insertLogRow);
 
+              // Insert the log
+              dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.rankchangetype, promotionDestination, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+              addLog(sheet, [[3, 10], [12, 14]], dataToInsert);
+              protectRange("N", sheet, null);
+
+              // Only add doc access if lockdown disabled
               if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
                 removeDocAccess(targetData.email);
                 addDocAccess(currentRankIndex + 1, targetData.email);
@@ -254,8 +269,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
 
               moveMember(targetData.row, Number(rowDestination[0]));
               moveMember(firstRankRow[0], targetData.row);
-              insertRankChangeLog(inputData, userData, targetData, demotionDestination, insertLogRow);
-              protectRange("N", sheet, null, insertLogRow);
+              dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.rankchangetype, demotionDestination, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+              addLog(sheet, [[3, 10], [12, 14]], dataToInsert);
+              protectRange("N", sheet, null);
 
               // Only add doc access if no lockdown
               if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
@@ -265,9 +281,10 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
               break;
             case "Removal":
               moveMember(targetData.row);
-              moveMember(firstRankRow[0], targetData.row);
-              insertRankChangeLog(inputData, userData, targetData, "D-Class", insertLogRow);
-              protectRange("N", sheet, null, insertLogRow);
+              if (targetData.row !== firstRankRow[0]) moveMember(firstRankRow[0], targetData.row);
+              dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.rankchangetype, "D-class", inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+              addLog(sheet, [[3, 10], [12, 14]], dataToInsert);
+              protectRange("N", sheet, null);
               removeDocAccess(targetData.email);
               break;
             case "Passed Interview":
@@ -291,7 +308,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
               if (targetData.row) return "Cannot have duplicate members";
 
               // Check if the user has been gone for over 2 weeks (minimum cooldown)
-              for (let i = insertLogRow - 1; i >= 7; i--) {
+              for (let i = 7; i < sheet.getMaxRows(); i++) {
                 const date = sheet.getRange(i, 3).getValue();
                 const playerId = sheet.getRange(i, 5).getValue();
                 const type = sheet.getRange(i, 8).getValue();
@@ -332,6 +349,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
                     } catch(e) { continue }
                   }
                 }
+
                 if (hasInterview !== true) return `Could not find an interview under the name: "${targetData.name}"\nMake sure they have passed a ${newStaffDestination} interview first.`;
               }
 
@@ -342,10 +360,10 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
               // For MTFs, say "Passed Tryout" and not "Passed Interview"
               let passed = "Passed Interview";
               if (LIBRARY_SETTINGS.factionName.includes("MTF")) passed = "Passed Tryout";
-              const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "D-Class", passed, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
-              sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, dataToInsert[0].length).setValues(dataToInsert);
 
-              protectRange("N", sheet, null, insertLogRow);
+              dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, "D-Class", passed, ranks[0], inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+              addLog(sheet, [[3, 10], [12, 14]], dataToInsert);
+              protectRange("N", sheet, null);
 
               if (LIBRARY_SETTINGS.lockdownEnabled.toString() === "false") {
                 removeDocAccess(targetData.email);
@@ -356,7 +374,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
 
           // Upon Rank Change => Wipe all supervisor mentions of this person
           if (!LIBRARY_SETTINGS.reqsDisabled) {
-            for (let i = 0; i < roster.getMaxRows(); i++) {
+            for (let i = 11; i < roster.getMaxRows(); i++) {
               const supervisorPlayerId = roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_playerId).getValue();
               if (targetData.playerId === supervisorPlayerId) {
                 roster.getRange(i, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).clearContent();
@@ -365,57 +383,56 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           }
           break;
         case "Infraction Log":
+          // Don't log again if triggered by threshold
           if (threshold === false) {
             if (targetData.status == "Suspended") return `${targetData.name} is suspended, you cannot strike them. Consider a removal/blacklist`;
             sheet = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
-            insertLogRow = getLastRow(sheet);
-            
-            // few random checks
+
             if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
-            sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 12).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.infraction_type, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
-            protectRange("A", sheet, 9, insertLogRow);
+            dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.infraction_type, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+            addLog(sheet, [[3, 10], [12, 14]], dataToInsert, [9]);
+            protectRange("A", sheet, 9);
             sendDiscordLog(inputData, targetData, userData);
           }
           break;
         case "LOA Log":
           console.log(inputData.end_date);
           const timeDiff = new Date().valueOf() - dateToMilliseconds(targetData.loaEnd);
+
+          // Checks
           if (targetData.status == "Suspended") return `${targetData.name} is currently suspended, they cannot go on LOA.`;
           if (timeDiff < 0) return `${targetData.name} is already on LOA, you cannot log another one`;
           if (timeDiff <= (LIBRARY_SETTINGS.cooldown_loa * 86400000)) return `${targetData.name} must wait ${LIBRARY_SETTINGS.cooldown_loa} days between LOAs`;
-
-          // few random checks
           if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
+          // Insert log
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_loa);
-          insertLogRow = getLastRow(sheet);
-
-          sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 10).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
-          protectRange("N", sheet, null, insertLogRow);
+          dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+          addLog(sheet, [[3, 8], [10, 12]], dataToInsert);
+          protectRange("N", sheet, null);
           break;
         case "Blacklist":
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
-          insertLogRow = getLastRow(sheet);
-
           // few random checks
           if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
 
           let appealable_bool;
-          if (inputData.blacklist_appealable == 'Yes') { appealable_bool = true; } else { appealable_bool = false; }
+          appealable_bool = inputData.blacklist_appealable == 'Yes' ? appealable_bool = true: appealable_bool = false;
 
-          sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 13).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
-          protectRange("A", sheet, 10, insertLogRow);
+          dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.blacklist_type, inputData.end_date, appealable_bool, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+          addLog(sheet, [[3, 11], [13, 15]], dataToInsert, [9, 10]);
+          protectRange("A", sheet, 10);
 
           if (inputData.blacklist_type === "Blacklist" && targetData.row) {
             sheet = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
             moveMember(targetData.row);
             inputData.rankchangetype = "Blacklisted";
-            insertLogRow = getLastRow(sheet);
 
             moveMember(firstRankRow[0], targetData.row);
-            insertRankChangeLog(inputData, userData, targetData, "D-Class", insertLogRow);
-            protectRange("N", sheet, null, insertLogRow);
+            dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.rankchangetype, "D-class", inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+            addLog(sheet, [[3, 10], [12, 14]], dataToInsert);
+            protectRange("N", sheet, null);
             removeDocAccess(targetData.email);
           }
           break;
@@ -440,16 +457,15 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           }
 
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_reqlogs);
-          insertLogRow = getLastRow(sheet);
 
           // Insert log
-          sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 11).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.reqName, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
-          protectRange("N", sheet, null, insertLogRow);
+          dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.reqName, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+          addLog(sheet, [[3, 9], [11, 13]], dataToInsert);
+          protectRange("N", sheet, null);
           break;
         case "Merit Log":
           if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_merit);
-          insertLogRow = getLastRow(sheet);
 
           // Get meritCount
           inputData.meritCount = 0;
@@ -459,11 +475,13 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
 
           if (inputData.meritCount <= 0 || !inputData.meritCount) return "Invalid Merit Action";
 
-          // Insert data
-          sheet.getRange(insertLogRow, LIBRARY_SETTINGS.dataCols.firstCol, 1, 12).setValues([[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.meritAction, inputData.meritCount, inputData.reason, "", userData.name, userData.playerId, userData.rank]]);
+          // Insert log
+          // :hardcode borderpairs
+          dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.meritAction, inputData.meritCount, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+          addLog(sheet, [[3, 10], [12, 14]], dataToInsert, [], 12 + LIBRARY_SETTINGS.meritActions.length)
           
           // Special Protect range
-          protections = sheet.getRange(insertLogRow, 1, 1, 16).protect();
+          protections = sheet.getRange(12 + LIBRARY_SETTINGS.meritActions.length, 1, 1, 16).protect();
 
           protections.removeEditors(protections.getEditors());
           if (protections.canDomainEdit()) {
@@ -493,8 +511,11 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           } else {
             return "Blacklist/Suspension was not found";
           }
-          break;
+
+          sendDiscordLog(inputData, targetData, userData);
+          return JSON.stringify(["Blacklist Appealed", Number(targetData.infractions) + 1, LIBRARY_SETTINGS.threshold_num, LIBRARY_SETTINGS.threshold_action]);
         case "Infraction Appeal":
+          console.log("Appealing Infraction");
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
           // Check if the given id corresponds to a log
           if (sheet.getRange(Number(inputData.log_id), 8).getValue() != '') {
@@ -513,7 +534,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
           } else {
             return "Infraction was not found";
           }
-          break;
+
+          sendDiscordLog(inputData, targetData, userData);
+          return JSON.stringify(["Infraction Appealed", Number(targetData.infractions) + 1, LIBRARY_SETTINGS.threshold_num, LIBRARY_SETTINGS.threshold_action]);
       }
 
       if (inputData.type !== "Infraction Log") sendDiscordLog(inputData, targetData, userData);

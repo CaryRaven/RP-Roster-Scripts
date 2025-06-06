@@ -416,7 +416,7 @@ function getDiscordWebhookUrls(authInput) {
  */
 function isUserBlacklisted(playerId) {
   if (!isInit) throw new Error("Library is not yet initialized");
-  if (!playerId || typeof playerId !== "string") throw new Error("Invalid playerId");
+  if (!playerId) throw new Error("Invalid playerId");
 
   const s = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
   const rows = getLastRow(s);
@@ -452,3 +452,59 @@ function includeJS() {
 function includeCSS() {
   return HtmlService.createHtmlOutputFromFile('menu/Interfaces/CSS').getContent();
 }
+
+/**
+ * Add any type of log to the roster (Rank Change, LOA etc...)
+ * @param {Object} sheet - The sheet object, retrieved using getCollect
+ * @param {Array<number>} borderPairs - The pairs of borders (used for styling)
+ * @param {(string|boolean|number[])[]} dataToInsert - The data that will be inserted into the new row
+ * @param {Array<number>} checkboxes - Cell columns to add a checkbox | default: []
+ * @param {Number} row - The row after which the new row will be made, & thus also the new row location | default: 7
+ * @returns {Void}
+ */
+function addLog(sheet, borderPairs, dataToInsert, checkboxes = [], row = 7) {
+  // Insert new row for log
+  // :hardcode row to insert after
+  sheet.insertRowBefore(row);
+  
+  // Style new row
+  borderPairs.forEach(pair => {
+    const colnum = pair[1] - pair[0] + 1;
+    sheet.getRange(row, pair[0], 1, colnum)
+      .setBorder(null, true, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK)
+      .setBorder(true, null, true, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID)
+      .setFontColor("white")
+      .setFontFamily("Lexend")
+      .setVerticalAlignment("middle")
+      .setHorizontalAlignment("center")
+      .setBackground("#666666");
+
+    // If first log ever => set bottom border thick
+    if (sheet.getRange(row + 1, pair[0]).getValue() === "") {
+      sheet.getRange(row, pair[0], 1, colnum)
+        .setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK)
+    }
+  });
+
+  checkboxes.forEach(cell => {
+    sheet.getRange(row, cell).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
+  });
+
+  // Insert data
+  sheet.getRange(row, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

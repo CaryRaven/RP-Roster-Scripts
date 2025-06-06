@@ -24,7 +24,9 @@ function sendDiscordLog(inputData, targetData, userData) {
   let date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
   let appealTo = "the Office of Office of Site Management";
 
-  if (LIBRARY_SETTINGS.factionName.includes("Management")) appealTo = "Staff Administration";
+  // :hardcode
+  if (LIBRARY_SETTINGS.factionName.includes("Management")
+    || userData.rank === "Blackshadow Staff") appealTo = "Staff Administration";
 
   // Set case-specific data to create speclialized discord notifs
   switch (inputData.type) {
@@ -147,7 +149,7 @@ function sendDiscordLog(inputData, targetData, userData) {
           inline: false
         }
       ],
-      footer: { text: footerMessage + '\nLogged on ' + date + `Issued by ${Number(userData.discordId) ? ` by <@${userData.discordId}>` : ` by ${userData.rank}`}` }
+      footer: { text: footerMessage + '\nLogged on ' + date + ` | Issued by ${Number(userData.discordId) ? `<@${userData.discordId}>` : `${userData.rank}`}` }
     }]
   });
 

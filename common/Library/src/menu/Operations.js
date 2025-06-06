@@ -8,17 +8,19 @@
 * @param {Number|Null} empty_row - Number of row to protect
 * @returns {Void}
 */
-function protectRange(type, sh, unprotectedCell, empty_row) {
+function protectRange(type, sh, unprotectedCell) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!type) throw new Error("protectRange: no type was provided");
   if (!sh) throw new Error("protectRange: no sheet object was provided");
-  if (!empty_row) throw new Error("protectRange: no empty row provided");
 
   let protections;
+
+  // :hardcode the row where the log is (8)
+  // Don't protect the last log, as that will prevent users from logging another => permissions error
   switch (type) {
     // NORMAL (full row)
     case "N":
-      protections = sh.getRange(empty_row, 1, 1, sh.getMaxColumns()).protect();
+      protections = sh.getRange(8, 1, 1, sh.getMaxColumns()).protect();
 
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
@@ -29,12 +31,12 @@ function protectRange(type, sh, unprotectedCell, empty_row) {
     case "A":
       if (!unprotectedCell) throw new Error("protectRange: no unprotected cell provided");
       
-      protections = sh.getRange(empty_row, 1, 1, (unprotectedCell - 1)).protect();
+      protections = sh.getRange(8, 1, 1, (unprotectedCell - 1)).protect();
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
         protections.setDomainEdit(false);
       }
-      protections = sh.getRange(empty_row, (unprotectedCell + 1), 1, sh.getMaxColumns()).protect();
+      protections = sh.getRange(8, (unprotectedCell + 1), 1, sh.getMaxColumns()).protect();
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
         protections.setDomainEdit(false);
@@ -44,31 +46,13 @@ function protectRange(type, sh, unprotectedCell, empty_row) {
     case "S":
       if (!unprotectedCell) throw new Error("protectRange: no unprotected cell provided");
 
-      protections = sh.getRange(empty_row, unprotectedCell, 1, 1).protect();
+      protections = sh.getRange(8, unprotectedCell, 1, 1).protect();
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
         protections.setDomainEdit(false);
       }
       break;
   }
-}
-
-/**
- * Insert a rank change log
- * @param {String} newRank - The name of the new rank of the target
- * @param {Number} insertLogRow - the number of the row to insert the rank change
- */
-function insertRankChangeLog(inputData, userData, targetData, newRank, insertLogRow) {
-  if (!isInit) throw new Error("Library is not yet initialized");
-  if (!inputData) throw new Error("insertRankChangeLog: no inputData provided");
-  if (!userData) throw new Error("insertRankChangeLog: no userData provided");
-  if (!targetData) throw new Error("insertRankChangeLog: no targetData provided");
-  if (!newRank) throw new Error("insertRankChangeLog: no newRank provided");
-  if (!insertLogRow) throw new Error("insertRankChangeLog: no insertLogRow provided");
-
-  const sheet = this.getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
-  const dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, targetData.rank, inputData.rankchangetype, newRank, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
-  sheet.getRange(insertLogRow, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
 }
 
 /**
@@ -102,7 +86,7 @@ function moveMember(rowToSearch, destinationRow, branch = 0) {
   if (destinationRow && destinationRow != 0) dataCols.forEach((col, i) => roster.getRange(destinationRow, col).setValue(moveData[i].val).setNote(moveData[i].note));
 
   // Remove Supervisor
-  if (!LIBRARY_SETTINGS.supervisorsDisabled) roster.getRange(destinationRow, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).clearContent();
+  if (!LIBRARY_SETTINGS.supervisorsDisabled && destinationRow > 0) roster.getRange(destinationRow, LIBRARY_SETTINGS.dataCols.supervisor_name, 1, 2).clearContent();
 }
 
 /**
