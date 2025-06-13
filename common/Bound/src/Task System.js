@@ -70,7 +70,8 @@ function OpenFile(type, row, col, title) {
   template.row = row;
   template.col = col;
   template.title = title;
-  template.type = type
+  template.type = type;
+  template.emails = RosterService.getAllEmails();
   const eval = template.evaluate();
   SpreadsheetApp.getUi().showModalDialog(eval.setWidth(600).setHeight(800), `${type} ${type === "Assign" ? "to" : ""} Task`);
 }
@@ -109,14 +110,6 @@ function ChangePriority(inputData) {
   if (response !== "Priority Edited") return SpreadsheetApp.getUi().alert(response);
 
   return response;
-}
-
-/**
- * Time-based trigger
- * @returns {void}
- */
-function Tigger_IsAssigned() {
-  RosterService.task_isAssigned();
 }
 
 /**

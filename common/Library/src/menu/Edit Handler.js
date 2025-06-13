@@ -104,7 +104,7 @@ function processEdit(inputData, allowedStaff, userData = {}) {
             inputData.title = spec.title;
             inputData.desc = spec.desc;
             inputData.type = "Edit Specialization";
-            sendDiscordLog(inputData, targetData, userData);
+            if (inputData.specialization !== "") sendDiscordLog(inputData, targetData, userData);
           }
         });
         if (!found) return "Specialization not found";

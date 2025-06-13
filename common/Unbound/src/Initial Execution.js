@@ -276,10 +276,10 @@ function Set() {
   lockdownEnabled: false,
   manualEnabled: false,
   reqsDisabled: true,
-  supervisorsDisabled: false,
+  supervisorsDisabled: true,
   modsOnlySupervised: false,
   managersOnlySupervised: false,
-  newRowData:
+  newRowData: 
    [ [ '/title/',
        '/title/',
        '',
@@ -289,11 +289,11 @@ function Set() {
        '',
        '= INFRACTIONS(F/row/, Infractions!E:E, Infractions!H:H, Infractions!I:I, Infractions!C:C)',
        '= GET_MERIT_COUNT(F/row/, \'Merit Logs\'!I:I, \'Merit Logs\'!C:C, \'Merit Logs\'!E:E)',
-       '= STATUS(F/row/, G/row/, E/row/, H/row/, \'LOA Logs\'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, P/row/)',
+       '= STATUS(F/row/, G/row/, E/row/, H/row/, \'LOA Logs\'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, R/row/)',
        '',
        '= LAST_RANKCHANGE(F/row/, \'Rank Changes\'!E:E, \'Rank Changes\'!C:C)',
        '= LOA_DATE(F/row/, \'LOA Logs\'!E:E, \'LOA Logs\'!G:G)',
-       false,
+       `= HAS_TASK(E/row/)`,
        '= REQS_CHECK(F/row/, \'Promotion Progress\'!F:F, \'Promotion Progress\'!H:M)',
        '= BLACKLIST_DATE(F/row/, \'Suspensions / Blacklists\'!E:E, \'Suspensions / Blacklists\'!H:H, \'Suspensions / Blacklists\'!J:J)',
        '' ] ] }));

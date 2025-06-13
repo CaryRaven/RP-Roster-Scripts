@@ -254,10 +254,11 @@ function task_changeAssignment(inputData) {
 
   if (currentAssignees.includes(targetData.name)) {
     currentAssignees = task_removeAssignee(currentAssignees, targetData.name);
-    roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.taskAssigned).setValue(false);
   } else {
+    // Do not assign tasks to LOA as they can be striked for not completing on time, would be unfair
+    // TODO: Improving LOAs: allow for early ending of an LOA & to select a start date (instead of assuming log date)
+    if (targetData.status === "LOA") return "Cannot assign a task, user is on LOA";
     currentAssignees = currentAssignees + `${currentAssignees ? ", " : ""} ${targetData.name}`;
-    roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.taskAssigned).setValue(true);
     assigned = true;
   }
 

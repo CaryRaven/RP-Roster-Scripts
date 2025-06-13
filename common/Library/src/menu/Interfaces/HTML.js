@@ -975,7 +975,7 @@ function getAdminMenu() {
                 <option value=""></option>
               </select>
               <input type="text" placeholder="Enter new Extra Notes" id="newnotesfield" style="display: none;"
-                maxlength="125" required />
+                maxlength="125" />
               <label for="supervisorSelect" id="supervisorSelectLabel" style="display: none;">Select a (new) supervisor:</label>
               <select id="supervisorSelect" style="display: none;"/>
                 <option value=''></option>

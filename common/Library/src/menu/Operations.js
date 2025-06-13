@@ -377,15 +377,15 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
       let startRankRow = getStartRankRow(inputData.editRank, i);
       let lastRankRow = getLastRankRow(inputData.editRank, i);
 
-      // Always remove rank from promo progress (won't error if not applicable)
       if (i === 1) {
-        removeRank(inputData.editRank, false, i, true);
-
         // Determine where to place rank on promo progress, as not all ranks will have promo reqs
         lastPromoRank = sheet.getRange(sheet.getMaxRows() - 2, LIBRARY_SETTINGS.dataCols.rank).getValue();
         if (lastPromoRank !== "" && LIBRARY_SETTINGS.ranks.indexOf(lastPromoRank) >= LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore)) {
           lastBeforeRow = sheet.getMaxRows() - 2;
         }
+      } else if (i === 0) {
+        // Always remove rank from promo progress (won't error if not applicable)
+        removeRank(inputData.editRank, false, 1, true);
       }
 
       // Change title of rank if applicable
@@ -665,9 +665,12 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
 
   if (!borderPairs) borderPairs = [
     [5, 8], 
-    [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
+    [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - (LIBRARY_SETTINGS.reqsDisabled ? 2 : 1)], 
     [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
-  ]
+  ];
+  
+  if (!LIBRARY_SETTINGS.supervisorsDisabled) borderPairs.splice(2, 0, [LIBRARY_SETTINGS.dataCols.supervisor_name, LIBRARY_SETTINGS.dataCols.supervisor_playerId]);
+
   console.log(`num: ${num}`)
 
   let rowData = getFirstRankRow(rank);
@@ -716,6 +719,8 @@ function addRankRow(rank, userData, num = 1, discordnotif = true, borderPairs = 
     // Set border styling
     sheet.getRange(insertRow, cellpair[0], num, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     sheet.getRange(insertRow, cellpair[0], num, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+
+    // Set first rank row borderstyling
     sheet.getRange(startMergedRange, cellpair[0], 1, numcols).setBorder(true, true, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     sheet.getRange(startMergedRange, cellpair[0], 1, numcols).setBorder(null, null, true, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
 
@@ -747,7 +752,9 @@ function removeRankRow(rank, userData, num = 1, borderPairs = null) {
       [5, 8], 
       [10, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1], 
       [LIBRARY_SETTINGS.dataCols.notes, LIBRARY_SETTINGS.dataCols.notes]
-    ]
+    ];
+
+    if (!LIBRARY_SETTINGS.supervisorsDisabled) borderPairs.splice(2, 0, [LIBRARY_SETTINGS.dataCols.supervisor_name, LIBRARY_SETTINGS.dataCols.supervisor_playerId]);
 
     if (rowData[0] == 0) return "Remove Rank Instead";
     if (startRankRow === lastRankRow || sheet.getRange(lastRankRow, LIBRARY_SETTINGS.dataCols.name, 1, 1).getDisplayValue() !== "") return "Population";
@@ -823,6 +830,7 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
   }
 
   // Insert row
+  console.log(`${startRow}, ${num}`);
   sheet.insertRowsAfter(startRow, num);
   borderPairs.forEach(cellpair => {
     const numcols = (cellpair[1] - cellpair[0]) + 1;

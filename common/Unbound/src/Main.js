@@ -1,3 +1,11 @@
+/**
+ * Processes a log 
+ * 
+ * @param {Object} inputData - Data object input by the user
+ * @param {Boolean} threshold - Was this function ran because of the infraction threshold?
+ * @param {String} accessType - Access level of the user (visitor, mod, manager, admin, dev)
+ * @returns {String}
+ */
 function ProcessLog(inputData, threshold = false, accessType) {
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
   const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
@@ -14,54 +22,23 @@ function ProcessLog(inputData, threshold = false, accessType) {
     if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
     let type = inputData.type === "Rank Change" ? inputData.rankchangetype : inputData.type === "Blacklist" ? inputData.blacklist_type : inputData.type;
 
-    for (user of inputData.users) {
-      const targetData = accessType === "visitor" ? RosterService.getUserData(inputData.email) : RosterService.getUserData(user, 5);
+    if (!Array.isArray(inputData.users)) inputData.users = [inputData.users];
 
-      if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal" && accessType !== "visitor") {
-        let ranks = LIBRARY_SETTINGS.ranks;
+    // For appeals, no users are provided
+    if (inputData.type.includes("Appeal")) {
+      const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
-        // More perm checks
-        if (!targetData.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
-        if (targetData.playerId == userData.playerId) return "You cannot manage yourself";
-
-        // If supervisors enabled & not supervisor => deny log
-        // TODO: Needs testing
-        if (!LIBRARY_SETTINGS.supervisorsDisabled) {
-          if (LIBRARY_SETTINGS.modRanks.includes(userData.rank) && LIBRARY_SETTINGS.modsOnlySupervised) {
-            if (userData.playerId !== targetData.supervisor_playerId) return `You cannot manage ${targetData.name}, you do not supervise them.`;
-          } else if (LIBRARY_SETTINGS.managerRanks.includes(userData.rank) && LIBRARY_SETTINGS.managersOnlySupervised) {
-            if (userData.playerId !== targetData.supervisor_playerId) return `You cannot manage ${targetData.name}, you do not supervise them.`;
-          }
-        }
-
-        if (targetData_check.status === "Missing Data") return "You cannot perform logs on people with missing data";
-        if (LIBRARY_SETTINGS.adminRanks.includes(targetData.rank)) return "You cannot manage Senior CL4 members";
-        if (allowedStaff.includes(inputData.email) || allowedStaff.includes(targetData.email)) return "You cannot manage Staff from this menu";
-        if (!allowedStaff.includes(inputData.email) && ranks.indexOf(targetData.rank) >= ranks.indexOf(userData.rank)) {
-          return "You cannot manage people with a higher rank than you."
-        }
+      for (let i = 6; i <= roster.getMaxRows(); i++) {
+        const name = roster.getRange(i, 5).getValue();
+        if (name !== "") inputData.users = [name];
       }
-
-      if (inputData.type === "Requirement Log") {
-        // Check if user completed req yet
-        sheet = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
-        let reqTitleRow = RosterService.getFirstRankRow(targetData.rank, LIBRARY_SETTINGS.rosterIds.length - 1)[0] - 1;
-
-        // Get column where req is located
-        for (let i = 8; i < sheet.getMaxColumns(); i++) {
-          if (sheet.getRange(reqTitleRow, i).getValue() === inputData.reqName) {
-
-            // Get row where req is located
-            for (let j = reqTitleRow; j < sheet.getMaxRows(); j++) {
-              if (sheet.getRange(j, LIBRARY_SETTINGS.dataCols.playerId).getValue() === targetData.playerId && sheet.getRange(j, i).getDisplayValue() == true) return "User already completed requirement";
-            }
-          }
-        }
-      }
-    
-    // Stop first loop here so checks are performed seperately
-    // Only start adding requests if all of them are clear to go
     }
+
+    if (inputData.users.length > 10) return "You cannot select more than 10 members at once";
+
+    // Check the submitted data
+    const returnVal = RosterService.processLog(inputData, userData, allowedStaff, threshold, true, accessType);
+    if (typeof returnVal === "string") return returnVal;
 
     let requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
 
@@ -400,6 +377,7 @@ function ToggleReqs() {
   console.log(value);
   value = value === "true" ? false : true;
   const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
+  const r = RosterService.getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   if (value) {
     console.log("removing")
@@ -410,6 +388,9 @@ function ToggleReqs() {
       const s = RosterService.getCollect(Number(sheetId));
       s.hideSheet();
     }
+
+    // Hiding column -> Handled by bound
+    // r.hideColumn(r.getRange(1, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1));
   } else {
     console.log("re-adding");
     // Show sheets related to promo reqs
@@ -418,6 +399,9 @@ function ToggleReqs() {
       const s = RosterService.getCollect(Number(sheetId));
       s.showSheet();
     }
+
+    // Show column -> handled by bound
+    // r.unhideColumn(r.getRange(1, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1));
   }
 
   LIBRARY_SETTINGS.reqsDisabled = value;
@@ -719,6 +703,12 @@ function GetMeritActions() {
 function ManageMeritAction(title, desc, meritCount, editTitle) {
   const returnVal = RosterService.merit_manageAction(title, desc, meritCount, editTitle);
 
+  if (editTitle) {
+    const s = RosterService.getCollect(2063800821);
+    s.unhideColumn(s.getRange(1, 11));
+    RosterService.getCollect(1635403376).showSheet();
+  }
+
   if (!Array.isArray(returnVal)) return returnVal;
 
   RosterService.init(returnVal[1]);
@@ -738,6 +728,12 @@ function RemoveMeritAction(title) {
 
   RosterService.init(returnVal[1]);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnVal[1]));
+
+  if (returnVal[1].meritActions.length <= 0) {
+    const s = RosterService.getCollect(2063800821);
+    s.hideColumn(s.getRange(1, 11));
+    RosterService.getCollect(1635403376).hideSheet();
+  }
 
   return returnVal[0]
 }

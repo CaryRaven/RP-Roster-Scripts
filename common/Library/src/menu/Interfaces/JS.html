@@ -291,6 +291,8 @@
       document.getElementById('search_panel').setAttribute('style', 'display: none;');
       document.getElementById("requests-panel").setAttribute("style", "display: none;");
       SetUserSelects();
+      HideCheck();
+      
       try {
         document.getElementById('config').setAttribute('style', 'display: none;'); 
         clearInterval(configupdate);
@@ -819,6 +821,8 @@
       rankElement.disabled = true;
 
       google.script.run.withSuccessHandler(response => {
+        document.getElementById("currentSlotsName").innerText = "";
+        document.getElementById("currentSlotsNum").innerText = "";
         configLoading.innerHTML = '';
         buttonAdd.classList.add('green');
         buttonRemove.classList.add('green');
@@ -880,6 +884,8 @@
       }
 
       google.script.run.withSuccessHandler(response => {
+        document.getElementById("currentSlotsName").innerText = "";
+        document.getElementById("currentSlotsNum").innerText = "";
         configLoading.innerHTML = '';
         if (response) {
           buttonAdd.classList.add('red');
@@ -1233,7 +1239,7 @@
 
     setInterval(() => {
       openCooldown = false;
-    }, 10000);
+    }, 15000);
 
     coll5.addEventListener("click", function() {
       this.classList.toggle("active");
@@ -1320,12 +1326,13 @@
       document.querySelectorAll(".req").forEach(task => {
         const title = task.querySelector(".title").value;
         const desc = task.querySelector(".description").value;
-        const completionType = task.querySelector(".completion_type").value;
-        const formula = completionType === "formula" ? task.querySelector(".formula").value : "";
         const logcount = task.querySelector(".logcount").value;
         const expirydays = task.querySelector(".expirydays").value;
+        // Currently not used
+        const completionType = "manual"; // task.querySelector(".completion_type").value;
+        const formula = ""; // completionType === "formula" ? task.querySelector(".formula").value : "";
 
-        if (!title || !desc || title.length > 16 || desc.length > 300 || !completionType || logcount > 10 || expirydays > 60) return valid = false;
+        if (!title || !desc || title.length > 16 || desc.length > 300 || logcount > 10 || expirydays > 60) return valid = false;
         
         reqs.push({ title, desc, completion_type: completionType, formula, logcount, expirydays });
       });
@@ -1983,7 +1990,6 @@
           button.disabled = false;
         }, 3000);
       }).ManageMeritAction(title, desc, meritCount, editTitle);
-      // TODO
     };
 
     window.RemoveMeritAction = function(event) {
@@ -2474,7 +2480,7 @@
     GetMeritTitles();
 
     // Prefill req field when loading web app
-    GetReqTitles();
+    if (accessType === "visitor") GetReqTitles();
 
     // If you're not logging a req for yourself -> check the reqs of the person on every input change
     // TODO
@@ -2862,10 +2868,21 @@
           if (editdata.current_user != '') { validEdit = true; }
           break;
         case 'Edit Note':
-          if (editdata.notes != '' && editdata.current_user != '') validEdit = true;
+          if (editdata.current_user != '') validEdit = true;
           break;
         case 'Edit Supervisor':
           if (editdata.current_user != '') validEdit = true;
+      }
+
+      if (!validEdit) {
+        Shake();
+        button.innerText = "Invalid Input";
+        button.disabled = true;
+        setTimeout(() => {
+          button.innerText = "Submit";
+          button.disabled = false;
+        }, 2000);
+        return;
       }
 
       Object.values(editdata).forEach(value => {

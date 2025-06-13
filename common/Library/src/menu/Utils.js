@@ -111,16 +111,6 @@ function getStartRankRow(rank, branch = 0) {
 }
 
 /**
-* Get the first empty slot of a certian rank, not to be confused with GetStartRankRow()
-* @param {String} rank - Rank name of the target
-* @returns {Array} Array with length of 2: [rowNumber, sheetObject]
-*/
-/**
- * Get the first empty slot of a certian rank, not to be confused with GetStartRankRow()
- * @param {String} rank - Rank name of the target
- * @returns {Array} Array with length of 2: [rowNumber, sheetObject]
- */
-/**
  * Gets the first row in a given branch's roster with the specified rank and an empty Steam ID.
  *
  * @param {string} rank The rank to search for.
@@ -493,18 +483,3 @@ function addLog(sheet, borderPairs, dataToInsert, checkboxes = [], row = 7) {
   // Insert data
   sheet.getRange(row, 3, 1, dataToInsert[0].length).setValues(dataToInsert);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

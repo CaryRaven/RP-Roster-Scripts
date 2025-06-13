@@ -6,9 +6,10 @@
  * @param {PropertyService.UserProperty} userData
  * @param {PropertyService.ScriptProperty} allowedStaff
  * @param {Boolean} threshold (optional) - Is this function run because of the threshold?
+ * @param {Boolean} justCheck - If the function should only perform the checks, and not process the log.
  * @returns {String}
  */
-function processLog(inputData, userData, allowedStaff, threshold = false) {
+function processLog(inputData, userData, allowedStaff, threshold = false, justCheck = false, accessType = null) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData || typeof inputData !== "object") throw new Error("Do not run this function from the editor");
   if (!userData) throw new Error("No userdata provided");
@@ -83,7 +84,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
     // Convert to an array so it's iterable, just in case
     if (!Array.isArray(inputData.users)) inputData.users = [inputData.users];
 
-    // For appeals, no users are provided
+    // For appeals, no users are provided -> get the first name you find (nothing will be done with it)
     if (inputData.type.includes("Appeal")) {
       const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
@@ -102,7 +103,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
     // Only do all these calculations when needed (runtime reduction)
     if (inputData.type != "Infraction Appeal" && inputData.type != "Blacklist Appeal") {
       for (user of inputData.users) {
-        let targetData_check = getUserData(user, 5);
+        let targetData_check = accessType  === "visitor" ? getUserData(inputData.email) : getUserData(user, 5);
 
         if (!targetData_check.row && inputData.blacklist_type != "Blacklist" && inputData.rankchangetype != "Passed Interview") return "User not found";
 
@@ -133,6 +134,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false) {
         if (ranks.indexOf(targetData_check.rank) >= ranks.indexOf(userData.rank) && !allowedStaff.includes(userData.email)) return "You cannot manage people with a higher rank than you.";
       }
     }
+
+    // Abort function if just checking
+    if (justCheck) return;
 
     // Array of responses to send back -> termine whether or not the infraction threshold applies etc...
     let response = [];

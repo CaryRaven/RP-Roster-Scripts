@@ -82,14 +82,24 @@ function getSpecContent(title) {
 function removeSpec(title) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!title || typeof title !== "string") throw new Error("No valid title provided");
-
   let found = false;
+
+  // Remove from settings
   LIBRARY_SETTINGS.specializations.forEach((spec, i) => {
     if (spec.title === title) {
       LIBRARY_SETTINGS.specializations.splice(i, 1);
       found = true;
     }
   });
+
   if (!found) return "Specialization not found";
+
+  // Remove from roster
+  const s = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  for (let i = 8; i < s.getMaxRows(); i++) {
+    const c = s.getRange(i, LIBRARY_SETTINGS.dataCols.specialization);
+    if (c.getDisplayValue() === title) c.clearContent().clearNote();
+  }
+
   return ["Specialization Removed", LIBRARY_SETTINGS];
 }
