@@ -5,22 +5,21 @@
 * @param {String} type - Single character: N (normal), A (Appealable) or S (Single)
 * @param {Object} sh - Sheet Object (use getCollect() to extract this object using sheet ID)
 * @param {Number|Null} unprotectedCell - Column number of cell to leave unprotected (null in case of N type)
-* @param {Number|Null} empty_row - Number of row to protect
+* @param {Number|Null} row - Number of row to protect, default: 8
 * @returns {Void}
 */
-function protectRange(type, sh, unprotectedCell) {
+function protectRange(type, sh, unprotectedCell, row = 8) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!type) throw new Error("protectRange: no type was provided");
   if (!sh) throw new Error("protectRange: no sheet object was provided");
 
   let protections;
 
-  // :hardcode the row where the log is (8)
   // Don't protect the last log, as that will prevent users from logging another => permissions error
   switch (type) {
     // NORMAL (full row)
     case "N":
-      protections = sh.getRange(8, 1, 1, sh.getMaxColumns()).protect();
+      protections = sh.getRange(row, 1, 1, sh.getMaxColumns()).protect();
 
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
@@ -31,12 +30,12 @@ function protectRange(type, sh, unprotectedCell) {
     case "A":
       if (!unprotectedCell) throw new Error("protectRange: no unprotected cell provided");
       
-      protections = sh.getRange(8, 1, 1, (unprotectedCell - 1)).protect();
+      protections = sh.getRange(row, 1, 1, (unprotectedCell - 1)).protect();
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
         protections.setDomainEdit(false);
       }
-      protections = sh.getRange(8, (unprotectedCell + 1), 1, sh.getMaxColumns()).protect();
+      protections = sh.getRange(row, (unprotectedCell + 1), 1, sh.getMaxColumns()).protect();
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
         protections.setDomainEdit(false);
@@ -46,7 +45,7 @@ function protectRange(type, sh, unprotectedCell) {
     case "S":
       if (!unprotectedCell) throw new Error("protectRange: no unprotected cell provided");
 
-      protections = sh.getRange(8, unprotectedCell, 1, 1).protect();
+      protections = sh.getRange(row, unprotectedCell, 1, 1).protect();
       protections.removeEditors(protections.getEditors());
       if (protections.canDomainEdit()) {
         protections.setDomainEdit(false);

@@ -439,7 +439,7 @@ function getAdminMenu() {
             <form id="config-form-modRanks">
               <label for="mod-role-select"><strong>Select Rank to add/remove Mod access to the Admin Menu</strong>
               <span class="tooltip2"><i class="bx bxs-help-circle"></i>
-                  <span class="tooltiptext">"Mod" access means that the person won't get access to "requests" or "config" and all logs/edits they make via this menu will need to be approved by a manager or above, though they are able to perform operations on their subordinates.<br><br>If the rank already had access, it will be removed. If it didn't, it will be added.</span>
+                  <span class="tooltiptext" style="font-weight: 0;">"Mod" access means that the person won't get access to "requests" or "config" and all logs/edits they make via this menu will need to be approved by a manager or above, though they are able to perform operations on their subordinates.<br><br>If the rank already had access, it will be removed. If it didn't, it will be added.</span>
               </span>
               <br><span style="font-size: 13px; font-weight: 100;">Current allowed ranks: <span id="modRanks"><?= modRanks.join(", ") ?></span></span><br>
               </label><br>
@@ -540,7 +540,7 @@ function getAdminMenu() {
               <input type="text" id="newRankViewFolders" placeholder="Add the file & folder IDs seperated by a comma"><br>
               <label for="newRankEditFolders">Add the IDs of the folders/files that this rank should have editor access to: 
               <span class="tooltip2"><i class="bx bxs-help-circle"></i>
-                <span class="tooltiptext">You do not need to add every single file seperately. It is enough to only give permissions to the parent folder. This will give
+                <span class="tooltiptext" style="font-weight: 0;">You do not need to add every single file seperately. It is enough to only give permissions to the parent folder. This will give
                 the user permissions to all current and future documents in said folder.
                 <br><br>File/Folder IDs can be found inside of the URL. It is a random string of characters, usually starts with a "1" and it doesn't make any sense.
                 <br><br><strong>Make sure you seperate the different IDs with a comma</strong></span>
@@ -552,7 +552,7 @@ function getAdminMenu() {
                   <td>
                     Does this rank require an interview: 
                     <span class="tooltip2"><i class="bx bxs-help-circle"></i>
-                      <span class="tooltiptext">In order to make an interview document, you will head to the roster under "Rank Changes" and press the checkbox at the 
+                      <span class="tooltiptext" style="font-weight: 0;">In order to make an interview document, you will head to the roster under "Rank Changes" and press the checkbox at the 
                       top-left corner. This will give you a UI to generate a document with random questions for your chosen rank. Each department/regiment has an interview folder where these documents will be stored.
                       <br><br>If you decide to check this config option, make sure that the rank can be selected inside of the "Generate Interview" UI. If not, you won't be able to 
                       promote anybody to your new rank. In order to configure this, contact a member of Community Leadership.</span>
@@ -834,6 +834,10 @@ function getAdminMenu() {
                 <option value="Requirement Log">Promotion Requirement Log</option>
                 <option value="Merit Log">Merit Log</option>
 
+                <? if (accessType !== "visitor" && accessType !== "mod") { ?>
+                  <option value="End LOA Early">End LOA Early</option>
+                <? } ?>
+
                 <? if (accessType === "dev" || accessType === "admin") { ?>
                   <option value="Blacklist">Blacklist / Suspension</option>
                   <option value="Infraction Appeal">Appeal Infraction</option>
@@ -850,6 +854,26 @@ function getAdminMenu() {
                 to appeal is located.</label>
               <input type="number" placeholder="Log ID; minimum 7, up to 1003" id='idfield' min="7" max="1003"
                 style="display: none;" required />
+              <label for="bltypelist" id="bllabel" style="display: none;">Do you want to log a Blacklist or
+                Suspension?:</label>
+              <select type="text" id='bltypelist' style="display: none;" onchange="BlacklistToggle()" required>
+                <option value=''></option>
+                <option value="Suspension">Suspension</option>
+                <option value="Blacklist">Blacklist</option>
+              </select>
+              <input type="text" placeholder="Name" id='namefield' maxlength="20" style="display: none;" required />
+              <input type="text" placeholder="5-hex Player ID" id='playerIdfield' maxlength="5" style="display: none;" required />
+              <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
+              <input type="text" placeholder="Email Address" id='newMemberEmailField' maxlength="40" style="display: none;" required />
+              <label for="userSelect" id="userSelectlabel">Select which members this log applies to:
+                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                  <span class="tooltiptext">You can press <em>shift</em> to select a range of members at once or <em>control</em> to select multiple
+                  members one by one.<br><br>The log will be executed on all selected members, which means the more members you select the longer the execution
+                  time will be, so please be patient when selecting a lot of members <em>(though there is a built in limit of 10)</em>.</span>
+                </span>
+              </label>
+              <select id="userSelect" required multiple />
+              </select>
               <label for="infrtypelist" id="infrlabel" style="display: none;">Select an Infraction Type: 
               <span class="tooltip2"><i class="bx bxs-help-circle"></i>
                 <span class="tooltiptext">Different severities of infraction take longer to expire, staying on your record for:
@@ -865,31 +889,11 @@ function getAdminMenu() {
                 <option value="Regular">Regular</option>
                 <option value="Severe">Severe</option>
               </select>
-              <label for="bltypelist" id="bllabel" style="display: none;">Do you want to log a Blacklist or
-                Suspension?:</label>
-              <select type="text" id='bltypelist' style="display: none;" onchange="BlacklistToggle()" required>
-                <option value=''></option>
-                <option value="Suspension">Suspension</option>
-                <option value="Blacklist">Blacklist</option>
-              </select>
               <label for='appealable' id='appealablelabel' style="display: none;">Is the Blacklist appealable?:</label>
               <select type="text" id="appealable" style="display: none;" required>
                 <option value=''></option>
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
-              </select>
-              <input type="text" placeholder="Name" id='namefield' maxlength="20" style="display: none;" required />
-              <input type="text" placeholder="5-hex Player ID" id='playerIdfield' maxlength="5" style="display: none;" required />
-              <input type="text" placeholder="Discord ID" id='discordidfield' maxlength="25" style="display: none;" required />
-              <input type="text" placeholder="Email Address" id='newMemberEmailField' maxlength="40" style="display: none;" required />
-              <label for="userSelect" id="userSelectlabel">Select which members this log applies to:
-                <span class="tooltip2"><i class="bx bxs-help-circle"></i>
-                  <span class="tooltiptext">You can press <em>shift</em> to select a range of members at once or <em>control</em> to select multiple
-                  members one by one.<br><br>The log will be executed on all selected members, which means the more members you select the longer the execution
-                  time will be, so please be patient when selecting a lot of members <em>(though there is a built in limit of 10)</em>.</span>
-                </span>
-              </label>
-              <select id="userSelect" required multiple />
               </select>
               <label for="userSelectPromoReqs" id="userSelectPromoReqsLabel">Select which member has completed the requirement</label>
               <select id="userSelectPromoReqs" required/>
@@ -901,10 +905,15 @@ function getAdminMenu() {
                 <option value="Demotion">Demotion</option>
                 <option value="Removal">Removal</option>
               </select>
+              <label for="enddatefield" id="startdatelabelLOA" style="display: none;">Select start date of LOA:
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                <span class="tooltiptext">Not required, by default the start date will be today.</span>
+              </span>
+              </label>
+              <input type="date" placeholder="dd/mm/yyyy" id='startdatefield' style="display: none;" />
               <label for="enddatefield" id="enddatelabelLOA" style="display: none;">Select end date of LOA:</label>
-              <label for="enddatefield" id="enddatelabelBL" style="display: none;">Select expiry date of
-                Blacklist:</label>
-              <input type="date" placeholder="dd-mm-yyyy" id='enddatefield' style="display: none;" required />
+              <label for="enddatefield" id="enddatelabelBL" style="display: none;">Select expiry date of Blacklist:</label>
+              <input type="date" placeholder="dd/mm/yyyy" id='enddatefield' style="display: none;" required />
               <label for="reqfield" id="reqfieldlabel" style="display: none;">Select which requirement 
               <? if(accessType === "visitor") { ?>
                 you

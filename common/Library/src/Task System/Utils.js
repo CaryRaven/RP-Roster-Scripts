@@ -246,7 +246,6 @@ function task_changeAssignment(inputData) {
   if (!targetData.row) return "User not found";
 
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
-  const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
 
   // :hardcode column
   let currentAssignees = s.getRange(inputData.row, taskCols.assignees).getValue();

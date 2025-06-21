@@ -15,6 +15,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
   if (!userData) throw new Error("No userdata provided");
   if (!allowedStaff) throw new Error("No allowed staff list provided");
 
+  // Day in milliseconds
+  const day = 86400000;
+
   try {
     // If this was called due to a threshold
     if (threshold === true) {
@@ -47,14 +50,14 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
     let valid = false;
     switch (inputData.type_check) {
       case 'Rank Change':
-        if (inputData.reason != '' && inputData.rankchangetype != '') { valid = true; }
+        if (inputData.reason != '' && inputData.rankchangetype != '') valid = true;
         if (inputData.rankchangetype == "Transfer") { inputData.branch != "" ? valid = true : valid = false; }
         break;
       case 'Infraction Log':
-        if (inputData.reason != '' && inputData.infraction_type != '') { valid = true; }
+        if (inputData.reason != '' && inputData.infraction_type != '') valid = true;
         break;
       case 'LOA Log':
-        if (inputData.reason != '' && inputData.end_date != '') { valid = true; }
+        if (inputData.reason != '' && inputData.end_date != '' && inputData.start_date != '') valid = true;
         break;
       case 'Blacklist':
         if (inputData.end_date != '' && inputData.reason != '' && inputData.blacklist_appealable != '') {
@@ -77,6 +80,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
       case "New Member":
         if (inputData.playerId.length === 5 && inputData.reason != '' && inputData.branch != '') valid = true;
         break;
+      case "End LOA Early":
+        valid = true;
+        break;
       default:
         break;
     }
@@ -96,6 +102,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
 
     if (inputData.users.length > 10) return "You cannot select more than 10 members at once";
 
+    if (valid !== true) return "Do not attempt to avoid answer validation";
+
+    // also filters special chars ("{" etc...)
     valid = filterQuotes(inputData);
     if (valid !== true) return "Do not attempt to avoid answer validation";
     const ranks = LIBRARY_SETTINGS.ranks;
@@ -401,20 +410,41 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
           }
           break;
         case "LOA Log":
-          console.log(inputData.end_date);
-          const timeDiff = new Date().valueOf() - dateToMilliseconds(targetData.loaEnd);
-
-          // Checks
-          if (targetData.status == "Suspended") return `${targetData.name} is currently suspended, they cannot go on LOA.`;
-          if (timeDiff < 0) return `${targetData.name} is already on LOA, you cannot log another one`;
-          if (timeDiff <= (LIBRARY_SETTINGS.cooldown_loa * 86400000)) return `${targetData.name} must wait ${LIBRARY_SETTINGS.cooldown_loa} days between LOAs`;
           if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
+          if (targetData.status == "Suspended") return `${targetData.name} is currently suspended, they cannot go on LOA.`;
+
+          let end_date_ms = dateToMilliseconds(formatDate(inputData.end_date));
+          let start_date_ms = dateToMilliseconds(formatDate(inputData.start_date));
+          if (start_date_ms >= end_date_ms) return "Start date cannot be on or after end date";
+          if (end_date_ms - start_date_ms > (30 * day)) return "LOAs cannot be longer than 30 days";
+
+          const now_ms = new Date().valueOf();
+          if (start_date_ms < now_ms - day) return "Start date must be today or later";
+
+          const timeDiff = now_ms - dateToMilliseconds(targetData.loaEnd);
+          if (timeDiff <= (LIBRARY_SETTINGS.cooldown_loa * day)) return `${targetData.name} must wait ${LIBRARY_SETTINGS.cooldown_loa} days between LOAs`;
+          if (timeDiff < 0) return `${targetData.name} is already on LOA, you cannot log another one`;
+
+          // 30 days from now
+          const date_in_30 = new Date(new Date().valueOf() + (30 * day)).valueOf();
+          if (start_date_ms > date_in_30) return "You cannot plan an LOA more than 30 days in advance";
+
+          // Cannot have two LOAs planned at once
+          sheet = getCollect(LIBRARY_SETTINGS.sheetId_loa);
+          for (let i = 7; i < sheet.getMaxRows(); i++) {
+            const log_date_ms = dateToMilliseconds(sheet.getRange(i, 3).getDisplayValue());
+            if (now_ms - log_date_ms >= (60 * day)) break;
+
+            const start_date = sheet.getRange(i, 7).getDisplayValue();
+            start_date_ms = dateToMilliseconds(start_date);
+            const playerId = sheet.getRange(i, 5).getDisplayValue();
+            if (start_date_ms >= now_ms && playerId == targetData.playerId) return `${targetData.name} already has an LOA planned on ${start_date}`;
+          }
 
           // Insert log
-          sheet = getCollect(LIBRARY_SETTINGS.sheetId_loa);
-          dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.end_date, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
-          addLog(sheet, [[3, 8], [10, 12]], dataToInsert);
-          protectRange("N", sheet, null);
+          dataToInsert = [[new Date(), targetData.name, targetData.playerId, targetData.discordId, inputData.start_date, inputData.end_date, false, inputData.reason, "", userData.name, userData.playerId, userData.rank]];
+          addLog(sheet, [[3, 10], [12, 14]], dataToInsert, [9]);
+          protectRange("A", sheet, 9);
           break;
         case "Blacklist":
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
@@ -491,6 +521,34 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
           if (protections.canDomainEdit()) {
             protections.setDomainEdit(false);
           }
+          break;
+        case "End LOA Early":
+          if (!targetData.name || !targetData.playerId || !targetData.row) return "User not found";
+          sheet = getCollect(LIBRARY_SETTINGS.sheetId_loa);
+          let found = false;
+
+          for (let i = 7; i < sheet.getMaxRows(); i++) {
+            const log_date_ms = dateToMilliseconds(sheet.getRange(i, 3).getDisplayValue());
+            const now_ms = new Date().valueOf();
+            if (now_ms - log_date_ms >= (60 * day)) return `Could not find a matching LOA for ${targetData.name}`;
+
+            const playerId = sheet.getRange(i, 5).getDisplayValue();
+            if (playerId !== targetData.playerId) continue;
+
+            const end_date_ms = dateToMilliseconds(sheet.getRange(i, 8).getDisplayValue());
+            const early_check = sheet.getRange(i, 9);
+            if (early_check.getValue() == true) continue;
+
+            // Found latest LOA of member
+            if (end_date_ms > now_ms) {
+              early_check.setValue(true);
+              protectRange("S", sheet, 9, i);
+              found = true;
+              break;
+            }
+          }
+
+          if (!found) return `Could not find a matching LOA for ${targetData.name}`;
           break;
         case "Blacklist Appeal":
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);

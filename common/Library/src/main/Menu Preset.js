@@ -3,14 +3,16 @@
  * 
  * Parameters: 
  *  template.user = user;
-    template.ranks = LIBRARY_SETTINGS.ranks;
-    template.modRanks = LIBRARY_SETTINGS.modRanks;
-    template.managerRanks = LIBRARY_SETTINGS.managerRanks;
-    template.adminRanks = LIBRARY_SETTINGS.adminRanks;
-    template.allowedStaff = allowedStaff;
-    template.factionName = LIBRARY_SETTINGS.factionName;
-    template.groups = LIBRARY_SETTINGS.group;
-    template.hex = LIBRARY_SETTINGS.colorHex;
+ * template.ranks = LIBRARY_SETTINGS.ranks;
+ * template.modRanks = LIBRARY_SETTINGS.modRanks;
+ * template.managerRanks = LIBRARY_SETTINGS.managerRanks;
+ * template.adminRanks = LIBRARY_SETTINGS.adminRanks;
+ * template.allowedStaff = allowedStaff;
+ * template.factionName = LIBRARY_SETTINGS.factionName;
+ * template.groups = LIBRARY_SETTINGS.group;
+ * template.hex = LIBRARY_SETTINGS.colorHex;
+ * template.sheetId = LIBRARY_SETTINGS.spreadsheetId_main;
+ * template.supervisorIdentifier = LIBRARY_SETTINGS.supervisorsDisabled;
  * @returns {String}
  */
 function getAdminMenu() {

@@ -273,7 +273,7 @@
       try { clearInterval(configupdate) } catch(e) { }
 
       SetSpecSelects();
-      SetRankSelects(true);
+      SetRankSelects();
       // SetSliders();
       configupdate = setInterval(() => {
         SetSpecSelects();
@@ -2323,6 +2323,8 @@
       document.getElementById("meritinfofield").setAttribute('style', 'display: none;');
       document.getElementById("userSelectPromoReqs").setAttribute('style', 'display: none');
       document.getElementById("userSelectPromoReqsLabel").setAttribute('style', 'display: none');
+      document.getElementById("startdatelabelLOA").setAttribute('style', 'display: none;');
+      document.getElementById("startdatefield").setAttribute('style', 'display: none;');
       document.getElementById('reasonfield').placeholder = "Provide a reason for this log.";
 
       switch (logtype) {
@@ -2346,6 +2348,8 @@
           document.getElementById('reasonfield').setAttribute('style', 'display: block;');
           document.getElementById('enddatefield').setAttribute('style', 'display: block;');
           document.getElementById('enddatelabelLOA').setAttribute('style', 'display: block;');
+          document.getElementById("startdatefield").setAttribute('style', 'display: block;');  
+          document.getElementById("startdatelabelLOA").setAttribute('style', 'display: block;');
           break;
         case 'Blacklist':
           document.getElementById('bllabel').setAttribute('style', 'display: block;');
@@ -2391,6 +2395,10 @@
 
           // Get merit actions
           GetMeritTitles();
+          break;
+        case "End LOA Early":
+          document.getElementById('userSelectlabel').setAttribute('style', 'display: block;');
+          document.getElementById('userSelect').setAttribute('style', 'display: block;');
           break;
       }
       
@@ -2562,12 +2570,16 @@
         reason: document.getElementById('reasonfield').value,
         infraction_type: document.getElementById('infrtypelist').value,
         end_date: document.getElementById('enddatefield').value,
+        start_date: document.getElementById('startdatefield').value,
         blacklist_appealable: document.getElementById('appealable').value,
         log_id: document.getElementById('idfield').value,
         blacklist_type: document.getElementById('bltypelist').value,
         reqName: document.getElementById("reqfield").value,
         meritAction: document.getElementById("meritfield").value
       };
+
+      // Format yyyy-mm-dd
+      if (dataToSubmit.start_date == "") dataToSubmit.start_date = new Date().toISOString().split('T')[0];
 
       if (dataToSubmit.users.length > 10) {
         Shake();
@@ -2584,13 +2596,13 @@
       let valid = false;
       switch (dataToSubmit.type_check) {
         case 'Rank Change':
-          if (dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.rankchangetype != '') valid = true;
           break;
         case 'Infraction Log':
-          if (dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.infraction_type != '') valid = true;
           break;
         case 'LOA Log':
-          if (dataToSubmit.reason != '' && dataToSubmit.end_date != '') { valid = true; }
+          if (dataToSubmit.reason != '' && dataToSubmit.end_date != '' && dataToSubmit.start_date != '') valid = true;
 
           // Don't check email for visitors as they can't input it
           if (accessType === "visitor" && dataToSubmit.reason != '' && dataToSubmit.end_date != '') valid = true;
@@ -2629,6 +2641,9 @@
 
           // Don't check email for visitors as they can't input it
           if (accessType === "visitor" && dataToSubmit.reason.length > 10 && dataToSubmit.meritAction != '') valid = true;
+          break;
+        case "End LOA Early":
+          valid = true;
           break;
         default:
           button.disabled = false;
@@ -2720,7 +2735,7 @@
             }
           } catch(e) {
             console.log(e);
-            if (oResponse.includes("not") || oResponse.includes("capacity") || oResponse.includes("only") || oResponse.includes("must")) {
+            if (oResponse.includes("not") || oResponse.includes("capacity") || oResponse.includes("only") || oResponse.includes("must") || oResponse.includes("already")) {
               Shake();
               button.classList.add('red');
               ResetUI(button, oResponse);

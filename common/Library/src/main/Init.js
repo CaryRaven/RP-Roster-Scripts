@@ -76,6 +76,7 @@ class SettingsTemplate {
     this.ranks = [];
     this.interviewRequired = [];
     this.modRanks = [];
+    // this.managerRanks = [];
     this.adminRanks = [];
     this.meritActions = [];
     this.group = [];
@@ -85,5 +86,7 @@ class SettingsTemplate {
     this.manualEnabled = true;
     this.reqsDisabled = true;
     // this.supervisorsDisabled = true;
+    // this.modsOnlySupervised = false;
+    // this.managersOnlySupervised = false;
   }
 }

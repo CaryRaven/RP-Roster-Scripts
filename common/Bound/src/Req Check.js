@@ -1,7 +1,6 @@
 /*
   Timed trigger that checks if a rank has any promotion requirements, if this isn't the case it will replace the formula with "N/A"
   This to make the roster cleaner and more descriptive. 
-
   This does mean that there will be a delay between when you re-add promo reqs to a rank and when the roster will be updated, but it shouldn't be too bad.
 */
 function CheckReqs() {
@@ -11,6 +10,12 @@ function CheckReqs() {
   const props = PropertiesService.getDocumentProperties();
   const reqColHidden = props.getProperty("reqColHidden")
   let ranks = [];
+
+  // No need to run the function unnecessarily
+  if (reqColHidden === "true") {
+    const reqSheetHidden = RosterService.getCollect(46188961).isSheetHidden();
+    if (reqSheetHidden) return;
+  }
 
   for (let k = 5; k <= rows; k++) {
     let rankName = roster.getRange(k, LIBRARY_SETTINGS.dataCols.rank).getDisplayValue();
@@ -44,7 +49,7 @@ function CheckReqs() {
     } else if (!RosterService.getCollect(LIBRARY_SETTINGS.sheetId_reqlogs).isSheetHidden() && reqColHidden === "true") {
       sheet.getRange(startRankRow, 16, rowcount, 1).setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID);
 
-      // Set styling of inner borders for reqsCompleted row in case of new rows that were added (styling hasn't been set)
+      // Set styling of inner borders for row in case of new rank rows that were added (styling hasn't been set)
       sheet.getRange(startRankRow, 17, rowcount, 1).setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
 
       sheet.unhideColumn(sheet.getRange(1, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1));

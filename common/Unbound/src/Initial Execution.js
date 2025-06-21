@@ -292,7 +292,7 @@ function Set() {
        '= STATUS(F/row/, G/row/, E/row/, H/row/, \'LOA Logs\'!E:E, N/row/, Infractions!H:H, Infractions!E:E, Infractions!I:I, Infractions!C:C, R/row/)',
        '',
        '= LAST_RANKCHANGE(F/row/, \'Rank Changes\'!E:E, \'Rank Changes\'!C:C)',
-       '= LOA_DATE(F/row/, \'LOA Logs\'!E:E, \'LOA Logs\'!G:G)',
+       '= LOA_DATE(F/row/, \'LOA Logs\'!E:E, \'LOA Logs\'!H:H, \'LOA Logs\'!G:G, \'LOA Logs\'!I:I)',
        `= HAS_TASK(E/row/)`,
        '= REQS_CHECK(F/row/, \'Promotion Progress\'!F:F, \'Promotion Progress\'!H:M)',
        '= BLACKLIST_DATE(F/row/, \'Suspensions / Blacklists\'!E:E, \'Suspensions / Blacklists\'!H:H, \'Suspensions / Blacklists\'!J:J)',

@@ -21,7 +21,6 @@ function sendDiscordLog(inputData, targetData, userData) {
   let [embedTitle, embedColor, field1Name, info, content, footerMessage, end_date, reason] = ['', '', '', '', '', '', '', inputData.reason];
 
   // let folderChanges = accessFolders.map(folder => ` ${folder.folderName} - ${folder.permission} access /`);
-  let date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
   let appealTo = "the Office of Office of Site Management";
 
   // :hardcode
@@ -88,7 +87,8 @@ function sendDiscordLog(inputData, targetData, userData) {
       embedColor = '12658943';
       field1Name = 'LOA Information';
       end_date = Utilities.formatDate(new Date(inputData.end_date), 'GMT', 'dd MMMM yyyy');
-      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nStart Date: ${date}\nEnd Date: ${end_date}`;
+      const start_date = Utilities.formatDate(new Date(inputData.start_date), 'GMT', 'dd MMMM yyyy');
+      info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nStart Date: ${start_date}\nEnd Date: ${end_date}`;
       footerMessage = `Enjoy your time off, ${targetData.name}`;
       break;
     case 'Infraction Appeal':
@@ -126,11 +126,20 @@ function sendDiscordLog(inputData, targetData, userData) {
       info = `Name: ${targetData.name}\nPlayerID: ${targetData.playerId}\nDiscordID: ${targetData.discordId}\nMerit Action Completed: ${inputData.meritAction}\nMerits Allocated: ${inputData.meritCount}`;
       footerMessage = `Congratulations on earning extra merit score.`;
       break;
+    case "End LOA Early":
+      embedTitle = `${targetData.name}'s LOA Ended Early`;
+      embedColor = '12658943';
+      field1Name = `${targetData.name} has decided to end their LOA early, welcome back!`;
+      info = ``;
+      footerMessage = `If this was done against your will, open a support ticket.`;
+      if (LIBRARY_SETTINGS.pings == true) content = `<@${targetData.discordId.toString()}>`;
+      break;
     default:
       throw new Error(`Type ${inputData.type} not supported`);
   }
 
   // Compose discord embed
+  const date = Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy');
   let payload = JSON.stringify({
     username: `${LIBRARY_SETTINGS.factionName} Roster Manager`,
     content: content,

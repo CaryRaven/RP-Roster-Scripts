@@ -165,6 +165,7 @@ function getLastRow(sheetObject = null, sheetId = 0) {
  */
 function dateToMilliseconds(dateString) {
   if (!isInit) throw new Error("Library is not yet initialized");
+  dateString = dateString.toString();
   if (typeof dateString != "string") throw new Error("dateString has to be a string");
 
   const parts = dateString.split("/");
@@ -175,6 +176,17 @@ function dateToMilliseconds(dateString) {
   // months are 0-indexed
   const date = new Date(year, month - 1, day);
   return date.getTime();
+}
+
+/**
+ * Convert a date from yyyy-mm-dd to dd/mm/yyyy, used so dateToMilliseconds can read dates from HTML
+ * @param {String} date - Date formatted as yyyy-mm-dd
+ * @returns {String}
+ */
+function formatDate(date) {
+  var parts = date.split("-");
+  var formattedDate = parts[2] + "/" + parts[1] + "/" + parts[0];
+  return formattedDate.toString();
 }
 
 /**
