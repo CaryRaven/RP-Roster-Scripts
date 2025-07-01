@@ -135,12 +135,15 @@ function ManageRequests(action, id) {
   if (!id) return "Invalid ID";
   const requests = JSON.parse(PropertiesService.getScriptProperties().getProperty("requests"));
   if (action === "accepted") {
-    let returnVal;
+    let returnVal = "No match found, request already handled";
     let result;
 
     // Loop through requests
     requests.forEach((request, i) => {
       if (request.id != id) return;
+      
+      requests.splice(i, 1);
+      PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
       
       const allowedStaff = JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff"));
       const userData = JSON.parse(PropertiesService.getUserProperties().getProperty("userData"));
@@ -152,16 +155,19 @@ function ManageRequests(action, id) {
       request.inputData.reqName = request.reqName;
 
       if (request.type.includes("Edit")) {
-        returnVal = RosterService.processEdit(request.inputData, allowedStaff, request.userData);
+        // returnVal = RosterService.processEdit(request.inputData, allowedStaff, request.userData);
       } else {
-        returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, false);
+        // returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, false);
       }
 
+      returnVal = "Log Submitted";
+
       try { returnVal = JSON.parse(returnVal); } catch(e) {}
-      if (Array.isArray(returnVal) || returnVal == "Information Edited") {
-        requests.splice(i, 1);
+      if (!Array.isArray(returnVal) || returnVal != "Information Edited") {
+        // re-add to list
+        requests.splice(i, 0, request);
         PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
-      } else {
+
         console.log(returnVal);
         if (returnVal.includes("interview")) {
           const match = returnVal.match(/^([^"]*"[^"]*")/);
@@ -215,8 +221,8 @@ function GetRequests() {
 }
 
 // Get the current ranks
-function GetRanks() {
-  return JSON.stringify(LIBRARY_SETTINGS.ranks);
+function GetRanks_n_Groups() {
+  return JSON.stringify([LIBRARY_SETTINGS.ranks, LIBRARY_SETTINGS.group]);
 }
 
 function AddNewRank(inputData) {
@@ -435,6 +441,14 @@ function ResetPermissions() {
   console.log(`${LIBRARY_SETTINGS.factionName} Documentation Permissions reset`);
   RosterService.sendDiscordConfig("resetPerms", null, JSON.parse(PropertiesService.getUserProperties().getProperty("userData")));
   PermissionsGuard();
+}
+
+/**
+ * Return all current groups
+ * @returns {Array<string>}
+ */
+function ReturnGroups() {
+  return JSON.stringify(LIBRARY_SETTINGS.group);
 }
 
 /**
@@ -867,4 +881,47 @@ function ToggleSupervisedManagers(value) {
   LIBRARY_SETTINGS.managersOnlySupervised = Boolean(value);
   RosterService.init(LIBRARY_SETTINGS);
   PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+}
+
+/**
+ * Manage a group on the roster (add)
+ * @param {String} firstRank - The title of the first rank of the group
+ * @param {String} title - The title of the group^
+ * @returns {String}
+ */
+function ManageGroup(firstRank, title) {
+  if (typeof firstRank !== "string" || typeof title !== "string") return "Invalid input";
+  if (title.includes("=") || title.includes("'") || title.includes('"') || title.length > 100) return "Invalid input";
+  const returnVal = RosterService.groups_manage(firstRank, title);
+  if (returnVal !== "Group Added") return returnVal;
+
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(firstRank);
+  const oGroup = LIBRARY_SETTINGS.group[rankIndex];
+  for (let i = rankIndex; i >= 0; i--) {
+    if (LIBRARY_SETTINGS.group[i] === oGroup) {
+      LIBRARY_SETTINGS.group[i] = title;
+    }
+  }
+
+  RosterService.init(LIBRARY_SETTINGS);
+  PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(LIBRARY_SETTINGS));
+  return JSON.stringify(LIBRARY_SETTINGS.group);
+}
+
+/**
+ * Remove a group from the roster
+ * @param {String} title - The title of the group to remove
+ * @returns {String}
+ */
+function RemoveGroup(title) {
+  if (typeof title !== "string" || title === "") return "Invalid Title";
+
+  let returnValue = RosterService.groups_remove(title, true);
+  if (Array.isArray(returnValue)) {
+    RosterService.init(returnValue[1]);
+    PropertiesService.getScriptProperties().setProperty("settings", JSON.stringify(returnValue[1]));
+    return [returnValue[0], LIBRARY_SETTINGS.group];
+  }
+
+  return [returnValue, undefined];
 }

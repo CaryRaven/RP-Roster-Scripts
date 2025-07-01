@@ -298,7 +298,7 @@ function getAdminMenu() {
                     that they will be allowed to perform operations on anybody without needing approval first. They can freely operate the menu. Alongisde this, managers are
                     able to approve operations made by visitors and mods. This independance is only possible with the proper permissions, which means that any rank with manager
                     access will need to be <strong>granted editor permissions to the roster</strong> first. Only give trusted leadership roles manager access and if you are unsure of
-                    whether or not to add a rank as manager, it might be best to just not do it until you are 100% sure. Any abuse or mistakes that happen by your subordinates is your responsibility.</p><br>
+                    whether or not to add a rank as manager, it might be best to just not do it until you are 100% sure. Any abuse or mistakes made by your subordinates is your responsibility.</p><br>
                   </li>
                 </ol>
                 <br><br>
@@ -318,7 +318,7 @@ function getAdminMenu() {
                 <br><h3>Manage Ranks</h3><br>
                 <p class="left-text">
                   <i class='bx bxs-tag-alt'></i><span class="subtitle"> Add new ranks / Edit existing ranks</span><br>
-                  This dropdown contains options that allow you to configure all sorts of aspects of each rank in your department/regiment. The first from allows you to create new ranks and edit existing properties
+                  This dropdown contains options that allow you to configure all sorts of aspects of each rank in your department/regiment. The first from allows you to create new ranks and edit properties
                   of an existing one. Use the dropdown menu at the top in order to choose an existing rank to edit, if you want to create a new rank then select the blank option. Next you can configure a title and the rank's
                   position in the hierarchy. Selecting a group is really only used in Task Forces in order to give them more flexibility (choosing between enlisted, NCO, officer). This option is not really applicable to departments, though it has still
                   been included just in case. Groups should be seperated by a gray banner on the roster <em>(like "Department Leaders", "Department Seniors" etc...)</em>. Below this, you can add IDs of registered files/folders <em>(configurable in General Config)</em> that people get access to when promoted to the rank. Seperate these IDs by commas.<br><br>
@@ -610,6 +610,29 @@ function getAdminMenu() {
               <button onclick="AddRankRow(event)" class="submitButton-mini-mini" id="addrankrow-button" style="width: 7%;">Add</button>
               <button onclick="RemoveRankRow(event)" type="submit" class="submitButton-mini-mini" id="removerankrow-button" style="width: 7%;">Remove</button>
             </form><br>
+          </div><br><br>
+
+          <button id="manageGroups" class="submitButton">Manage Groups</button>
+          <div id="manageGroupsContent" class="container">
+            <form id="config-form-rankGroup">
+              <label for="rank-group-select">Select the first rank of the new group
+              <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                <span class="tooltiptext">You must select a rank that will be apart of your new group. This also means that all ranks below the selected rank in its previous group will be moved to your new group.</span>
+              </span>
+              </label><br>
+              <select id="rank-group-select" required>
+              </select><br>
+              <label for="group-title">Provide a title for your new group</label><br>
+              <input type="text" id="group-title" minlength="5" maxlength="100" placeholder="Give your group a name" required>
+              <button onclick="ManageGroups(event)" type="submit" class="submitButton" id="group-button">Add Group</button>
+            </form><br><hr><br>
+
+            <form id="config-form-removeGroup">
+              <label for="remove-group-select">Select a group to remove:</label><br>
+              <select id="remove-group-select" style="width: 50%;" required>
+              </select>
+              <button onclick="RemoveGroup(event)" type="submit" class="submitButton-mini" id="group-remove-button">Remove</button>
+            </form>
           </div><br><br>
 
           <button id="manageSpecialization" class="submitButton">Manage Specializations</button>

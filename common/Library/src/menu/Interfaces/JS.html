@@ -100,13 +100,15 @@
     window.SetRankSelects = function(forced = false) {
       let initRanks = document.getElementById("ranks")?.innerText;
       let groups = document.getElementById("groups")?.innerText;
-      let rankSelect = document.getElementById("mod-role-select");
-      let managerRankSelect = document.getElementById("manager-role-select");
-      let rankRowSelect = document.getElementById("new-rank-select");
-      let addRankSelect = document.getElementById("new-rank-before-select");
-      let groupSelect = document.getElementById("new-rank-group-select");
-      let removeRankSelect = document.getElementById("remove-rank-select");
+      const rankSelect = document.getElementById("mod-role-select");
+      const managerRankSelect = document.getElementById("manager-role-select");
+      const rankRowSelect = document.getElementById("new-rank-select");
+      const addRankSelect = document.getElementById("new-rank-before-select");
+      const groupRankSelect = document.getElementById("new-rank-group-select"); // Dropdown when editing a rank
+      const removeRankSelect = document.getElementById("remove-rank-select");
+      const groupSelect = document.getElementById("rank-group-select"); // Config to add new groups
       const editRankSelect = document.getElementById("editRankSelect");
+      const removeGroupSelect = document.getElementById("remove-group-select");
 
       if (initRanks) {
         initRanks = initRanks.split(",");
@@ -127,7 +129,9 @@
       if (removeRankSelect.value === "" || forced === true) removeRankSelect.innerHTML = '<option value=""></option>';
       if (addRankSelect.value === "" || forced === true) addRankSelect.innerHTML = '<option value=""></option>';
       if (editRankSelect.value === "" || forced === true) editRankSelect.innerHTML = '<option value=""></option>';
+      if (groupRankSelect.value === "" || forced === true) groupRankSelect.innerHTML = '<option value=""></option>';
       if (groupSelect.value === "" || forced === true) groupSelect.innerHTML = '<option value=""></option>';
+      if (removeGroupSelect.value === "" || forced === true) removeGroupSelect.innerHTML = '<option value=""></option>';
 
       initRanks.forEach(rankName => {
         
@@ -175,15 +179,29 @@
             removeRankOption.innerText = rankName;
             removeRankSelect.appendChild(removeRankOption);
           }
+
+          if (groupSelect.value === "" || forced === true) {
+            const groupOption = document.createElement("option");
+            groupOption.value = rankName;
+            groupOption.innerText = rankName;
+            groupSelect.appendChild(groupOption);
+          }
         }
       });
 
-      groups.forEach(group => {
-        if ((groupSelect.value === "" || forced === true) && group !== "Sr CL4") {
-          const groupOption = document.createElement("option");
-          groupOption.value = group;
-          groupOption.innerText = group;
-          groupSelect.appendChild(groupOption);
+      groups.forEach((group, i) => {
+        if ((groupRankSelect.value === "" || forced === true) && group !== "Sr CL4") {
+          const groupRankOption = document.createElement("option");
+          groupRankOption.value = group;
+          groupRankOption.innerText = group;
+          groupRankSelect.appendChild(groupRankOption);
+        }
+
+        if ((removeGroupSelect.value === "" || forced === true) && group !== "Sr CL4" && groups[i + 1] !== "Sr CL4") {
+          const removeGroupOption = document.createElement("option");
+          removeGroupOption.value = group;
+          removeGroupOption.innerText = group;
+          removeGroupSelect.appendChild(removeGroupOption);
         }
       });
     };
@@ -1152,12 +1170,112 @@
       }).ReturnTotalSlots(rank);
     });
 
+    window.UpdateGroupSelects = function(groups) {
+      const rankGroupSelect = document.getElementById("new-rank-group-select");
+      const removeGroupSelect = document.getElementById("remove-group-select");
+      groups = groups.filter(onlyUnique);
+      document.getElementById("groups").innerText = groups;
+      [rankGroupSelect, removeGroupSelect].forEach(select => {
+        select.innerHTML = '<option value=""></option>';
+        groups.forEach((group, i) => {
+          if (group === "Sr CL4" || groups[i + 1] === "Sr CL4") return;
+          const option = document.createElement("option");
+          option.innerText = group;
+          option.value = group;
+          select.appendChild(option);
+        })
+      });
+    }
+
+    // manage groups
+    window.ManageGroups = function (event) {
+      event.preventDefault();
+      const button = document.getElementById("group-button");
+      const firstRank = document.getElementById("rank-group-select").value;
+      const groupTitle = document.getElementById("group-title").value;
+      const form = document.getElementById("config-form-rankGroup");
+
+      if (firstRank === "" || groupTitle === "" || groupTitle.length < 5) return Shake();
+      if (typeof groupTitle !== "string" || (groupTitle.includes("=") || groupTitle.includes("'") || groupTitle.includes('"') || groupTitle.includes("<"))) return Shake();
+      button.disabled = true;
+      button.innerHTML = '<div class="loader"></div>';
+
+      google.script.run.withSuccessHandler(value => {
+        try { value = JSON.parse(value); } catch(e) { }
+        if (Array.isArray(value)) {
+          button.classList.add("green");
+          form.reset();
+          button.innerText = "Group Added";
+          UpdateGroupSelects(value);
+
+          document.getElementById("groups").innerText = value;
+        } else {
+          button.classList.add("red");
+          button.innerText = value;
+          Shake();
+        }
+
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerText = "Add Group";
+          button.classList.remove("green");
+          button.classList.remove("red");
+        }, 3000);
+      }).withFailureHandler(error => {
+        console.log(error);
+        button.innerText = "Something went wrong";
+        Shake();
+
+        setTimeout(() => {
+          button.disabled = false; 
+          button.innerText = "Add Group";
+        }, 3000);
+      }).ManageGroup(firstRank, groupTitle);
+    }
+
+    window.RemoveGroup = function(event) {
+      event.preventDefault();
+      const button = document.getElementById("group-remove-button");
+      const group = document.getElementById("remove-group-select").value;
+
+      if (typeof group !== "string" || group === "") return Shake();
+      button.disabled = true;
+      button.innerText = 'Loading...';
+
+      google.script.run.withSuccessHandler(response => {
+        if (response[0] == "Removed") {
+          button.classList.add("green");
+          SetRankSelects();
+          UpdateGroupSelects(response[1]);
+        } else {  
+          button.classList.add("red");
+        }
+
+        button.innerText = response[0];
+        setTimeout(() => {
+          button.classList.remove("green");
+          button.classList.remove("red");
+          button.innerText = "Remove";
+          button.disabled = false;
+        }, 3000);
+      }).withFailureHandler(error => {
+        console.log(error);
+        button.classList.add("red");
+        button.innerText = "Error";
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerText = "Remove";
+          button.classList.remove("red");
+        }, 3000);
+      }).RemoveGroup(group);
+    }
+
     // *********** DROPDOWN HANDLERS ************
     // These are used in the config menu to make certain buttons reveal a content div on click
 
-    let coll = document.getElementById("manageRank");
+    const collapse_rank = document.getElementById("manageRank");
 
-    coll.addEventListener("click", function() {
+    collapse_rank.addEventListener("click", function() {
       this.classList.toggle("active");
       var content = document.getElementById("newRankContent");
       if (content.style.display === "block") {
@@ -1167,9 +1285,9 @@
       }
     });
 
-    let coll2 = document.getElementById("manageSpecialization");
+    const collapse_specs = document.getElementById("manageSpecialization");
 
-    coll2.addEventListener("click", function() {
+    collapse_specs.addEventListener("click", function() {
       this.classList.toggle("active");
       var content = document.getElementById("manageSpecContent");
       if (content.style.display === "block") {
@@ -1179,88 +1297,116 @@
       }
     });
 
-    let coll3 = document.getElementById("manageCooldown");
+    const collapse_cooldown = document.getElementById("manageCooldown");
+    let collapse_cooldown_cooldown = false;
+    let collapse_cooldown_hidden = true;
 
-    coll3.addEventListener("click", function() {
+    collapse_cooldown.addEventListener("click", function() {
       this.classList.toggle("active");
-      var content = document.getElementById("manageCooldownContent");
-      if (content.style.display === "block") {
-        content.style.display = "none";
+      const content = document.getElementById("manageCooldownContent");
+
+      collapse_cooldown_hidden = !collapse_cooldown_hidden;
+
+      if (collapse_cooldown_hidden) {
+        return content.style.display = "none";
       } else {
-        // Disable inputs until loaded
-        const loaCd = document.getElementById("loaCooldown");
-        const loaCdButton = document.getElementById("loaCooldown-button");
-        const promoCd = document.getElementById("promoCooldown");
-        const promoCdButton = document.getElementById("promoCooldown-button");
-
-        [loaCd, loaCdButton, promoCd, promoCdButton].forEach(el => el.disabled = true);
-
-        // Get cooldowns from server
-        google.script.run.withSuccessHandler(r => {
-          r = JSON.parse(r);
-          loaCd.value = r[0];
-          promoCd.value = r[1];
-          [loaCd, loaCdButton, promoCd, promoCdButton].forEach(el => el.disabled = false);
-        }).ReturnCooldown();
-
         content.style.display = "block";
       }
+
+      if (collapse_cooldown_cooldown) return;
+
+      collapse_cooldown_cooldown = true;
+
+      // Disable inputs until loaded
+      const loaCd = document.getElementById("loaCooldown");
+      const loaCdButton = document.getElementById("loaCooldown-button");
+      const promoCd = document.getElementById("promoCooldown");
+      const promoCdButton = document.getElementById("promoCooldown-button");
+
+      [loaCd, loaCdButton, promoCd, promoCdButton].forEach(el => el.disabled = true);
+      loaCdButton.innerText = "Loading...";
+      promoCdButton.innerText = "Loading...";
+
+      // Get cooldowns from server
+      google.script.run.withSuccessHandler(r => {
+        r = JSON.parse(r);
+        loaCd.value = r[0];
+        promoCd.value = r[1];
+        [loaCd, loaCdButton, promoCd, promoCdButton].forEach(el => el.disabled = false);
+        loaCdButton.innerText = "Change";
+        promoCdButton.innerText = "Change";
+      }).ReturnCooldown();
     });
 
-    let coll4 = document.getElementById("manageThreshold");
+    const collapse_threshold = document.getElementById("manageThreshold");
+    let collapse_threshold_cooldown = false;
+    let collapse_threshold_hidden = true;
 
-    coll4.addEventListener("click", function() {
+    collapse_threshold.addEventListener("click", function() {
       this.classList.toggle("active");
-      var content = document.getElementById("manageThresholdContent");
-      if (content.style.display === "block") {
-        content.style.display = "none";
+      const content = document.getElementById("manageThresholdContent");
+
+      collapse_threshold_hidden = !collapse_threshold_hidden;
+
+      if (collapse_threshold_hidden) {
+        return content.style.display = "none";
       } else {
-        // Disable inputs until loaded
-        const threshold = document.getElementById("threshold");
-        const thresholdAction = document.getElementById("thresholdActionSelect");
-        const thresholdButton = document.getElementById("threshold-button");
-
-        [threshold, thresholdAction, thresholdButton].forEach(el => el.disabled = true);
-
-        google.script.run.withSuccessHandler(r => {
-          r = JSON.parse(r);
-          document.getElementById("threshold").value = r[0];
-          document.getElementById("thresholdActionSelect").value = r[1];
-          [threshold, thresholdAction, thresholdButton].forEach(el => el.disabled = false);
-        }).ReturnThreshold();
-
         content.style.display = "block";
       }
+
+      if (collapse_threshold_cooldown) return;
+
+      collapse_threshold_cooldown = true;
+
+      // Disable inputs until loaded
+      const threshold = document.getElementById("threshold");
+      const thresholdAction = document.getElementById("thresholdActionSelect");
+      const thresholdButton = document.getElementById("threshold-button");
+
+      [threshold, thresholdAction, thresholdButton].forEach(el => el.disabled = true);
+      thresholdButton.innerText = "Loading...";
+
+      google.script.run.withSuccessHandler(r => {
+        r = JSON.parse(r);
+        document.getElementById("threshold").value = r[0];
+        document.getElementById("thresholdActionSelect").value = r[1];
+        [threshold, thresholdAction, thresholdButton].forEach(el => el.disabled = false);
+        thresholdButton.innerText = "Submit";
+      }).ReturnThreshold();
+
+      content.style.display = "block";
     });
 
-    let coll5 = document.getElementById("registeredListButton");
-    let openCooldown = false;
-    let coll5Hidden = true;
+    const collapse_registered = document.getElementById("registeredListButton");
+    let collapse_registered_cooldown = false;
+    let collapse_registered_hidden = true;
 
     setInterval(() => {
-      openCooldown = false;
+      collapse_registered_cooldown = false;
+      collapse_threshold_cooldown = false;
+      collapse_cooldown_cooldown = false;
     }, 15000);
 
-    coll5.addEventListener("click", function() {
+    collapse_registered.addEventListener("click", function() {
       this.classList.toggle("active");
       const wrapper = document.getElementById("docListWrapper");
       const content = document.getElementById("registeredListContent");
 
-      coll5Hidden = !coll5Hidden;
+      collapse_registered_hidden = !collapse_registered_hidden;
 
-      if (coll5Hidden) {
+      if (collapse_registered_hidden) {
         return wrapper.style.display = "none";
       } else {
         wrapper.style.display = "block";
       }
 
-      if (openCooldown) {
+      if (collapse_registered_cooldown) {
         return;
       } else {
         content.innerHTML = '<div class="loader"></div>';
       }
         
-      openCooldown = true;
+      collapse_registered_cooldown = true;
 
       google.script.run.withSuccessHandler(r => {
         r = JSON.parse(r);
@@ -1286,9 +1432,9 @@
       }).ReturnRegistered();
     });
 
-    let coll6 = document.getElementById("generalConfig");
+    const collapse_general = document.getElementById("generalConfig");
 
-    coll6.addEventListener("click", function() {
+    collapse_general.addEventListener("click", function() {
       this.classList.toggle("active");
       var content = document.getElementById("generalConfigContent");
       if (content.style.display === "block") {
@@ -1298,9 +1444,9 @@
       }
     });
 
-    let coll7 = document.getElementById("manageMerits");
+    const collapse_merits = document.getElementById("manageMerits");
 
-    coll7.addEventListener("click", function() {
+    collapse_merits.addEventListener("click", function() {
       this.classList.toggle("active");
       var content = document.getElementById("manageMeritsContent");
       if (content.style.display === "block") {
@@ -1317,6 +1463,18 @@
       meritSliderOutput.innerText = this.value;
     }
 
+    const collapse_groups = document.getElementById("manageGroups");
+
+    collapse_groups.addEventListener("click", function () {
+      this.classList.toggle("active");
+      const content = document.getElementById("manageGroupsContent");
+      if (content.style.display === "block") {
+        content.style.display = "none";
+      } else {
+        content.style.display = "block";
+      }
+    })
+
     // **********************************************
 
     window.ExtractReqs = function() {
@@ -1324,8 +1482,8 @@
       let valid = true;
 
       document.querySelectorAll(".req").forEach(task => {
-        const title = task.querySelector(".title").value;
-        const desc = task.querySelector(".description").value;
+        const title = task.querySelector(".title").value.toString();
+        const desc = task.querySelector(".description").value.toString();
         const logcount = task.querySelector(".logcount").value;
         const expirydays = task.querySelector(".expirydays").value;
         // Currently not used
@@ -1333,6 +1491,7 @@
         const formula = ""; // completionType === "formula" ? task.querySelector(".formula").value : "";
 
         if (!title || !desc || title.length > 16 || desc.length > 300 || logcount > 10 || expirydays > 60) return valid = false;
+        if (typeof logcount !== "number" || typeof expirydays !== "number") return valid = false;
         
         reqs.push({ title, desc, completion_type: completionType, formula, logcount, expirydays });
       });
@@ -1441,11 +1600,12 @@
           button.classList.remove('green');
         }, 3000);
 
-        google.script.run.withSuccessHandler(ranks => {
-          ranks = JSON.parse(ranks);
-          document.getElementById("ranks").innerText = ranks;
+        google.script.run.withSuccessHandler(data => {
+          data = JSON.parse(data);
+          document.getElementById("ranks").innerText = data[0];
+          document.getElementById("groups").innerText = data[1];
           SetRankSelects(true);
-        }).GetRanks();
+        }).GetRanks_n_Groups();
 
       }).withFailureHandler(error => {
         
@@ -1492,11 +1652,12 @@
             button.classList.remove('green');
           }, 3000);
 
-          google.script.run.withSuccessHandler(ranks => {
-            ranks = JSON.parse(ranks);
-            document.getElementById("ranks").innerText = ranks;
+          google.script.run.withSuccessHandler(data => {
+            data = JSON.parse(data);
+            document.getElementById("ranks").innerText = data[0];
+            document.getElementById("groups").innerText = data[1];
             SetRankSelects(true);
-          }).GetRanks();
+          }).GetRanks_n_Groups();
         }).withFailureHandler(error => {
           
           button.disabled = false;
@@ -2028,6 +2189,8 @@
     document.getElementById('config-loading').innerHTML = '<div class="loader"></div>';
     document.getElementById("newRankContent").classList.add("collapseContent");
     document.getElementById("manageRank").classList.add("collapsible");
+    document.getElementById("manageGroups").classList.add("collapsible");
+    document.getElementById("manageGroupsContent").classList.add("collapseContent");
     document.getElementById("manageSpecContent").classList.add("collapseContent");
     document.getElementById("manageSpecialization").classList.add("collapsible");
     document.getElementById("manageCooldown").classList.add("collapsible");

@@ -325,6 +325,7 @@ function sendDiscordPermissionReport(flagArray, flaggedDocs) {
  * @returns {Void}
  */
 function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
+  return;
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!type || typeof type != 'string') throw new Error("DiscordConfig: no valid type provided");
   if (!userData || typeof userData != "object") throw new Error("DiscordConfig: no valid user data provided");
@@ -550,6 +551,7 @@ function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
  * @returns {Void}
  */
 function sendDiscordNewRank(rank, added = true) {
+  return;
   if (!isInit) throw new Error("Library is not yet initialized");
 
   // Compose discord embed

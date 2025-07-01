@@ -60,11 +60,11 @@ function CheckReqs() {
     try { if (sheet.getRange(lastRankRow, 17).getDataValidation() && hasReqs) return } catch(e) { }
     try { if (!sheet.getRange(lastRankRow, 17).getDataValidation() && !hasReqs) return } catch(e) { }
 
-    let data = [[]];
+    let data = [];
     if (hasReqs && !sheet.getRange(lastRankRow, 17).getDataValidation()) {
       // If has reqs but no checkbox yet => add formula & checkbox
       for (let i = startRankRow; i <= lastRankRow; i++) {
-        data[0].push(`= REQS_CHECK(F${i}, 'Promotion Progress'!F:F, 'Promotion Progress'!H:L)`);
+        data.push([`= REQS_CHECK(F${i}, 'Promotion Progress'!F:F, 'Promotion Progress'!H:L)`]);
       }
 
       sheet.getRange(startRankRow, 17, rowcount, 1)
@@ -72,7 +72,7 @@ function CheckReqs() {
         .setFormulas(data);
     } else if (!hasReqs && sheet.getRange(lastRankRow, 17).getDataValidation()) {
       for (let i = startRankRow; i <= lastRankRow; i++) {
-        data[0].push("N/A");
+        data.push(["N/A"]);
       }
 
       sheet.getRange(startRankRow, 17, rowcount, 1)

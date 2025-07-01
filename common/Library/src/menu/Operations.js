@@ -211,6 +211,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   let viewerFolders = [];
   let editorFolders = [];
   let ss;
+  let rankIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank);
   let reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
   const editingRank =  inputData.editRank !== "" ? true : false;
   valid = filterQuotes(inputData);
@@ -310,20 +311,31 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   // Check if the rank before is the last rank in the group
   // If that is the case & the group is different than that rank's group, we want to move the rank down on the roster to its chosen group.
   let rankBeforeIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore);
-  if (rankBeforeIndex < 0) rankBeforeIndex = LIBRARY_SETTINGS.ranks.indexOf(LIBRARY_SETTINGS.adminRanks[0]);
-  const rankBeforeGroup = LIBRARY_SETTINGS.group[rankBeforeIndex];
-  let rankBeforeGroup2;
-  let changeGroup = false;
-
-  if (rankBeforeIndex !== 0) {
-    rankBeforeGroup2 = LIBRARY_SETTINGS.group[rankBeforeIndex - 1];
-
-    if ((rankBeforeGroup === rankBeforeGroup2 && inputData.group !== rankBeforeGroup2)
-      || (inputData.group !== rankBeforeGroup && inputData.group !== rankBeforeGroup2)
-      || rankBeforeIndex === 0 && inputData.group !== rankBeforeGroup) return "Invalid group";
-    if (rankBeforeGroup !== rankBeforeGroup2 && inputData.group === rankBeforeGroup2) changeGroup = true;
-    if (editingRank && inputData.group === LIBRARY_SETTINGS.group[LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank)]) changeGroup = false;
+  if (rankBeforeIndex < 0) {
+    // Cannot add reqs to the last rank as there is nothing to promote to
+    if (inputData.promoReqs.length > 0 || inputData.minMeritScore > 0) return `Cannot add promo reqs to this rank as it is at the top of the hierarchy`;
+    rankBeforeIndex = LIBRARY_SETTINGS.ranks.indexOf(LIBRARY_SETTINGS.adminRanks[0]);
   }
+
+  // Determine groups ************************
+  let [rank_group, next_rank_group, prev_rank_group, changeGroup] = ["", "", "", false];
+
+  if (editingRank) {
+    rank_group = LIBRARY_SETTINGS.group[rankIndex];
+    next_rank_group = LIBRARY_SETTINGS.group[rankBeforeIndex];
+    prev_rank_group = LIBRARY_SETTINGS.group[rankIndex - 1] || rank_group;
+  } else {
+    rank_group = inputData.group;
+    next_rank_group = LIBRARY_SETTINGS.group[rankBeforeIndex];
+    prev_rank_group = LIBRARY_SETTINGS.group[rankBeforeIndex - 1] || rank_group;
+  }
+
+  if (((next_rank_group === prev_rank_group) 
+    || ((inputData.group !== next_rank_group && rank_group === prev_rank_group)
+    || (inputData.group !== prev_rank_group && rank_group === next_rank_group)))
+    && inputData.group !== rank_group) return "Invalid Group";
+  
+  if (inputData.group !== rank_group && inputData.group !== next_rank_group) changeGroup = true;
 
   // if no rankBefore => add it at the top (before Sr CL4)
   let rankBeforeTop;
@@ -406,34 +418,21 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
           // Editing promo progress
           if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0)) {
             // Only edit if there are promo reqs being added
-
             addReqRank(sheet, lastBeforeRow, inputData);
           }
         } else {
-          console.log(`changeGroup: ${changeGroup}`);
-          // Editing roster
-          let moveBefore;
-          if (changeGroup) {
-            moveBefore = getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]);
-            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), moveBefore - 1);
-          } else {
-            moveBefore = getLastRankRow(inputData.rankBefore);
-            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), moveBefore + 2)
-          }
+          sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), getLastRankRow(inputData.rankBefore) + 2);
         }
 
       } else {
         // Order of ranks remained the same
+        console.log(`changeGroup: ${changeGroup}`);
 
         if (i === 1) { 
           // Editing promo progress
           if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0)) {
             console.log(inputData.promoReqs)
             addReqRank(sheet, lastBeforeRow, inputData);
-          }
-
-          if (changeGroup) {
-            sheet.moveRows(sheet.getRange(startRankRow, 1, rownum, sheet.getMaxColumns()), getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]) - 1);
           }
         }
       }
@@ -468,6 +467,8 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
           r.setBorder(null, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
         });
 
+        if (LIBRARY_SETTINGS.reqsDisabled) sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned, 1, 1).setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+
         // Map formulas into usable format (replace /row/ & /title/)
         let insertData;
         insertData = LIBRARY_SETTINGS.newRowData.map(col => 
@@ -485,13 +486,26 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
         // Set Task Assigned? && reqs completed? to a checkbox - always
         sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
         sheet.getRange(insertRow, LIBRARY_SETTINGS.dataCols.taskAssigned + 1).setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
-
-        if (changeGroup) {
-          sheet.moveRows(sheet.getRange(insertRow - 1, 1, 2, sheet.getMaxColumns()), getStartRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex - 1]) - 1);
-        }
       }
     }
   }
+
+  // Move rows to align with group
+  const r = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  const start = getStartRankRow(inputData.title) || getLastRankRow(inputData.rankBefore) + 2;
+  const end = getLastRankRow(inputData.title) || start;
+  let destination = getLastRankRow(LIBRARY_SETTINGS.ranks[rankBeforeIndex]) + 1;
+
+  // Will error if rank is already directly below next rank, hence the catch
+  try { r.moveRows(r.getRange(start - 1, 1, end - start + 2, r.getMaxColumns()), destination); } catch(e) { }
+
+  if (rankIndex <= 0 && rankBeforeIndex <= 0) {
+    destination = r.getMaxRows() - 1
+  } else {
+    destination = getStartRankRow(LIBRARY_SETTINGS.ranks[[rankIndex, rankBeforeIndex].filter(index => index > 0)[0] - 1]) - 1;
+  }
+
+  if (changeGroup) r.moveRows(r.getRange(start - 1, 1, end - start + 2, r.getMaxColumns()), destination);
 
   // Don't add empty 2D array to promoReqs if no reqs were added
   inputData.promoReqs = inputData.promoReqs.length > 0 ? inputData.promoReqs : [];
@@ -499,8 +513,6 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   // Setting Operations ***************************************************************
 
   // Prepare settings
-  let rankIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.editRank);
-
   if (hierarchyChange || !editingRank) {
     if (editingRank) {
       // Remove previous rank from settings if hierarchy changed
@@ -578,6 +590,9 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     if (discordnotif) sendDiscordConfig("rankEdit", false, userData);
   }
 
+  // Clean groups after settings have been changed
+  groups_cleanup();
+  
   return [message, LIBRARY_SETTINGS];
 }
 
@@ -1023,4 +1038,91 @@ function supervisors_toggle(value) {
       }
     }
   }
+}
+
+/**
+ * Manage groups on the roster (currently only add)
+ * @param {String} firstRank - The title of the first rank of the group
+ * @param {String} title - The title of the group
+ * @throws {Error} if library is not initialized
+ * @returns {String}
+ */
+function groups_manage(firstRank, title) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  const rankIndex = LIBRARY_SETTINGS.ranks.indexOf(firstRank);
+  if (rankIndex < 0) return "Invalid Rank";
+  if (LIBRARY_SETTINGS.group.includes(title)) return "Group Already Exists";
+  if (LIBRARY_SETTINGS.adminRanks.includes(firstRank)) return "Cannot manage Sr CL4 from this menu";
+
+  const startRankRow = getStartRankRow(firstRank);
+  const r = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+
+  r.insertRowAfter(startRankRow - 1);
+  r.insertRowAfter(startRankRow - 1);
+
+  r.getRange(startRankRow, 2, 1, r.getMaxColumns() - 2).merge();
+  r.getRange(startRankRow, 2, 1, r.getMaxColumns() - 2)
+    .setBackground("#434343")
+    .setBorder(true, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK)
+    .setVerticalAlignment("middle")
+    .setHorizontalAlignment("center")
+    .setFontColor("#ffffff")
+    .setFontSize(28)
+    .setFontFamily("Lexend")
+    .setValue(title)
+    .setFontWeight("bold");
+
+  r.setRowHeight(startRankRow, 50);
+  return "Group Added";
+}
+
+/**
+ * Remove a group from the roster
+ * @param {String} title - The title of the group you want to remove
+ * @param {Boolean} forced - If removal is forced, is won't account for ranks still being part of the group
+ * @returns {String|Array}
+ */
+function groups_remove(title, forced = false) {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  const r = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  const groups = r.getRange(5, 2, r.getMaxRows(), 1).getValues().flat();
+  const filtered_groups = groups.filter(group => group.length > 1);
+
+  if (!filtered_groups.includes(title)) return "Invalid Group";
+  if (LIBRARY_SETTINGS.group.includes(title) && !forced) return "Not empty";
+
+  r.deleteRows(groups.indexOf(title) + 4, 2);
+
+  if (forced) {
+    const settings_index = LIBRARY_SETTINGS.group.lastIndexOf(title);
+    const group_after = LIBRARY_SETTINGS.group[settings_index + 1];
+    for (let i = settings_index; i >= 0; i--) {
+      if (LIBRARY_SETTINGS.group[i] === title) {
+        LIBRARY_SETTINGS.group[i] = group_after;
+      }
+    }
+  }
+
+  init(LIBRARY_SETTINGS);
+  return ["Removed", LIBRARY_SETTINGS];
+}
+
+/**
+ * Remove any empty groups from the roster
+ * @returns {String}
+ */
+function groups_cleanup() {
+  if (!isInit) throw new Error("Library is not yet initialized");
+
+  const r = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
+  const groups = r.getRange(5, 2, r.getMaxRows(), 1).getValues().flat();
+  const filtered_groups = groups.filter(group => group.length > 1);
+
+  for (group of filtered_groups) {
+    groups_remove(group);
+  }
+
+  return "Groups Cleaned";
 }

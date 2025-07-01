@@ -577,6 +577,7 @@ function getHtmlAddTask() {
       color: #fff;
       outline: none;
       text-align: center;
+      font-family: Lexend;
     }
 
     input:hover,
@@ -612,7 +613,7 @@ function getHtmlAddTask() {
     }
 
     #description {
-      height: 4rem;
+      height: 6rem;
       text-align: left;
       justify-content: top;
       word-wrap: break-word;
@@ -621,60 +622,60 @@ function getHtmlAddTask() {
     }
 
     .submitButton {
-        background-color: #4a4a4a;
-        color: whitesmoke;
-        text-align: center;
-        align-self: center;
-        border-radius: 20px;
-        box-shadow: 0 0.3rem 0.4rem #111111;
-        width: 45%;
-        padding: 20px 20px;
-        font-size: 20px;
-        border: 4px solid #111111;
-        transition: 0.5s ease;
-        overflow: hidden;
+      background-color: #4a4a4a;
+      color: whitesmoke;
+      text-align: center;
+      align-self: center;
+      border-radius: 20px;
+      box-shadow: 0 0.3rem 0.4rem #111111;
+      width: 45%;
+      padding: 20px 20px;
+      font-size: 20px;
+      border: 4px solid #111111;
+      transition: 0.5s ease;
+      overflow: hidden;
     }
 
     .submitButton:hover {
-        background-color: #222222;
-        transition: 0.5s ease;
-        cursor: pointer;
+      background-color: #222222;
+      transition: 0.5s ease;
+      cursor: pointer;
     }
 
     .submitButton:disabled {
-        background-color: #4a4a4a;
-        color: gray;
-        cursor: not-allowed;
+      background-color: #4a4a4a;
+      color: gray;
+      cursor: not-allowed;
     }
 
     .loader {
-        border: 16px solid #666666;
-        border-top: 16px solid black;
-        border-radius: 50%;
-        width: 25px;
-        height: 25px;
-        animation: spin 1.2s linear infinite;
-        justify-self: center;
+      border: 16px solid #666666;
+      border-top: 16px solid black;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      animation: spin 1.2s linear infinite;
+      justify-self: center;
     }
 
     @keyframes spin {
-        0% {
-        transform: rotate(0deg);
-        }
+      0% {
+      transform: rotate(0deg);
+      }
 
-        100% {
-        transform: rotate(360deg);
-        }
+      100% {
+      transform: rotate(360deg);
+      }
     }
 
     .red {
-        background-color: red !important;
-        color: black !important;
+      background-color: red !important;
+      color: black !important;
     }
 
     .green {
-        background-color: green !important;
-        color: black !important;
+      background-color: green !important;
+      color: black !important;
     }
   </style>
   <script>
@@ -703,13 +704,14 @@ function getHtmlAddTask() {
         priority: priority
       }
       google.script.run.withSuccessHandler(response => {
+        button.innerText = response;
         if (response) {
-          button.innerText = response;
           if (response.includes("Added")) {
             button.classList.add("green");
           } else {
             button.classList.add("red");
           }
+
           setTimeout(() => {
             button.disabled = false;
             if (response.includes("Added")) {
@@ -717,6 +719,7 @@ function getHtmlAddTask() {
               google.script.host.close();
             } else {
               button.classList.remove("red");
+              button.innerText = "Submit";
             }
           }, 2000);
         }
@@ -744,7 +747,7 @@ function getHtmlAddTask() {
     <label for="title">Title:</label>
     <input type="text" id="title" placeholder="Add a title to your task" maxlength="25" required>
     <label for="description">Description:</label>
-    <textarea type="message" id="description" placeholder="Add a description to your task" maxlength="1500" required></textarea>
+    <textarea type="text" id="description" placeholder="Add a description to your task" maxlength="1500" required></textarea>
     <label for="deadline">Deadline:</label>
     <input type="date" id="deadline" placeholder="Select a deadline for the task" required>
     <label for="priority">Select a Priority Level:</label>

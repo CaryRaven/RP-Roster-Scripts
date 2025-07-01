@@ -438,7 +438,14 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
             const start_date = sheet.getRange(i, 7).getDisplayValue();
             start_date_ms = dateToMilliseconds(start_date);
             const playerId = sheet.getRange(i, 5).getDisplayValue();
-            if (start_date_ms >= now_ms && playerId == targetData.playerId) return `${targetData.name} already has an LOA planned on ${start_date}`;
+
+            if (playerId != targetData.playerId) continue;
+            if (start_date_ms >= now_ms) return `${targetData.name} already has an LOA planned on ${start_date}`;
+            
+            const end_date = sheet.getRange(i, 8).getDisplayValue();
+            end_date_ms = dateToMilliseconds(end_date);
+
+            if (now_ms - end_date_ms <= (LIBRARY_SETTINGS.cooldown_loa * day)) return `${targetData.name} must wait ${LIBRARY_SETTINGS.cooldown_loa} days between LOAs`
           }
 
           // Insert log

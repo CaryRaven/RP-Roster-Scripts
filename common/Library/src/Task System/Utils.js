@@ -28,6 +28,10 @@ function task_add(inputData) {
   console.log(`End Loc: ${endLoc}\nLoc: ${loc}`);
   if (!endLoc) return;
 
+  const now_ms = new Date().valueOf();
+  const deadline_ms = dateToMilliseconds(formatDate(inputData.deadline));
+  if (deadline_ms <= now_ms) return "Deadline cannot be in the past";
+
   // If there are no more free slots in a type
   if (!loc) {
     s.insertRowAfter(endLoc);
@@ -74,13 +78,13 @@ function task_manager(sheet, range, oldValue) {
     return "This is not a task";
   }
 
-  if (sheet.getRange(row, taskCols.c_date).getValue() == "") {
+  const completed = types[2].includes(sheet.getRange(row, taskCols.type).getValue());
+  if (sheet.getRange(row, taskCols.c_date).getValue() == "" && !completed) {
     range.setValue(false);
     return "This task is empty";
   }
 
-  if (types[2].includes(sheet.getRange(row, taskCols.type).getValue())) {
-    range.setValue(false);
+  if (completed) {
     return "You cannot edit a completed task";
   }
 
@@ -194,8 +198,8 @@ function task_getLastRow(s, type) {
 
  /**
   * Get the first row of a certain type of task
-  * @param {Object} s - Sheet object, use RosterService.getCollect to extract it
-  * @param {String} type - Backlog, In Progress or Completed
+  * @param {Object} s     - Sheet object, use RosterService.getCollect to extract it
+  * @param {String} type  - Backlog, In Progress or Completed
   */
 function task_getFirstRow(s, type) {
   if (!s || !type) throw new Error("Do not run this function from the editor");
@@ -321,8 +325,8 @@ function task_isAssigned() {
 /**
  * Regex, used in assigning / deassinging to a task
  * Made using AI (One day I will understand how this works)
- * @param {String} str - The complete string of current assignees
- * @param {String} name - The name to remove from str
+ * @param {String} str    - The complete string of current assignees
+ * @param {String} name   - The name to remove from str
  * @returns {String}
  */
 function task_removeAssignee(str, name) {
@@ -448,17 +452,21 @@ function task_cycleStatus(row) {
   };
 
   let newLoc;
-  let endLoc;
+  let startLoc;
+
+  const data = s.getRange(row, taskCols.c_date, 1, 6).getValues();
+  console.log(`Data: ${data}`);
+  task_delete(row, taskCols.b_delete);
 
   switch (type) {
     case "Backlog":
       newLoc = task_getEmptyRow(s, "In Progress");
-      endLoc = task_getLastRow(s, "In Progress");
+      startLoc = task_getFirstRow(s, "In Progress");
       type = "In Progress";
       break;
     case "In Progress":
       newLoc = task_getEmptyRow(s, "Completed");
-      endLoc = task_getLastRow(s, "Completed");
+      startLoc = task_getFirstRow(s, "Completed");
       type = "Completed";
       break;
     case "Completed":
@@ -466,16 +474,13 @@ function task_cycleStatus(row) {
     default:
       throw new Error("No matching type found");
   }
-  console.log(`Loc: ${newLoc}\nEndLoc: ${endLoc}`);
+  console.log(`Loc: ${newLoc}\nstartLoc: ${startLoc}`);
 
-  const data = s.getRange(row, taskCols.c_date, 1, 6).getValues();
-  task_delete(row, taskCols.b_delete);
-  console.log(`Data: ${data}`)
 
   // If there are no more free slots in a type
   if (!newLoc) {
-    s.insertRowAfter(endLoc);
-    newLoc = endLoc + 1;
+    s.insertRowBefore(startLoc);
+    newLoc = startLoc;
     console.log(newLoc);
 
     // Style new row
@@ -483,11 +488,11 @@ function task_cycleStatus(row) {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
 
       // Border styling
-      s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+      s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(true, true, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       if (type === "Completed" && cellpair[0] === 10) {
-        s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(false, null, null, null, false, false);
+        s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(null, null, false, null, false, false);
       } else {
-        s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(true, null, null, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
+        s.getRange(newLoc, cellpair[0], 1, numcols).setBorder(null, null, true, null, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);
       }
 
       // Remove checboxes to avoid confusion
@@ -504,10 +509,9 @@ function task_cycleStatus(row) {
 
   if (type === "Completed") {
     s.getRange(newLoc, taskCols.deadline).setValue(new Date());
-
-    // :hardcode
-    protectRange("N", s, null, newLoc);
+    task_removeOld(s);
   }
+
   task_sendDiscordMessage("Status", inputData);
 }
 
@@ -534,8 +538,8 @@ function task_changePriority(inputData) {
 /**
  * Deletes a task in "row"
  * 
- * @param {Number} row - Row where task to delete is located
- * @param {Number} [clearcell = 14] - The cell where the "delete" button (checkbox) is located
+ * @param {Number} row                - Row where task to delete is located
+ * @param {Number} [clearcell = 14]   - The cell where the "delete" button (checkbox) is located
  * @param {Number} [endLoc = null]
  * @param {Number} [startLoc = null]
  * @returns {String|Object}
@@ -586,4 +590,30 @@ function task_delete(row, clearcell = 14, endLoc = null, startLoc = null) {
   }
 
   return inputData;
+}
+
+/**
+ * Remove any completed task that was completed over 6 months ago
+ * No need to have old tasks piling up, only need to show the most recent ones
+ * @param {Object} s          - Sheet object
+ * @param {Number} start_row   - The first task row of "Completed"
+ */
+function task_removeOld(s) {
+  const end_row = task_getLastRow(s, "Completed");
+  const start_row = task_getFirstRow(s, "Completed");
+
+  for (let i = end_row; i >= start_row; i--) {
+    const deadline = s.getRange(i, taskCols.deadline).getDisplayValue();
+    const deadline_ms = dateToMilliseconds(deadline);
+    const max_days_old = new Date(new Date().valueOf() - (180 * 86400000)).valueOf();
+
+    if (deadline_ms <= max_days_old && i !== start_row) s.deleteRow(i);
+    if (deadline_ms <= max_days_old && i === start_row) s.getRange(i, 3, 1, s.getMaxColumns()).clearContent();
+  }
+  
+  [[taskCols.c_date, taskCols.priority], [taskCols.b_assign, taskCols.b_delete]].forEach(cellpair => {
+    const numcols = (cellpair[1] - cellpair[0]) + 1;
+    s.getRange(start_row, cellpair[0], 1, numcols).setBorder(true, true, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+    s.getRange(end_row, cellpair[0], 1, numcols).setBorder(null, true, true, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+  });
 }

@@ -8,9 +8,10 @@ function T() {
 }
 
 /**
- * Web app entry point. Default google function thus it cannot be used in your project, only defined/declared once
+ * Web app entry point
  */
-function doGet() {
+function doGet(e) {
+  if (!e) throw new Error("Do not run this function from the editor");
   let user = Session.getActiveUser().getEmail();
   Logger.log(user);
 
@@ -232,7 +233,9 @@ function Set() {
   managerRanks: [],
   adminRanks: [ 'Security Chief', 'Office of Site Management' ],
   folders: 
-   [ { viewerAccess: 
+   [ { viewerAccess: [], editorAccess: [] },
+  { viewerAccess: [], editorAccess: [] },
+  { viewerAccess: 
      [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
        '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A' ],
     editorAccess: [] },
@@ -254,13 +257,21 @@ function Set() {
     '10RmXJBe6IWA5DMQtfrQFaeXy5u7UEtzkQ1jjRngsVow',
     '1Pnh9FaNnlVho5T2cfJSg6PaPg_UFaiF8Lc81EYfjx7Y' ] ],
   ranks: 
-   [ 'Captain',
+   [ 'Reserve Captain',
+     'Trial Captain',
+     'Captain',
      'Captain Major',
      'Security Chief',
      'Office of Site Management' ],
-  interviewRequired: [ false, false, false, false ],
-  promoReqs: [ [], [], [], [] ],
-  group: [ 'Security', 'Security', 'Sr CL4', 'Sr CL4' ],
+  interviewRequired: [ false, false, false, false, false, false ],
+  promoReqs: [ [], [], [], [], [], [] ],
+  group: 
+   [ 'Departmental Seniors',
+     'Departmental Seniors',
+     'Departmental Seniors',
+     'Departmental Seniors',
+     'Sr CL4',
+     'Sr CL4' ],
   specializations: 
    [ { title: '', desc: '' },
      { title: 'Security Liaison',
@@ -270,7 +281,7 @@ function Set() {
      { title: 'Head of Propaganda',
        desc: 'In charge of making the department live up to its name.' } ],
   meritActions: [],
-  minMeritScore: [ 0, 0, 0, 0 ],
+  minMeritScore: [ 0, 0, 0, 0, 0, 0, 0, 0 ],
   pings: false,
   backupEnabled: true,
   lockdownEnabled: false,
@@ -293,7 +304,7 @@ function Set() {
        '',
        '= LAST_RANKCHANGE(F/row/, \'Rank Changes\'!E:E, \'Rank Changes\'!C:C)',
        '= LOA_DATE(F/row/, \'LOA Logs\'!E:E, \'LOA Logs\'!H:H, \'LOA Logs\'!G:G, \'LOA Logs\'!I:I)',
-       `= HAS_TASK(E/row/)`,
+       '= HAS_TASK(E/row/)',
        '= REQS_CHECK(F/row/, \'Promotion Progress\'!F:F, \'Promotion Progress\'!H:M)',
        '= BLACKLIST_DATE(F/row/, \'Suspensions / Blacklists\'!E:E, \'Suspensions / Blacklists\'!H:H, \'Suspensions / Blacklists\'!J:J)',
        '' ] ] }));
