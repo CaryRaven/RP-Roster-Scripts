@@ -182,6 +182,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
           sheet = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
           const roster = getCollect(LIBRARY_SETTINGS.rosterIds[0]);
           let isBlacklisted;
+          console.log("Rank Changing");
 
           switch (inputData.rankchangetype) {
             case "Promotion":
@@ -189,7 +190,9 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
               if (targetData.status == "LOA") return `You cannot promote members who are on LOA: ${targetData.name}`;
               if (Number(targetData.infractions) !== 0) return `You cannot promote members with an active infraction: ${targetData.name}`;
               if (targetData.status == "Suspended") return `You cannot promote suspended members: ${targetData.name}`;
-              if (roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1).getDisplayValue().toLowerCase() == "false") return `${targetData.name} must complete all their requirements before promotion.`; 
+              if (roster.getRange(targetData.row, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1).getDisplayValue().toLowerCase() == "false"
+                && !LIBRARY_SETTINGS.reqsDisabled) return `${targetData.name} must complete all their requirements before promotion.`;
+                
               const promotionDestination = ranks[currentRankIndex + 1];
               if (!promotionDestination || currentRankIndex === ranks.length - 3) return `${targetData.name} cannot be promoted any further`;
 
@@ -301,6 +304,7 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
               removeDocAccess(targetData.email);
               break;
             case "Passed Interview":
+              console.log("Passed Interview");
               const newStaffDestination = ranks[0];
               rowDestination = getFirstRankRow(newStaffDestination);
               if (rowDestination[0] === 0) return `${newStaffDestination} has reached capacity`;
@@ -617,5 +621,113 @@ function processLog(inputData, userData, allowedStaff, threshold = false, justCh
   } catch(e) {
     sendDiscordError(e.toString(), "processLog");
     throw new Error(e);
+  }
+}
+
+/**
+ * Validates the data submitted for a log edit & gets the row where the target log is located
+ * @param {Object<Array|String>} data
+ * @param {Number} startSearchRow - The first row to start searching from on the log sheet, default: 7
+ * @returns {String|Number}
+ */
+function logEdit_getRow(data, startSearchRow = 7) {
+  if (!data.name || !data.playerId || !data.discordId || !data.reason) return "Invalid Data";
+  let [s, logRow, reasonCol] = [undefined, undefined, 10];
+
+  switch (data.type) {
+    case "Rank Change":
+      s = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
+      break;
+    case "LOA Log":
+      s = getCollect(LIBRARY_SETTINGS.sheetId_loa);
+      break;
+    case "Infraction":
+      if (!["Minor", "Regular", "Severe"].includes(data.infraction_type))return "Invalid Data";
+      s = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
+      break;
+    case "Suspension / Blacklist Log":
+      if (!["Suspension", "Blacklist"].includes(data.blacklist_type) || !data.expiry_date) return "Invalid Data";
+      s = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
+      reasonCol = 11;
+      break;
+    default:
+      return "Invalid Data";
+  }
+
+  let valid = true;
+  Object.entries(data).forEach(([key, value]) => {
+    if (!value || (key === "index" && value >= 0) || key === "prev_data") return;
+    if (typeof value !== "string" || value.includes('"') || value.includes("=") || value.includes("<")) return valid = false;
+  });
+
+  if (!valid) return "Invalid Data";
+
+  const expiry_ms = new Date().valueOf() - (14 * 86400000);
+  for (let i = startSearchRow; i < s.getMaxRows(); i++) {
+    const log_date = s.getRange(i, 3).getDisplayValue();
+    const log_date_ms = dateToMilliseconds(log_date);
+    if (log_date_ms < expiry_ms) break;
+
+    const player_id = s.getRange(i, 5).getDisplayValue().toString();
+    if (player_id !== data.prev_data["Player ID"]) continue;
+
+    const reason = s.getRange(i, reasonCol).getDisplayValue();
+    if (reason !== data.prev_data["Reason"]) continue;
+
+    logRow = i;
+  }
+
+  if (!logRow) return "Invalid Log, try pressing 'search' again.";
+  return logRow;
+}
+
+/**
+ * Handles the editing of an existing log. This can be done by the user via the search panel.
+ * This function does NOT validate or check the data provided. Use logEdit_getRow to do so.
+ * @param {Object} data
+ * @param {String} row - The row where the target log is located
+ * @throws {Error} if the function is not executed by the target spreadsheet owner, as it edits protected ranges.
+ * @returns {Void}
+ */
+function logEdit_handler(data, row) {
+
+  let reasonCol = 10;
+  function editStandardInfo(sheet) {
+    sheet.getRange(row, 4).setValue(data.name);
+    sheet.getRange(row, 5).setValue(data.playerId);
+    sheet.getRange(row, 6).setValue(data.discordId);
+    sheet.getRange(row, reasonCol).setValue(data.reason);
+
+    // :hardcode Set icon & note to indicate log has been edited
+    s.getRange(row, 2)
+      .setFormula('= IMAGE("https://drive.google.com/uc?export=view&id=1r-nkHw21nuj256WmLZYRuhJgIJ_tyX0W", 4, 22, 22)')
+      .setNote(`This log has last been edited on ${Utilities.formatDate(new Date(), 'GMT', 'dd MMMM yyyy')}`);
+  }
+
+  switch (data.type) {
+    case "Rank Change":
+      s = getCollect(LIBRARY_SETTINGS.sheetId_rankchange);
+      editStandardInfo(s);
+      break;
+    case "LOA Log":
+      s = getCollect(LIBRARY_SETTINGS.sheetId_loa);
+      editStandardInfo(s);
+      break;
+    case "Infraction":
+      s = getCollect(LIBRARY_SETTINGS.sheetId_infraction);
+      editStandardInfo(s);
+
+      s.getRange(row, 8).setValue(data.infraction_type);
+      break;
+    case "Suspension / Blacklist Log":
+      s = getCollect(LIBRARY_SETTINGS.sheetId_blacklist);
+      reasonCol = 11;
+      editStandardInfo(s);
+
+      s.getRange(row, 7).setValue(data.blacklist_type);
+      s.getRange(row, 8).setValue(data.expiry_date);
+      break;
+    default:
+      return "Invalid Data";
   }
 }

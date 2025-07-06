@@ -251,7 +251,10 @@ function task_changeAssignment(inputData) {
 
   const s = getCollect(LIBRARY_SETTINGS.sheetId_task);
 
-  // :hardcode column
+  const deadline_ms = dateToMilliseconds(s.getRange(inputData.row, taskCols.deadline).getDisplayValue());
+  const now_ms = new Date().valueOf();
+  if (deadline_ms <= now_ms + 86400000) return "Task too close to deadline";
+
   let currentAssignees = s.getRange(inputData.row, taskCols.assignees).getValue();
   let assigned = false;
 
@@ -497,10 +500,6 @@ function task_cycleStatus(row) {
 
       // Remove checboxes to avoid confusion
       if (cellpair[0] === taskCols.b_assign && type === "Completed") s.getRange(newLoc, cellpair[0], 1, numcols).clearDataValidations().clearContent();
-
-      // Set background color just in case (spreadsheets can be slippery with conditional formatting)
-      if (newLoc > row) s.getRange(row, cellpair[0], 1, numcols).setBackground("#666666");
-      if (newLoc < row) s.getRange(row + 1, cellpair[0], 1, numcols).setBackground("#666666");
     });
   }
 

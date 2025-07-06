@@ -11,6 +11,7 @@
  * @returns {Void}
  */
 function sendDiscordLog(inputData, targetData, userData) {
+  return;
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!inputData || typeof inputData != "object") throw new Error("sendDiscordLog: no valid inputdata provided");
   if (!targetData || typeof targetData != "object") throw new Error("sendDiscordLog: no valid targetdata provided");
@@ -176,7 +177,7 @@ function sendDiscordLog(inputData, targetData, userData) {
 
   // Send message
   webhookURLs.forEach(webhookURL => UrlFetchApp.fetch(webhookURL, params));
-  Logger.log('Discord Notification Sent Successfully.');
+  console.log('Discord Notification Sent Successfully.');
 }
 
 /**
@@ -227,6 +228,7 @@ function sendDiscordUnauthed() {
 /**
  * Send an error report to Staff Administration
  * @param {String} error - the error message
+ * @param {String} func - the name of the function where the error occured
  */
 function sendDiscordError(error, func) {
   if (!isInit) throw new Error("Library is not yet initialized");
@@ -325,7 +327,6 @@ function sendDiscordPermissionReport(flagArray, flaggedDocs) {
  * @returns {Void}
  */
 function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
-  return;
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!type || typeof type != 'string') throw new Error("DiscordConfig: no valid type provided");
   if (!userData || typeof userData != "object") throw new Error("DiscordConfig: no valid user data provided");
@@ -426,6 +427,7 @@ function sendDiscordConfig(type, value, userData, timeSinceBackup = 0) {
         Editor Access to: ${userData.editorAccess}
         Interview Required?: ${userData.interviewRequired.toString() === "true" ? "Yes" : "No"}
         Minimum Merits for promotion: ${userData.minMeritScore}
+        Minimum Cooldown (in days): ${userData.minDaysInRank}
         ${userData.reqsDisabled.toString() === "true" ? "" : `Requirements: ${userData.promoReqs}`}`;
       footerMessage = "Not all change info listen above is necessarily new";
       break;
@@ -551,7 +553,6 @@ function sendDiscordConfigRankRow(rank, added, userData, num = 1) {
  * @returns {Void}
  */
 function sendDiscordNewRank(rank, added = true) {
-  return;
   if (!isInit) throw new Error("Library is not yet initialized");
 
   // Compose discord embed

@@ -7,6 +7,10 @@
         font-family: Lexend;
     }
 
+    body {
+      display: grid;
+    }
+
     @media print {
       body {
         display: none;
@@ -20,7 +24,7 @@
       transform: translate(-50%, -50%);
       width: 100vw;
       height: 20vh;
-      z-index: 999999;
+      z-index: 9999;
       display: flex;
       flex-direction: column; 
       align-items: center;
@@ -51,84 +55,84 @@
     }
 
     ::-webkit-scrollbar {
-        display: none;
+      display: none;
     }
 
     @keyframes shake {
-        0% {
-        transform: translate(1px, 1px) rotate(0deg);
-        }
+      0% {
+      transform: translate(1px, 1px) rotate(0deg);
+      }
 
-        10% {
-        transform: translate(-1px, -2px) rotate(-1deg);
-        }
+      10% {
+      transform: translate(-1px, -2px) rotate(-1deg);
+      }
 
-        20% {
-        transform: translate(-3px, 0px) rotate(1deg);
-        }
+      20% {
+      transform: translate(-3px, 0px) rotate(1deg);
+      }
 
-        30% {
-        transform: translate(3px, 2px) rotate(0deg);
-        }
+      30% {
+      transform: translate(3px, 2px) rotate(0deg);
+      }
 
-        40% {
-        transform: translate(1px, -1px) rotate(1deg);
-        }
+      40% {
+      transform: translate(1px, -1px) rotate(1deg);
+      }
 
-        50% {
-        transform: translate(-1px, 2px) rotate(-1deg);
-        }
+      50% {
+      transform: translate(-1px, 2px) rotate(-1deg);
+      }
 
-        60% {
-        transform: translate(-3px, 1px) rotate(0deg);
-        }
+      60% {
+      transform: translate(-3px, 1px) rotate(0deg);
+      }
 
-        70% {
-        transform: translate(3px, 1px) rotate(-1deg);
-        }
+      70% {
+      transform: translate(3px, 1px) rotate(-1deg);
+      }
 
-        80% {
-        transform: translate(-1px, -1px) rotate(1deg);
-        }
+      80% {
+      transform: translate(-1px, -1px) rotate(1deg);
+      }
 
-        90% {
-        transform: translate(1px, 2px) rotate(0deg);
-        }
+      90% {
+      transform: translate(1px, 2px) rotate(0deg);
+      }
 
-        100% {
-        transform: translate(1px, -2px) rotate(-1deg);
-        }
+      100% {
+      transform: translate(1px, -2px) rotate(-1deg);
+      }
     }
 
     .shake {
-        overflow: hidden;
-        animation: shake 0.1s;
+      overflow: hidden;
+      animation: shake 0.1s;
     }
 
     a {
-        text-decoration: none;
-        color: black;
+      text-decoration: none;
+      color: black;
     }
 
     .sidebar {
-        z-index: 2;
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: 80px;
-        padding: .4rem .8rem;
-        transition: all 0.5s ease;
-        display: flex;
-        flex-direction: column;
+      z-index: 2;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 80px;
+      padding: .4rem .8rem;
+      transition: all 0.5s ease;
+      display: flex;
+      flex-direction: column;
     }
 
     .sidebar ul {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 0;
-        margin: 0;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      margin: 0;
     }
 
     /* Add this in case want a notifications tab
@@ -139,50 +143,50 @@
     */
 
     .sidebar .top {
-        opacity: 0;
-        cursor: default;
+      opacity: 0;
+      cursor: default;
     }
 
     .sidebar p {
-        opacity: 0;
-        transition-duration: 0.1s;
+      opacity: 0;
+      transition-duration: 0.1s;
     }
 
     .sidebar ul li {
-        position: relative;
-        list-style-type: none;
-        height: 50px;
-        width: 90%;
-        margin: 0.8rem auto;
-        line-height: 50px;
+      position: relative;
+      list-style-type: none;
+      height: 50px;
+      width: 90%;
+      margin: 0.8rem auto;
+      line-height: 50px;
     }
 
     .sidebar ul li button {
-        color: #fff;
-        all: unset;
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        border-radius: 0.8rem;
-        width: 50px;
-        transition: 0.3s ease;
+      color: #fff;
+      all: unset;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      border-radius: 0.8rem;
+      width: 50px;
+      transition: 0.3s ease;
     }
 
     .sidebar ul li button:hover {
-        background-color: #fff;
-        color: #12171e;
-        transition: 0.3s ease;
-        cursor: pointer;
+      background-color: #fff;
+      color: #12171e;
+      transition: 0.3s ease;
+      cursor: pointer;
     }
 
     .sidebar ul li button i {
-        color: #fff;
-        min-width: 50px;
-        text-align: center;
-        height: 50px;
-        border-radius: 12px;
-        line-height: 50px;
-        transition: 0.3s ease;
+      color: #fff;
+      min-width: 50px;
+      text-align: center;
+      height: 50px;
+      border-radius: 12px;
+      line-height: 50px;
+      transition: 0.3s ease;
     }
 
     .sidebar ul li button:hover i {
@@ -526,7 +530,7 @@
     }
 
     .lockdown-banner, #actionBanner {
-        z-index: 10;
+        z-index: 102;
         width: 100%;
         background-color: rgb(255, 70, 70);
         color: black;
@@ -666,7 +670,7 @@
         padding: 1rem;
     }
 
-    #meritsNeeded {
+    #meritsNeeded, #daysNeeded {
       padding: 12px 5px !important;
       width: 100% !important; 
       font-size: 20px !important;
@@ -924,5 +928,63 @@
     .tooltip2:hover .tooltiptext {
       visibility: visible;
       opacity: 0.9;
+    }
+
+    #screenCurtain {
+      position: absolute;
+      top: 0px;
+      z-index: 100;
+      width: 200%;
+      height: 200%;
+      background-color: #222222;
+      opacity: 0.6;
+      display: none;
+    }
+
+    #logEditor {
+      position: absolute;
+      display: none;
+      z-index: 101;
+      justify-self: center;
+      text-align: center;
+      padding: 15px;
+      background-color: #ababab;
+      border: 5px solid black;
+      border-radius: 20px;
+      box-shadow: 0 0.5rem 0.8rem black;
+      top: 5rem;
+      transform: translateX(40px);
+      width: 50%;
+      height: 80%;
+    }
+
+    #editorWrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #logEditorForm {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    #editorWrapper h1 { 
+      position: relative; 
+    }
+
+    #editorWrapper h1 i {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    #editorWrapper hr {
+      border: 2px solid black;
+      border-radius: 100%;
     }
 </style>

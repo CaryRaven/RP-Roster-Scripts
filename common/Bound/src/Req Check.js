@@ -37,12 +37,11 @@ function CheckReqs() {
     const startRankRow = RosterService.getStartRankRow(rank);
     const lastRankRow = RosterService.getLastRankRow(rank);
     const rowcount = lastRankRow - startRankRow + 1;
-
-    SpreadsheetApp.getActiveSheet().isSheetHidden()
     
     if (RosterService.getCollect(LIBRARY_SETTINGS.sheetId_reqlogs).isSheetHidden() && reqColHidden === "false") {
       // Column hidden but registered as visible? => change border style & mark hidden so it doesn't edit the style every execution
       sheet.getRange(startRankRow, 16, rowcount, 1).setBorder(null, null, null, true, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
+      sheet.getRange(lastRankRow, 17).setBorder(null, null, true, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
       sheet.hideColumn(sheet.getRange(1, LIBRARY_SETTINGS.dataCols.blacklistEnd - 1));
       props.setProperty("reqColHidden", true);
 

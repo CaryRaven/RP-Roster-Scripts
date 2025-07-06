@@ -13,6 +13,7 @@
  * template.hex = LIBRARY_SETTINGS.colorHex;
  * template.sheetId = LIBRARY_SETTINGS.spreadsheetId_main;
  * template.supervisorIdentifier = LIBRARY_SETTINGS.supervisorsDisabled;
+ * template.totalMeritActions = LIBRARY_SETTINGS.meritActions.length;
  * 
  * @returns {String}
  */
@@ -33,9 +34,7 @@ function getAdminMenu() {
 <body>
 
   <div class="lockdown-banner" style="display: none;" id="lockdown-topbanner">🚨 <?= factionName ?> Documentation is currently under lockdown 🚨</div>
-  <div id="actionBanner" style="display: none;">
-    <h3>Request <span id="requestType"></span></h3>
-  </div>
+  <div id="actionBanner" style="display: none;"></div>
   <div id="afkBanner" class="hazard-background" style="display: none;">
     <h1>AFK Warning</h1><br>
     <h3>Please do not open the admin menu if you do not need to be here. You are slowing down other users.</h3>
@@ -57,6 +56,23 @@ function getAdminMenu() {
       </div>
     </div>
   </div>
+
+  <? if (accessType === "manager" || accessType === "admin" || accessType === "dev") { ?>
+    <!-- Menu that allows managers+ to edit logs after they have been submitted in case mistakes were made. Logs older than 2 weeks can no longer be edited -->
+    <div id="screenCurtain"></div>
+    <div id="logEditor">
+      <div id="editorWrapper">
+        <h1>Editing 
+          <span id="logEditorTitle"></span>
+          <i id="logEditorCloseIcon" class='bx bxs-x-circle' ></i>
+        </h1><br>
+        <p style="font-size: 12px;"><em>You may edit any information about the selected log. When doing so, please bear in mind that the information must remain correct and you must only fix mistakes or outdated information.
+        Abuse of this feature to compromise logs will result in removal. <strong>Editing a log here will NOT change anything on the roster, it will only edit the log!</strong> (editing a rank change won't actually change the rank of the person etc...)</em></p><br><hr><br>
+        <form id="logEditorForm" style="display: block">
+        </form>
+      </div>
+    </div>
+  <? } ?>
 
   <div id="admin-menu" style="display: none;">
     <!-- Sidebar NAVIGATION - Permanently displayed -->
@@ -399,7 +415,7 @@ function getAdminMenu() {
           <form>
             <label for="inputField">Enter Player ID:</label><br>
             <input type="text" id="inputField" maxlength="25" required style="width: 20%;" />
-            <button type="submit" class="submitButton-mini-mini" onclick="UpdateDiv(event)">Submit</button>
+            <button type="submit" class="submitButton-mini-mini" onclick="UpdateDiv(event)">Search</button>
           </form>
           <p id="loading-search"></p><br>
           <div class="loader" id="searchLoading"></div>
@@ -415,7 +431,8 @@ function getAdminMenu() {
       <div class="container">
         <div class="textbox">
           <h1><i class='bx bx-calendar-check'></i> Requests Overview</h1><br>
-          <p>From here you can manage incoming requests made by roster moderators.<br>They need your authorization in order to perform an action, you may accept/decline these requests here. They will be notified of your verdict.</p><br>
+          <p>From here you can manage incoming requests made by roster moderators.<br>They need your authorization in order to perform an action, you may accept/decline these requests here. They will be notified of your verdict.<br>
+          <strong>ATTENTION: Please coordinate with other manager+ personnel when handling requests, if multiple people are managing them at once you can expect buggy behavior.</strong></p>
           <div id="mainDiv">
             <!-- Request output goes here -->
           </div>
@@ -424,6 +441,7 @@ function getAdminMenu() {
     </div>
 
     <!-- Config Panel -->
+    <? if (accessType === "admin" || accessType === "dev") { ?>
     <div class="main-content" id="config" style="display: none;">
       <div class="container">
         <div class="textbox" id="config-textbox" style="display: none;">
@@ -571,6 +589,18 @@ function getAdminMenu() {
                   </td>
                   <td class="config-switch">
                     <input type="number" id="meritsNeeded" min="0" max="25" required>
+                  </td>
+                </tr>
+                <tr id="minCooldownConfig">
+                  <td>
+                    Minimum Days In Rank:
+                    <span class="tooltip2"><i class="bx bxs-help-circle"></i>
+                      <span class="tooltiptext" style="font-weight: 0;">If set to 0, the default global cooldown will apply <em>(Set under "Manage Cooldowns")</em>.</span>
+                    </span>
+                    <br><span style="font-weight: 200; font-size: 12px;">How many days players must spend at this rank before being able to be promoted.<br>(Set to 0 to disable this)</span>
+                  </td>
+                  <td class="config-switch">
+                    <input type="number" id="daysNeeded" min="0" max="30" required>
                   </td>
                 </tr>
                 <tr id="addReqButton">
@@ -824,10 +854,9 @@ function getAdminMenu() {
           </table>
         </div>
         <p id="config-loading" style="margin-top: 15px;"></p>
-        <p style="font-size: 0px;" id="ranks"><?= ranks ?></p>
-        <p style="font-size: 0px;" id="rank"><?= data.rank ?></p>
       </div>
     </div>
+    <? } ?>
 
     <div class="main-content" id="data-forms" style="display: none;">
       <div class="container">
@@ -855,7 +884,10 @@ function getAdminMenu() {
 
                 <option value="LOA Log">LOA Log</option>
                 <option value="Requirement Log">Promotion Requirement Log</option>
+
+                <? if (totalMeritActions > 0) { ?>
                 <option value="Merit Log">Merit Log</option>
+                <? } ?>
 
                 <? if (accessType !== "visitor" && accessType !== "mod") { ?>
                   <option value="End LOA Early">End LOA Early</option>
@@ -918,8 +950,8 @@ function getAdminMenu() {
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
               </select>
-              <label for="userSelectPromoReqs" id="userSelectPromoReqsLabel">Select which member has completed the requirement</label>
-              <select id="userSelectPromoReqs" required/>
+              <label for="userSelectPromoReqs" id="userSelectPromoReqsLabel" style="display: none;">Select which member has completed the requirement</label>
+              <select id="userSelectPromoReqs" style="display: none;" required/>
               </select>
               <label for="rctypefield" id='rctypelabel'>Rank Change Type:</label>
               <select id="rctypefield" style='display: block;' required>
@@ -1029,6 +1061,8 @@ function getAdminMenu() {
   <p id="hex" style="font-size: 0px;"><?= hex ?></p>
   <p id="sheetId" style="font-size: 0px;"><?= sheetId ?></p>
   <p id="supervisorIder" style="font-size: 0px;"><?= supervisorIdentifier ?></p>
+  <p style="font-size: 0px;" id="ranks"><?= ranks ?></p>
+  <p style="font-size: 0px;" id="rank"><?= data.rank ?></p>
 </body>
 
 </html>`

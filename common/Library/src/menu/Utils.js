@@ -316,7 +316,8 @@ function getRankContent(title) {
         LIBRARY_SETTINGS.interviewRequired[i].toString(),
         LIBRARY_SETTINGS.promoReqs[i],
         LIBRARY_SETTINGS.group[i],
-        LIBRARY_SETTINGS.minMeritScore[i]
+        LIBRARY_SETTINGS.minMeritScore[i],
+        LIBRARY_SETTINGS.minDaysInRank[i]
       ];
     }
   });
@@ -358,14 +359,14 @@ function getSpreadsheetData(inputValue) {
       const matchingData = data
         .filter(row => {
           // filter empty logs
-          if (!row || row.length < 8 || !row[2]) return false;
+          if (row.toString() !== "false" && (!row || row.length < 8 || !row[2])) return "";
           const cellValue = row[2].toString().trim().toLowerCase();
           const normalizedInput = inputValue.trim().toLowerCase();
           return cellValue === normalizedInput;
         })
         .map(row => {
           // compose object
-          row = row.filter(Boolean);
+          row = row.filter(value => value !== "");
           const rowObject = { sheetLabel: sheetInfo.label };
           headers.forEach((header, index) => {
             rowObject[header] = row[index] !== undefined ? row[index] : null;

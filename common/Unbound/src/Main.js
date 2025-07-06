@@ -15,7 +15,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
   // :hardcode
   if (accessType === "manager" || accessType === "admin" || accessType === "dev") {
     // Normal log
-    return RosterService.processLog(inputData, userData, allowedStaff, threshold);
+    return RosterService.processLog(inputData, userData, allowedStaff, threshold, false, accessType);
   } else {
     // Permission Checks
     if (accessType === "visitor") inputData.email = Session.getActiveUser().getEmail();
@@ -68,7 +68,8 @@ function ProcessLog(inputData, threshold = false, accessType) {
         userData: userData,
         inputData: inputData,
         targetName: type === "New Member" ? inputData.name : targetData.name,
-        reqName: inputData.reqName
+        reqName: inputData.reqName,
+        accessType: accessType,
       };
 
       // :hardcode
@@ -78,7 +79,7 @@ function ProcessLog(inputData, threshold = false, accessType) {
     }
     
     PropertiesService.getScriptProperties().setProperty("requests", JSON.stringify(requests));
-    return "Requests Submitted";
+    return "Request Submitted";
   }
 }
 
@@ -94,9 +95,9 @@ function ProcessInputEdits(inputData, accessType) {
     return RosterService.processEdit(inputData, allowedStaff, userData);
   } else {
     // Permission Checks
-    if (accessType === "visitor" && inputData.email !== userData.email) return "You cannot manage others";
+    if (accessType === "visitor" && inputData.current_user !== userData.name) return "You cannot manage others";
     if (accessType !== "visitor") {
-      let targetDataCheck = RosterService.getUserData(inputData.email);
+      let targetDataCheck = RosterService.getUserData(inputData.current_user, 5);
       let ranks = LIBRARY_SETTINGS.ranks;
       if (!targetDataCheck.row) return "User not found";
       if (targetDataCheck.playerId == userData.playerId) return "You cannot manage yourself";
@@ -155,12 +156,10 @@ function ManageRequests(action, id) {
       request.inputData.reqName = request.reqName;
 
       if (request.type.includes("Edit")) {
-        // returnVal = RosterService.processEdit(request.inputData, allowedStaff, request.userData);
+        returnVal = RosterService.processEdit(request.inputData, allowedStaff, request.userData);
       } else {
-        // returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, false);
+        returnVal = RosterService.processLog(request.inputData, request.userData, allowedStaff, false);
       }
-
-      returnVal = "Log Submitted";
 
       try { returnVal = JSON.parse(returnVal); } catch(e) {}
       if (!Array.isArray(returnVal) || returnVal != "Information Edited") {
@@ -924,4 +923,33 @@ function RemoveGroup(title) {
   }
 
   return [returnValue, undefined];
+}
+
+/**
+ * Handle the editing of an existing log
+ * @param {Object} data
+ * @returns {String}
+ */
+function ProcessLogEdit(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return "Invalid Data";
+
+  const returnValue = RosterService.logEdit_getRow(data);
+  if (typeof returnValue === "string") return returnValue;
+
+  // Add to queue for trigger
+  // Log edits must be dealt with via trigger as the user does not have access to edit the logs (they'be been protected) and triggers always run as spreadsheet owner
+  let editQueue = PropertiesService.getScriptProperties().getProperty("editQueue")
+  editQueue = !editQueue ? [] : JSON.parse(editQueue);
+
+  const log_pd = data.prev_data;
+  for (let i = 0; i < editQueue.length; i++) {
+    const edit = editQueue[i];
+    const edit_pd = edit.data.prev_data;
+
+    if (edit_pd.playerId === log_pd.playerId && edit_pd.reason === log_pd.reason) return "There is already an edit being processed for this log, please be patient.";
+  }
+
+  editQueue.push({row: returnValue, data: data});
+  PropertiesService.getScriptProperties().setProperty("editQueue", JSON.stringify(editQueue));
+  return "Edit Logged";
 }

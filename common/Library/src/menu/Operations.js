@@ -137,10 +137,11 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
   sheet.moveRows(sheet.getRange(lastBeforeRow + 1, 1), lastBeforeRow + 3);
   let insertRow = lastBeforeRow + 2;
   const hasMinMerits = inputData.minMeritScore > 0 ? 1 : 0;
+  const hasMinDays = inputData.minDaysInRank > 0 ? 1 : 0;
   let borderPairs = [
     [3, 3], 
     [5, 6],
-    [8, 7 + inputData.promoReqs.length + hasMinMerits]
+    [8, 7 + inputData.promoReqs.length + hasMinMerits + hasMinDays]
   ];
 
   // Set styling & (in case of promo reqs) add title/desc row + styling
@@ -154,12 +155,14 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
     if (cellpair[0] === 8) {
       console.log(inputData.promoReqs);
 
-      if (hasMinMerits === 1) inputData.promoReqs.push({ title: `${inputData.minMeritScore} Merits`, desc: `Have a minimum of ${inputData.minMeritScore} merits on your name.`})
+      if (hasMinMerits === 1) inputData.promoReqs.push({ title: `${inputData.minMeritScore} Merits`, desc: `Have a minimum of ${inputData.minMeritScore} merits on your name.`});
+      if (hasMinDays === 1) inputData.promoReqs.push({ title: `${inputData.minDaysInRank}d Cooldown`, desc: `Spend at least ${inputData.minDaysInRank} day${inputData.minDaysInRank === 1 ? "s" : ""} as ${inputData.rank}`});
 
       addFirstReqRow(sheet, insertRow, inputData.promoReqs, cellpair, numcols);
       insertRow++;
 
       if (hasMinMerits === 1) inputData.promoReqs.pop();
+      if (hasMinDays === 1) inputData.promoReqs.pop();
     }
   });
 
@@ -168,6 +171,7 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
   // Set data for promo reqs
   const reqFormulas = inputData.promoReqs.map((v, i) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow}, 'Requirement Logs'!G:G, D${insertRow}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + i)}$${insertRow - 1}, 'Requirement Logs'!C:C, ${Number(v.logcount)}, ${Number(v.expirydays)})`);
   hasMinMerits === 1 && reqFormulas.push(`= HAS_MIN_MERITS(GET_MERIT_COUNT(F${insertRow}, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E), ${Number(inputData.minMeritScore)})`);
+  hasMinDays === 1 && reqFormulas.push(`= HAS_NO_COOLDOWN(F${insertRow}, ${Number(inputData.minDaysInRank)})`);
   const preData = [[inputData.title, inputData.title, "", "", ""]];
   let insertData = [preData[0].concat(reqFormulas)];
 
@@ -185,7 +189,7 @@ function addReqRank(sheet, lastBeforeRow, inputData) {
   let reqRowNum = lastRankRow - startRankRow;
   // If the rank only has one row, no extra slots need to be added
   reqRowNum = reqRowNum === 1 ? 0 : reqRowNum;
-  addReqRow(inputData.title, reqRowNum, borderPairs, inputData.promoReqs, inputData.minMeritScore);
+  addReqRow(inputData.title, reqRowNum, borderPairs, inputData.promoReqs, inputData.minMeritScore, inputData.minDaysInRank);
 
   // Only set this formula after as it can cause unwanted rows to be added
   sheet.getRange(insertRow, 5).setValue(`= IFERROR(FILTER('${LIBRARY_SETTINGS.factionName} Roster'!E:F, '${LIBRARY_SETTINGS.factionName} Roster'!D:D=D${insertRow}), "Rank Not found")`);
@@ -306,6 +310,9 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     if (editorFolders.includes(folderId)) return "Cannot have duplicate file/folder permissions";
   }
 
+  // Don't add min merit score if merits are disabled
+  if (LIBRARY_SETTINGS.meritActions.length <= 0 && inputData.minMeritScore > 0) return "Cannot add a min merit score, there are no merit actions configured";
+
   // **************************************************************
 
   // Check if the rank before is the last rank in the group
@@ -313,7 +320,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   let rankBeforeIndex = LIBRARY_SETTINGS.ranks.indexOf(inputData.rankBefore);
   if (rankBeforeIndex < 0) {
     // Cannot add reqs to the last rank as there is nothing to promote to
-    if (inputData.promoReqs.length > 0 || inputData.minMeritScore > 0) return `Cannot add promo reqs to this rank as it is at the top of the hierarchy`;
+    if (inputData.promoReqs.length > 0 || inputData.minMeritScore > 0 || inputData.minDaysInRank > 0) return `Cannot add promo reqs to this rank as it is at the top of the hierarchy`;
     rankBeforeIndex = LIBRARY_SETTINGS.ranks.indexOf(LIBRARY_SETTINGS.adminRanks[0]);
   }
 
@@ -350,7 +357,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
   // Determining if we're doing anything with promotion reqs
   // editReq = 0 if no, 1 if yes
   let editReq = 1
-  if (inputData.promoReqs.length <= 0 && inputData.minMeritScore <= 0) editReq = 0;
+  if (inputData.promoReqs.length <= 0 && inputData.minMeritScore <= 0 && inputData.minDaysInRank <= 0) editReq = 0;
 
   // Make sure that if promo reqs were all removed, it still registers it as a change in reqs
   try {
@@ -416,7 +423,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
         if (i === 1) {
           // Editing promo progress
-          if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0)) {
+          if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0 || inputData.minDaysInRank > 0)) {
             // Only edit if there are promo reqs being added
             addReqRank(sheet, lastBeforeRow, inputData);
           }
@@ -426,11 +433,9 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
 
       } else {
         // Order of ranks remained the same
-        console.log(`changeGroup: ${changeGroup}`);
-
         if (i === 1) { 
           // Editing promo progress
-          if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0)) {
+          if ((inputData.promoReqs.length > 0 || inputData.minMeritScore > 0 || inputData.minDaysInRank > 0)) {
             console.log(inputData.promoReqs)
             addReqRank(sheet, lastBeforeRow, inputData);
           }
@@ -541,6 +546,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     LIBRARY_SETTINGS.promoReqs.splice(rankIndex, 0, inputData.promoReqs);
     LIBRARY_SETTINGS.group.splice(rankIndex, 0, inputData.group);
     LIBRARY_SETTINGS.minMeritScore.splice(rankIndex, 0, Number(inputData.minMeritScore));
+    LIBRARY_SETTINGS.minDaysInRank.splice(rankIndex, 0, Number(inputData.minDaysInRank));
 
     LIBRARY_SETTINGS.ranks.splice(rankIndex, 0, inputData.title); // Always change last
   } else {
@@ -554,6 +560,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     LIBRARY_SETTINGS.promoReqs.splice(rankIndex, 1, inputData.promoReqs);
     LIBRARY_SETTINGS.group.splice(rankIndex, 1, inputData.group);
     LIBRARY_SETTINGS.minMeritScore.splice(rankIndex, 1, Number(inputData.minMeritScore));
+    LIBRARY_SETTINGS.minDaysInRank.splice(rankIndex, 1, Number(inputData.minDaysInRank));
     
     if (!hierarchyChange && inputData.title !== inputData.editRank && editingRank) {
       LIBRARY_SETTINGS.ranks.splice(rankIndex, 1, inputData.title); // Always change last
@@ -586,6 +593,7 @@ function manageRank(inputData, borderPairs, userData, discordnotif = true, reqsB
     userData.promoReqs = inputData.promoReqs;
     userData.reqsDisabled = LIBRARY_SETTINGS.reqsDisabled;
     userData.minMeritScore = inputData.minMeritScore;
+    userData.minDaysInRank = inputData.minDaysInRank;
     
     if (discordnotif) sendDiscordConfig("rankEdit", false, userData);
   }
@@ -779,7 +787,6 @@ function removeRankRow(rank, userData, num = 1, borderPairs = null) {
       let numcols = (cellpair[1] - cellpair[0]) + 1;
       sheet.getRange(lastRankRow, cellpair[0], 1, numcols).setBorder(true, null, null, null, null, null, "black", SpreadsheetApp.BorderStyle.SOLID_THICK);
     });
-
   }
 
   sendDiscordConfigRankRow(rank, false, userData, num);
@@ -792,16 +799,17 @@ function removeRankRow(rank, userData, num = 1, borderPairs = null) {
  * @param {Array[]} borderPairs (optional)
  */
 // :hardcode
-function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = [], minMeritScore) {
+function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = [], minMeritScore, minDaysInRank) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
   if (num === 0) num = 1;
   const hasMinMerits = minMeritScore > 0 ? 1 : 0;
+  const hasMinDays = minDaysInRank > 0 ? 1 : 0;
 
   // Add third (custom) if no borderPair provided
   // if (promoReqs.length <= 0) promoReqs = LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)];
   // :hardcode
-  if (borderPairs.length === 2) borderPairs.push([8, 7 + promoReqs.length + hasMinMerits]);
+  if (borderPairs.length === 2) borderPairs.push([8, 7 + promoReqs.length + hasMinMerits + hasMinDays]);
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
 
   console.log(borderPairs);
@@ -838,6 +846,7 @@ function addReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]], promoReqs = []
   for (let i = 0; i < num; i++) {
     let reqFormulas = promoReqs.map((v, j) => `= IS_REQ_COMPLETED('Requirement Logs'!E:E, F${insertRow + i}, 'Requirement Logs'!G:G, D${insertRow + i}, 'Requirement Logs'!H:H, $${String.fromCharCode(72 + j)}$${startRow - 1}, 'Requirement Logs'!C:C, ${Number(v.logcount)}, ${Number(v.expirydays)})`);
     hasMinMerits === 1 && reqFormulas.push(`= HAS_MIN_MERITS(GET_MERIT_COUNT(F${insertRow + i}, 'Merit Logs'!I:I, 'Merit Logs'!C:C, 'Merit Logs'!E:E), ${Number(minMeritScore)})`);
+    hasMinDays === 1 && reqFormulas.push(`= HAS_NO_COOLDOWN(F${insertRow + i}, ${Number(minDaysInRank)})`);
     const preData = [rank, "", "", ""];
     const insertData = preData.concat(reqFormulas);
     reqs.push(insertData);
@@ -874,8 +883,9 @@ function removeReqRow(rank, num = 1, borderPairs = [[3, 3], [5, 6]]) {
   if (!isInit) throw new Error("Library is not yet initialized");
   if (!rank) return "no";
 
-  const hasMinMerits = LIBRARY_SETTINGS.minMeritScore[LIBRARY_SETTINGS.ranks.indexOf(rank)] > 0 ? 1 : 0;;
-  borderPairs.push([8, 7 + LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length + hasMinMerits]);
+  const hasMinMerits = LIBRARY_SETTINGS.minMeritScore[LIBRARY_SETTINGS.ranks.indexOf(rank)] > 0 ? 1 : 0;
+  const hasMinDays = LIBRARY_SETTINGS.minDaysInRank[LIBRARY_SETTINGS.ranks.indexOf(rank)] > 0 ? 1 : 0;
+  borderPairs.push([8, 7 + LIBRARY_SETTINGS.promoReqs[LIBRARY_SETTINGS.ranks.indexOf(rank)].length + hasMinMerits + hasMinDays]);
 
   // :hardcode roster length
   const sheet = getCollect(LIBRARY_SETTINGS.rosterIds[LIBRARY_SETTINGS.rosterIds.length - 1]);
@@ -934,6 +944,8 @@ function removeRank(rank, discordnotif = true, branch = 0, override = false) {
     LIBRARY_SETTINGS.interviewRequired.splice(rankIndex, 1);
     LIBRARY_SETTINGS.promoReqs.splice(rankIndex, 1);
     LIBRARY_SETTINGS.group.splice(rankIndex, 1);
+    LIBRARY_SETTINGS.minMeritScore.splice(rankIndex, 1);
+    LIBRARY_SETTINGS.minDaysInRank.splice(rankIndex, 1);
 
     if (LIBRARY_SETTINGS.modRanks.includes(rank)) {
       rankIndex = LIBRARY_SETTINGS.modRanks.indexOf(rank);

@@ -81,6 +81,7 @@ class SettingsTemplate {
     this.meritActions = [];
     this.group = [];
     this.minMeritScore = [];
+    // this.minDaysInRank = [];
     this.backupEnabled = true;
     this.lockdownEnabled = true;
     this.manualEnabled = true;

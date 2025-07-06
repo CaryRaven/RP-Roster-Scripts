@@ -5,6 +5,7 @@ RosterService.init(LIBRARY_SETTINGS);
 
 // test function - ignore
 function T() {
+  console.log(JSON.parse(PropertiesService.getScriptProperties().getProperty("editQueue"))[0]);
 }
 
 /**
@@ -104,6 +105,7 @@ function doGet(e) {
     template.hex = LIBRARY_SETTINGS.colorHex;
     template.sheetId = LIBRARY_SETTINGS.spreadsheetId_main;
     template.supervisorIdentifier = LIBRARY_SETTINGS.supervisorsDisabled;
+    template.totalMeritActions = LIBRARY_SETTINGS.meritActions.length;
 
     let ssEditors;
 
@@ -233,9 +235,7 @@ function Set() {
   managerRanks: [],
   adminRanks: [ 'Security Chief', 'Office of Site Management' ],
   folders: 
-   [ { viewerAccess: [], editorAccess: [] },
-  { viewerAccess: [], editorAccess: [] },
-  { viewerAccess: 
+   [ { viewerAccess: 
      [ '1UZFKjpPueZEQvkqkHXwykyLv9DcCVpZE',
        '13U1EGXwSfQYVdUoYMzSfmxfBSEDNwN4A' ],
     editorAccess: [] },
@@ -254,21 +254,24 @@ function Set() {
     '1Hor8B4_cxYYtjmkNtsVcBWBaR2rWRfDV',
     '1IQvMVAE6xS93NbOwaS60IqCAfVMKqFPg1tmvifT8bYg',
     '1zQnOxsHb3BVEQTLn9ySSj8myKrNCclNUWSWQMOkRJpk',
-    '10RmXJBe6IWA5DMQtfrQFaeXy5u7UEtzkQ1jjRngsVow',
     '1Pnh9FaNnlVho5T2cfJSg6PaPg_UFaiF8Lc81EYfjx7Y' ] ],
   ranks: 
-   [ 'Reserve Captain',
-     'Trial Captain',
-     'Captain',
+   [ 'Captain',
      'Captain Major',
      'Security Chief',
      'Office of Site Management' ],
-  interviewRequired: [ false, false, false, false, false, false ],
-  promoReqs: [ [], [], [], [], [], [] ],
+  interviewRequired: [ false, false, false, false ],
+  promoReqs: [ [ { completion_type: 'manual',
+      title: 'Training',
+      expirydays: 30,
+      desc: 'Host a training in the past 30 days.',
+      logcount: 1,
+      formula: '' } ],
+  [],
+  [],
+  [] ],
   group: 
    [ 'Departmental Seniors',
-     'Departmental Seniors',
-     'Departmental Seniors',
      'Departmental Seniors',
      'Sr CL4',
      'Sr CL4' ],
@@ -281,12 +284,13 @@ function Set() {
      { title: 'Head of Propaganda',
        desc: 'In charge of making the department live up to its name.' } ],
   meritActions: [],
-  minMeritScore: [ 0, 0, 0, 0, 0, 0, 0, 0 ],
+  minMeritScore: [ 15, 0, 0, 0 ],
+  minDaysInRank: [ 0, 0, 0, 0 ],
   pings: false,
   backupEnabled: true,
   lockdownEnabled: false,
   manualEnabled: false,
-  reqsDisabled: true,
+  reqsDisabled: false,
   supervisorsDisabled: true,
   modsOnlySupervised: false,
   managersOnlySupervised: false,

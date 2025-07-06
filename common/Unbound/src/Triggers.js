@@ -23,3 +23,25 @@ function BackupSheet() {
 function PermissionsGuard() {
   RosterService.permissionsGuard(JSON.parse(PropertiesService.getScriptProperties().getProperty("allowedStaff")));
 }
+
+/**
+ * Process all log edits lined up in queue
+ */
+function Trigger_LogEdits() {
+  let editQueue = PropertiesService.getScriptProperties().getProperty("editQueue")
+  editQueue = !editQueue ? [] : JSON.parse(editQueue);
+
+  if (editQueue.length <= 0) return;
+
+  let i;
+  for (i = 0; i < editQueue.length; i++) {
+    const edit = editQueue[i];
+    const logRow = RosterService.logEdit_getRow(edit.data, edit.row);
+    if (typeof logRow !== "number") return RosterService.sendDiscordError("Corrupted Data", "Trigger_LogEdits");
+
+    RosterService.logEdit_handler(edit.data, logRow);
+  }
+
+  editQueue.splice(0, i);
+  PropertiesService.getScriptProperties().setProperty("editQueue", JSON.stringify(editQueue));
+}
